@@ -1,0 +1,83 @@
+# Default values for alibaba-cloud-cert-renewer
+# This is a YAML-formatted file.
+
+# Service configuration
+serviceType: cdn # cdn or slb
+
+# Image configuration
+image:
+  repository: alibaba-cloud-cert-renewer
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Deployment configuration
+replicas: 1
+
+# Init container resources
+initContainer:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Main container (placeholder) resources
+mainContainer:
+  image: busybox:latest
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# CDN configuration
+cdn:
+  domainName: schema.amugua.com
+  region: cn-hangzhou
+
+# SLB configuration
+slb:
+  instanceId: ""
+  region: cn-hangzhou
+
+# Secrets configuration
+secrets:
+  # Alibaba Cloud credentials secret name
+  alibabaCloudCredentials:
+    name: alibaba-cloud-credentials
+    accessKeyIdKey: access-key-id
+    accessKeySecretKey: access-key-secret
+  # Certificate secret name (usually created by cert-manager)
+  certificate:
+    name: cert-secret
+    certKey: tls.crt
+    privateKeyKey: tls.key
+
+# Reloader configuration
+reloader:
+  enabled: true
+  auto: true
+  search: true
+
+# Namespace
+namespace: default
+
+# Labels and annotations
+labels: {}
+annotations: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

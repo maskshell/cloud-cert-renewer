@@ -1,0 +1,15 @@
+apiVersion: v2
+name: alibaba-cloud-cert-renewer
+description: A Helm chart for Alibaba Cloud certificate renewal service (CDN and SLB)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - alibaba-cloud
+  - certificate
+  - ssl
+  - cdn
+  - slb
+maintainers:
+  - name: Your Name
+    email: your.email@example.com

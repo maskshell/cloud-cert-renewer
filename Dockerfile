@@ -1,5 +1,6 @@
 # 使用 Python 3.11 作为基础镜像
 FROM python:3.11-slim
+LABEL maintainer="analyser <analyser@gmail.com>"
 
 # 设置工作目录
 WORKDIR /app
@@ -20,4 +21,3 @@ ENV PYTHONPATH=/app
 
 # 运行主程序
 CMD ["python", "main.py"]
-

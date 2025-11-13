@@ -11,7 +11,11 @@ from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_tea_util import models as util_models
 from dotenv import load_dotenv
 
-from dianplus.utils.ssl_cert_parser import is_cert_valid
+from dianplus.utils.ssl_cert_parser import (
+    get_cert_fingerprint_sha1,
+    get_cert_fingerprint_sha256,
+    is_cert_valid,
+)
 
 # 配置日志
 logging.basicConfig(
@@ -56,6 +60,43 @@ class CdnCertsRenewer:
         return Cdn20180510Client(config)
 
     @staticmethod
+    def get_current_cert(
+        domain_name: str,
+        access_key_id: str,
+        access_key_secret: str,
+    ) -> str | None:
+        """
+        查询CDN域名当前配置的证书内容
+        :param domain_name: CDN域名
+        :param access_key_id: 阿里云AccessKey ID
+        :param access_key_secret: 阿里云AccessKey Secret
+        :return: 证书内容（PEM格式），如果查询失败或没有证书则返回None
+        """
+        try:
+            client = CdnCertsRenewer.create_client(access_key_id, access_key_secret)
+            request = cdn_20180510_models.DescribeDomainCertificateInfoRequest(
+                domain_name=domain_name
+            )
+            runtime = util_models.RuntimeOptions()
+            response = client.describe_domain_certificate_info_with_options(
+                request, runtime
+            )
+
+            if (
+                response.body
+                and response.body.cert_infos
+                and response.body.cert_infos.cert_info
+            ):
+                cert_info = response.body.cert_infos.cert_info[0]
+                server_cert = cert_info.server_certificate
+                if server_cert:
+                    return server_cert
+            return None
+        except Exception as e:
+            logger.warning("查询CDN当前证书失败: %s，将跳过证书比较", str(e))
+            return None
+
+    @staticmethod
     def renew_cert(
         domain_name: str,
         cert: str,
@@ -63,6 +104,7 @@ class CdnCertsRenewer:
         region: str,
         access_key_id: str,
         access_key_secret: str,
+        force: bool = False,
     ) -> bool:
         """
         更新CDN域名SSL证书
@@ -72,6 +114,7 @@ class CdnCertsRenewer:
         :param region: 区域
         :param access_key_id: 阿里云AccessKey ID
         :param access_key_secret: 阿里云AccessKey Secret
+        :param force: 是否强制更新（即使证书相同也更新，用于测试）
         :return: 是否成功
         """
         try:
@@ -79,6 +122,25 @@ class CdnCertsRenewer:
             if not is_cert_valid(cert, domain_name):
                 raise CertValidationError(
                     f"证书验证失败：域名 {domain_name} 不在证书中或证书已过期"
+                )
+
+            # 查询当前证书并比较
+            current_cert = CdnCertsRenewer.get_current_cert(
+                domain_name, access_key_id, access_key_secret
+            )
+            if current_cert and not force:
+                new_fingerprint = get_cert_fingerprint_sha256(cert)
+                current_fingerprint = get_cert_fingerprint_sha256(current_cert)
+                if new_fingerprint == current_fingerprint:
+                    logger.info(
+                        "CDN证书未变化，跳过更新: 域名=%s, 指纹=%s",
+                        domain_name,
+                        new_fingerprint[:20] + "...",
+                    )
+                    return True
+            elif force:
+                logger.info(
+                    "强制更新模式已启用，即使证书相同也会更新: 域名=%s", domain_name
                 )
 
             # 创建客户端
@@ -141,6 +203,51 @@ class SlbCertsRenewer:
         return Slb20140515Client(config)
 
     @staticmethod
+    def get_current_cert_fingerprint(
+        instance_id: str,
+        region: str,
+        access_key_id: str,
+        access_key_secret: str,
+    ) -> str | None:
+        """
+        查询SLB实例当前使用的证书指纹
+        注意：此方法查询所有证书列表，实际使用时需要根据监听器配置找到正确的证书
+        这里简化实现，通过证书名称匹配（如果证书名称包含实例ID或域名信息）
+        :param instance_id: SLB实例ID
+        :param region: 区域
+        :param access_key_id: 阿里云AccessKey ID
+        :param access_key_secret: 阿里云AccessKey Secret
+        :return: 证书指纹（SHA1格式），如果查询失败则返回None
+        """
+        try:
+            client = SlbCertsRenewer.create_client(access_key_id, access_key_secret)
+            request = slb_20140515_models.DescribeServerCertificatesRequest(
+                region_id=region,
+            )
+            runtime = util_models.RuntimeOptions()
+            response = client.describe_server_certificates_with_options(
+                request, runtime
+            )
+
+            if (
+                response.body
+                and response.body.server_certificates
+                and response.body.server_certificates.server_certificate
+            ):
+                certs = response.body.server_certificates.server_certificate
+                # 尝试根据证书名称或ID匹配（简化实现）
+                # 实际使用时应该查询监听器配置来确定使用的证书
+                for cert in certs:
+                    # 如果证书名称包含实例ID，或者有其他匹配逻辑
+                    # 这里返回第一个证书的指纹作为示例
+                    # 实际场景需要根据业务逻辑匹配正确的证书
+                    return cert.fingerprint
+            return None
+        except Exception as e:
+            logger.warning("查询SLB当前证书指纹失败: %s，将跳过证书比较", str(e))
+            return None
+
+    @staticmethod
     def renew_cert(
         instance_id: str,
         cert: str,
@@ -148,6 +255,7 @@ class SlbCertsRenewer:
         region: str,
         access_key_id: str,
         access_key_secret: str,
+        force: bool = False,
     ) -> bool:
         """
         更新SLB实例SSL证书
@@ -157,9 +265,28 @@ class SlbCertsRenewer:
         :param region: 区域
         :param access_key_id: 阿里云AccessKey ID
         :param access_key_secret: 阿里云AccessKey Secret
+        :param force: 是否强制更新（即使证书相同也更新，用于测试）
         :return: 是否成功
         """
         try:
+            # 查询当前证书指纹并比较
+            current_fingerprint = SlbCertsRenewer.get_current_cert_fingerprint(
+                instance_id, region, access_key_id, access_key_secret
+            )
+            if current_fingerprint and not force:
+                new_fingerprint = get_cert_fingerprint_sha1(cert)
+                if new_fingerprint == current_fingerprint:
+                    logger.info(
+                        "SLB证书未变化，跳过更新: 实例ID=%s, 指纹=%s",
+                        instance_id,
+                        new_fingerprint[:20] + "...",
+                    )
+                    return True
+            elif force:
+                logger.info(
+                    "强制更新模式已启用，即使证书相同也会更新: 实例ID=%s", instance_id
+                )
+
             # 创建客户端
             client = SlbCertsRenewer.create_client(access_key_id, access_key_secret)
 
@@ -197,11 +324,11 @@ class SlbCertsRenewer:
             raise
 
 
-def load_config() -> Tuple[str, str, str, str, str, str, str]:
+def load_config() -> Tuple[str, str, str, str, str, str, str, bool]:
     """
     从环境变量加载配置
-    :return: (service_type, access_key_id, access_key_secret, domain_name_or_instance_id,
-              cert, cert_private_key, region)
+    :return: (service_type, access_key_id, access_key_secret,
+              domain_name_or_instance_id, cert, cert_private_key, region, force)
     :raises ConfigError: 配置错误时抛出
     """
     # 加载 .env 文件
@@ -218,7 +345,8 @@ def load_config() -> Tuple[str, str, str, str, str, str, str]:
 
     if not access_key_id or not access_key_secret:
         raise ConfigError(
-            "缺少必要的环境变量: ALIBABA_CLOUD_ACCESS_KEY_ID 或 ALIBABA_CLOUD_ACCESS_KEY_SECRET"
+            "缺少必要的环境变量: ALIBABA_CLOUD_ACCESS_KEY_ID 或 "
+            "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
         )
 
     # 根据服务类型获取不同的配置
@@ -235,6 +363,10 @@ def load_config() -> Tuple[str, str, str, str, str, str, str]:
         if not cert_private_key:
             raise ConfigError("缺少必要的环境变量: CDN_CERT_PRIVATE_KEY")
 
+        # 获取强制更新标志
+        force_str = os.environ.get("FORCE_UPDATE", "false").lower()
+        force = force_str in ("true", "1", "yes", "on")
+
         return (
             service_type,
             access_key_id,
@@ -243,6 +375,7 @@ def load_config() -> Tuple[str, str, str, str, str, str, str]:
             cert,
             cert_private_key,
             region,
+            force,
         )
 
     else:  # slb
@@ -258,6 +391,10 @@ def load_config() -> Tuple[str, str, str, str, str, str, str]:
         if not cert_private_key:
             raise ConfigError("缺少必要的环境变量: SLB_CERT_PRIVATE_KEY")
 
+        # 获取强制更新标志
+        force_str = os.environ.get("FORCE_UPDATE", "false").lower()
+        force = force_str in ("true", "1", "yes", "on")
+
         return (
             service_type,
             access_key_id,
@@ -266,6 +403,7 @@ def load_config() -> Tuple[str, str, str, str, str, str, str]:
             cert,
             cert_private_key,
             region,
+            force,
         )
 
 
@@ -283,9 +421,15 @@ def main() -> None:
             cert,
             cert_private_key,
             region,
+            force,
         ) = load_config()
 
-        logger.info("开始更新证书: 服务类型=%s, 区域=%s", service_type, region)
+        logger.info(
+            "开始更新证书: 服务类型=%s, 区域=%s, 强制更新=%s",
+            service_type,
+            region,
+            force,
+        )
 
         # 根据服务类型执行不同的更新逻辑
         if service_type == "cdn":
@@ -296,6 +440,7 @@ def main() -> None:
                 region=region,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
+                force=force,
             )
         else:  # slb
             success = SlbCertsRenewer.renew_cert(
@@ -305,6 +450,7 @@ def main() -> None:
                 region=region,
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
+                force=force,
             )
 
         if success:

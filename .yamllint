@@ -1,0 +1,23 @@
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+  indentation:
+    spaces: 2
+    indent-sequences: true
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  document-start: disable
+  truthy:
+    allowed-values: ["true", "false", "on", "off"]
+  empty-lines:
+    max: 1
+    max-start: 0
+    max-end: 1
+
+# 忽略整个 Helm Chart 目录（包含 Go 模板语法，且 Helm Chart 有自己的格式要求）
+ignore: |
+  helm/**

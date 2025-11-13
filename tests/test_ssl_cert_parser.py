@@ -1,15 +1,12 @@
 import os
 import sys
 import unittest
-from datetime import datetime, timedelta
 
 # 添加父目录到路径，以便导入模块
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from dianplus.utils.ssl_cert_parser import (
-    parse_cert_info,
+from dianplus.utils.ssl_cert_parser import (  # noqa: I001
     is_domain_name_match,
-    is_cert_valid,
 )
 
 

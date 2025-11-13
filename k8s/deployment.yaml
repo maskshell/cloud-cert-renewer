@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: renew-cert-alibaba-cloud
+  name: alibaba-cloud-cert-renewer
   namespace: default
   labels:
-    app: renew-cert-alibaba-cloud
+    app: alibaba-cloud-cert-renewer
   annotations:
     # Reloader 注解：监听证书 Secret 的变化
     # 当 secret/cert-secret 发生变化时，自动重新部署
@@ -14,16 +14,16 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: renew-cert-alibaba-cloud
+      app: alibaba-cloud-cert-renewer
   template:
     metadata:
       labels:
-        app: renew-cert-alibaba-cloud
+        app: alibaba-cloud-cert-renewer
     spec:
       # Init 容器：执行证书更新
       initContainers:
         - name: cert-renewer
-          image: renew-cert-alibaba-cloud:latest
+          image: alibaba-cloud-cert-renewer:latest
           imagePullPolicy: IfNotPresent
           command: ["python", "main.py"]
           env:
@@ -79,11 +79,20 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
-      # 主容器：占位容器，保持 Deployment 运行
+      # 主容器：占位容器，保持 Deployment 运行（永不退出）
       containers:
         - name: placeholder
           image: busybox:latest
-          command: ["sh", "-c", "while true; do sleep 3600; done"]
+          command:
+            - "sh"
+            - "-c"
+            - |
+              # 捕获 SIGTERM 信号，优雅退出（仅在 Pod 被删除时）
+              trap 'exit 0' SIGTERM
+              # 无限循环，确保容器永不退出
+              while true; do
+                sleep 3600
+              done
           resources:
             requests:
               cpu: 10m
@@ -92,4 +101,3 @@ spec:
               cpu: 100m
               memory: 128Mi
       restartPolicy: Always
-
