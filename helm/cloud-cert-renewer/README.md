@@ -159,6 +159,109 @@ The certificate secret is typically created by cert-manager. It should contain:
 - `tls.crt`: The SSL certificate (PEM format)
 - `tls.key`: The private key (PEM format)
 
+## RAM Permissions (Alibaba Cloud)
+
+When using Alibaba Cloud, you need to configure appropriate RAM (Resource Access Management) permissions for the AccessKey. The following permissions are recommended:
+
+### Recommended Custom Policy
+
+For CDN certificate renewal:
+
+```json
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cdn:SetCdnDomainSSLCertificate",
+        "cdn:DescribeDomainCertificateInfo"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+For Load Balancer (SLB) certificate renewal:
+
+```json
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "slb:DescribeServerCertificates",
+        "slb:UploadServerCertificate"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+For both CDN and Load Balancer:
+
+```json
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cdn:SetCdnDomainSSLCertificate",
+        "cdn:DescribeDomainCertificateInfo"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "slb:DescribeServerCertificates",
+        "slb:UploadServerCertificate"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+### System Policy Alternative
+
+Alternatively, you can use the system policy `AliyunSLBReadOnlyAccess` combined with the following custom policy:
+
+```json
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Action": [
+        "slb:Describe*",
+        "slb:List*",
+        "slb:Get*"
+      ],
+      "Resource": "*",
+      "Effect": "Allow"
+    },
+    {
+      "Action": "cms:QueryMetric*",
+      "Resource": "*",
+      "Effect": "Allow"
+    }
+  ]
+}
+```
+
+**Note:** The system policy `AliyunSLBReadOnlyAccess` provides read-only access. You still need to add write permissions for `slb:UploadServerCertificate` and `cdn:SetCdnDomainSSLCertificate` through a custom policy.
+
+### Security Best Practices
+
+- Use the principle of least privilege: only grant the minimum permissions required
+- Use STS (Security Token Service) temporary credentials when possible instead of permanent AccessKeys
+- Regularly rotate AccessKeys
+- Use different AccessKeys for different environments (development, staging, production)
+
 ## Examples
 
 ### CDN Certificate Renewal

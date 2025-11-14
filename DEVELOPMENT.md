@@ -103,6 +103,15 @@ Certificate content...
 
 This ensures the certificate content is not escaped or corrupted.
 
+### Alibaba Cloud RAM Permissions
+
+When using Alibaba Cloud, ensure your AccessKey has the appropriate RAM permissions. For detailed permission requirements and recommended policies, see the [Helm Chart README](../helm/cloud-cert-renewer/README.md#ram-permissions-alibaba-cloud).
+
+**Quick Reference:**
+
+- **CDN**: `cdn:SetCdnDomainSSLCertificate`, `cdn:DescribeDomainCertificateInfo`
+- **Load Balancer**: `slb:DescribeServerCertificates`, `slb:UploadServerCertificate`
+
 ## Code Formatting
 
 ```bash
