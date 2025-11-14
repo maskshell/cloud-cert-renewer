@@ -49,9 +49,9 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
         else:
             clients_module = sys.modules["cloud_cert_renewer.clients.alibaba"]
 
-        CdnCertRenewer = getattr(clients_module, "CdnCertRenewer")
+        cdn_cert_renewer = getattr(clients_module, "CdnCertRenewer")
 
-        current_cert = CdnCertRenewer.get_current_cert(
+        current_cert = cdn_cert_renewer.get_current_cert(
             domain_name=self.config.cdn_config.domain_name,
             access_key_id=self.config.credentials.access_key_id,
             access_key_secret=self.config.credentials.access_key_secret,
@@ -72,9 +72,9 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
         else:
             clients_module = sys.modules["cloud_cert_renewer.clients.alibaba"]
 
-        CdnCertRenewer = getattr(clients_module, "CdnCertRenewer")
+        cdn_cert_renewer = getattr(clients_module, "CdnCertRenewer")
 
-        return CdnCertRenewer.renew_cert(
+        return cdn_cert_renewer.renew_cert(
             domain_name=self.config.cdn_config.domain_name,
             cert=cert,
             cert_private_key=cert_private_key,
