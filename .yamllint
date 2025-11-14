@@ -18,6 +18,6 @@ rules:
     max-start: 0
     max-end: 1
 
-# 忽略整个 Helm Chart 目录（包含 Go 模板语法，且 Helm Chart 有自己的格式要求）
+# Ignore entire Helm Chart directory (contains Go template syntax and Helm Chart has its own format requirements)
 ignore: |
   helm/**

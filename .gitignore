@@ -1,4 +1,4 @@
-# 环境变量文件
+# Environment variable files
 .env
 .env.local
 .env.*.local
@@ -26,7 +26,7 @@ wheels/
 *.egg
 MANIFEST
 
-# 虚拟环境
+# Virtual environment
 .venv/
 venv/
 ENV/
@@ -36,16 +36,16 @@ venv.bak/
 
 # uv
 .uv/
-# 注意：uv.lock 应该被提交到版本控制
+# Note: uv.lock should be committed to version control
 
-# 类型检查
+# Type checking
 .mypy_cache/
 .dmypy.json
 dmypy.json
 .pyre/
 .pytype/
 
-# 测试和覆盖率
+# Testing and coverage
 .pytest_cache/
 .coverage
 .coverage.*
@@ -58,7 +58,7 @@ nosetests.xml
 coverage.xml
 *.log
 
-# 代码质量工具
+# Code quality tools
 .ruff_cache/
 .bandit
 
@@ -77,7 +77,7 @@ coverage.xml
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# 操作系统
+# Operating System
 .DS_Store
 .DS_Store?
 ._*
@@ -90,7 +90,7 @@ Desktop.ini
 # Docker
 *.log
 
-# 临时文件
+# Temporary files
 *.tmp
 *.temp
 *.bak
