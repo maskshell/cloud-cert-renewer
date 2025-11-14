@@ -40,6 +40,14 @@ spec:
             # Authentication method (default: access_key)
             - name: AUTH_METHOD
               value: {{ .Values.authMethod | default "access_key" | quote }}
+            # STS temporary security token (optional, required when AUTH_METHOD=sts)
+            {{- if .Values.secrets.cloudCredentials.securityTokenKey }}
+            - name: CLOUD_SECURITY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.cloudCredentials.name | default .Values.secrets.alibabaCloudCredentials.name }}
+                  key: {{ .Values.secrets.cloudCredentials.securityTokenKey }}
+            {{- end }}
             # Cloud service access credentials (new name, preferred)
             - name: CLOUD_ACCESS_KEY_ID
               valueFrom:
@@ -115,6 +123,11 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.certificate.name }}
                   key: {{ .Values.secrets.certificate.privateKeyKey }}
+            {{- end }}
+            # Force update flag (optional, default: false)
+            {{- if .Values.forceUpdate }}
+            - name: FORCE_UPDATE
+              value: {{ .Values.forceUpdate | quote }}
             {{- end }}
           resources:
             {{- toYaml .Values.initContainer.resources | nindent 12 }}

@@ -10,6 +10,10 @@ cloudProvider: alibaba # alibaba, aws, azure, etc. (currently supports Alibaba C
 # Authentication method
 authMethod: access_key # access_key, sts, iam_role, service_account, env
 
+# Force update flag (optional, default: false)
+# When enabled, certificate will be updated even if it's the same
+forceUpdate: false
+
 # Image configuration
 image:
   repository: cloud-cert-renewer
@@ -64,6 +68,8 @@ secrets:
     name: cloud-credentials
     accessKeyIdKey: access-key-id
     accessKeySecretKey: access-key-secret
+    # Security token key (optional, required when authMethod=sts)
+    securityTokenKey: "" # e.g., "security-token"
   # Alibaba Cloud credentials secret name (old name, backward compatible)
   alibabaCloudCredentials:
     name: alibaba-cloud-credentials

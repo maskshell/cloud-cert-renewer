@@ -36,6 +36,13 @@ spec:
             # Authentication method (default: access_key)
             - name: AUTH_METHOD
               value: "access_key"
+            # STS temporary security token (optional, required when AUTH_METHOD=sts)
+            # Uncomment and configure if using STS authentication:
+            # - name: CLOUD_SECURITY_TOKEN
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: cloud-credentials
+            #       key: security-token
             # Cloud service access credentials (new name, preferred)
             - name: CLOUD_ACCESS_KEY_ID
               valueFrom:
@@ -108,6 +115,10 @@ spec:
             #     secretKeyRef:
             #       name: cert-secret
             #       key: tls.key
+            # Force update flag (optional, default: false)
+            # Uncomment to force certificate update even if it's the same:
+            # - name: FORCE_UPDATE
+            #   value: "true"
           resources:
             requests:
               cpu: 100m

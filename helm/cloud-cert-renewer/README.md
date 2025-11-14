@@ -54,8 +54,10 @@ The following table lists the configurable parameters and their default values:
 | `slb.instanceId`                       | SLB instance ID (old name, backward compatible)    | `""`                         |
 | `slb.region`                           | SLB region (old name, backward compatible)         | `cn-hangzhou`                |
 | `secrets.cloudCredentials.name`        | Cloud service credentials secret name (new name, preferred) | `cloud-credentials`           |
+| `secrets.cloudCredentials.securityTokenKey` | Security token key in credentials secret (optional, for STS) | `""`                         |
 | `secrets.alibabaCloudCredentials.name` | Alibaba Cloud credentials secret name (old name, backward compatible) | `alibaba-cloud-credentials`  |
 | `secrets.certificate.name`             | Certificate secret name               | `cert-secret`                |
+| `forceUpdate`                          | Force update certificate even if same | `false`                      |
 | `reloader.enabled`                     | Enable Reloader annotations           | `true`                       |
 | `namespace`                            | Kubernetes namespace                  | `default`                    |
 
@@ -76,6 +78,30 @@ kubectl create secret generic alibaba-cloud-credentials \
   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
 ```
+
+### STS Authentication
+
+To use STS (Security Token Service) temporary credentials:
+
+1. Set `authMethod: sts` in your values file
+2. Include `security-token` in your credentials secret:
+   ```bash
+   kubectl create secret generic cloud-credentials \
+     --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
+     --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET \
+     --from-literal=security-token=YOUR_SECURITY_TOKEN
+   ```
+3. Configure `secrets.cloudCredentials.securityTokenKey: "security-token"` in values
+
+### Force Update
+
+To force certificate update even if it's the same:
+
+```yaml
+forceUpdate: true
+```
+
+This sets the `FORCE_UPDATE` environment variable to `"true"`.
 
 ### Certificate Secret
 
