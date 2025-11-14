@@ -94,6 +94,7 @@ type(scope): description
 ```
 
 **Commit types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -103,6 +104,7 @@ type(scope): description
 - `chore`: Maintenance tasks
 
 **Example:**
+
 ```
 feat(auth): add STS credential provider support
 
@@ -189,9 +191,9 @@ Before submitting a pull request, ensure:
 ## Questions?
 
 If you have questions or need help, please:
+
 - Open an issue for discussion
 - Check existing documentation
 - Ask in pull request comments
 
 Thank you for contributing!
-
