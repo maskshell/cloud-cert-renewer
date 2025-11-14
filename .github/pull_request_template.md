@@ -30,6 +30,9 @@ Closes #
 
 - [ ] All existing tests pass
 - [ ] New tests added for new functionality
+- [ ] **Tests follow design pattern organization** (see CONTRIBUTING.md)
+- [ ] **Test coverage meets minimum requirements** (100% for design patterns, 80%+ for core logic)
+- [ ] **Tests use appropriate mocks at design pattern boundaries**
 - [ ] Manual testing performed (if applicable)
 
 ## Checklist
@@ -42,6 +45,10 @@ Closes #
 - [ ] Code is properly formatted (`ruff format .`)
 - [ ] Code passes linting (`ruff check .`)
 - [ ] All tests pass (`pytest`)
+- [ ] **Tests follow design pattern organization** (see CONTRIBUTING.md)
+- [ ] **Test coverage meets minimum requirements** (100% for design patterns, 80%+ for core logic)
+- [ ] **New functionality has corresponding tests**
+- [ ] **Tests use appropriate mocks at design pattern boundaries**
 - [ ] Documentation is updated (if needed)
 - [ ] Pre-commit hooks pass (`pre-commit run --all-files`)
 - [ ] Changes are backward compatible (or migration guide is provided)

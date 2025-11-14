@@ -85,7 +85,7 @@ uv run pre-commit run --all-files
 
 Follow the commit message convention:
 
-```
+```text
 type(scope): description
 
 - List any breaking changes
@@ -105,7 +105,7 @@ type(scope): description
 
 **Example:**
 
-```
+```text
 feat(auth): add STS credential provider support
 
 - Add STSCredentialProvider class
@@ -151,9 +151,60 @@ uv run yamllint .
 
 ## Testing
 
-- Write tests for all new features
-- Ensure all existing tests pass
-- Aim for good test coverage
+**All tests must follow the testing design principles defined in `testing-design-principles.mdc`.**
+
+### Test Organization
+
+Tests must be organized by design patterns, not by implementation details:
+
+- Each design pattern should have its own dedicated test file
+- Test files should mirror the design pattern structure of the codebase
+- Tests should focus on testing the design pattern layer, not the underlying implementation
+
+**Test File Naming Convention:**
+
+- Factory Pattern: `test_*_factory.py`
+- Strategy Pattern: `test_*_strategy.py`
+- Template Method Pattern: `test_*_base.py`
+- Adapter Pattern: `test_*_adapter.py`
+- Integration tests: `test_integration.py`
+- Utility tests: `test_utils.py`
+- Client implementation tests: `test_clients.py`
+- Configuration tests: `test_config.py`
+
+### Test Coverage Requirements
+
+**Minimum coverage requirements:**
+
+- Design pattern layer: **100% coverage**
+- Core business logic: **80%+ coverage**
+- Utility functions: **80%+ coverage**
+- Client implementations: **80%+ coverage**
+
+### Mandatory Test Updates
+
+**When making code changes, tests MUST be updated accordingly:**
+
+1. **Adding New Design Pattern Implementation:**
+   - Create corresponding test file following naming convention
+   - Test all design pattern contracts and behaviors
+   - Add integration tests if applicable
+
+2. **Modifying Existing Design Pattern:**
+   - Update corresponding test file
+   - Ensure all existing tests still pass
+   - Add new tests for new behaviors
+
+3. **Test Update Checklist:**
+   - [ ] All existing tests pass
+   - [ ] New functionality has corresponding tests
+   - [ ] Tests follow design pattern organization
+   - [ ] Tests use appropriate mocks at design pattern boundaries
+   - [ ] Test names are descriptive and follow conventions
+   - [ ] Integration tests cover new workflows
+   - [ ] Test coverage meets minimum requirements
+
+### Running Tests
 
 ```bash
 # Run all tests
@@ -161,7 +212,24 @@ uv run pytest
 
 # Run tests with coverage
 uv run pytest --cov=cloud_cert_renewer --cov-report=html
+
+# Run tests with coverage report (terminal)
+uv run pytest --cov=cloud_cert_renewer --cov-report=term-missing
+
+# Run specific test file
+uv run pytest tests/test_cert_renewer_factory.py
+
+# Run tests with verbose output
+uv run pytest -v
 ```
+
+### Mock Usage Guidelines
+
+- Mock external dependencies (cloud APIs, file system, network)
+- Mock at design pattern boundaries, not at implementation details
+- Use correct import paths for mocking (e.g., `cloud_cert_renewer.clients.alibaba.CdnCertRenewer`)
+
+**See `testing-design-principles.mdc` for complete testing guidelines.**
 
 ## Pull Request Checklist
 
@@ -173,6 +241,10 @@ Before submitting a pull request, ensure:
 - [ ] Code is properly formatted (`ruff format .`)
 - [ ] Code passes linting (`ruff check .`)
 - [ ] All tests pass (`pytest`)
+- [ ] **Tests follow design pattern organization** (see Testing section)
+- [ ] **Test coverage meets minimum requirements** (100% for design patterns, 80%+ for core logic)
+- [ ] **New functionality has corresponding tests**
+- [ ] **Tests use appropriate mocks at design pattern boundaries**
 - [ ] Documentation is updated if needed
 - [ ] Pre-commit hooks pass (`pre-commit run --all-files`)
 - [ ] Changes are backward compatible (or migration guide is provided)
@@ -182,7 +254,9 @@ Before submitting a pull request, ensure:
 1. All pull requests require at least one approval
 2. Code reviews will verify:
    - Code quality and style
-   - Test coverage
+   - **Test organization follows design patterns** (see `testing-design-principles.mdc`)
+   - **Test coverage meets requirements** (100% for design patterns, 80%+ for core logic)
+   - **Tests align with code changes** (mandatory test updates)
    - Documentation completeness
    - **Language policy compliance** (all content in English)
 3. Address review comments promptly
