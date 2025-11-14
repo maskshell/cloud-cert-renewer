@@ -4,6 +4,31 @@ globs:
 alwaysApply: true
 ---
 
+# Project Rules and Memory Tool Usage Guide
+
+## Language Policy
+
+**All project content must be in English:**
+
+- All code comments and docstrings must be written in English
+- All documentation files (README.md, CHANGELOG.md, etc.) must be in English
+- All commit messages must be in English
+- All configuration file comments must be in English
+- All error messages and log messages should be in English
+- All variable names, function names, and class names should use English words (following Python naming conventions)
+
+**Exceptions:**
+
+- Proper nouns (brand names, product names, company names) should use their official/standard names (e.g., "Alibaba Cloud" is the official English brand name, not "阿里云")
+- Test data or example values that are intentionally in other languages for testing purposes
+- Strings that are explicitly designated as non-English content (e.g., translation files, language-specific prompts, multilingual content) should be preserved as-is, even if they contain mixed languages
+
+**When generating code or documentation:**
+- Always use English for all comments, docstrings, and documentation
+- Use clear and simple English - clarity is more important than perfect grammar
+- When in doubt, prefer English over other languages
+- See `.cursorrules` and `CONTRIBUTING.md` for complete language policy details
+
 # Memory Tool Usage Guide
 
 ## ⚠️ CRITICAL: MEMORY TOOLS ARE MANDATORY ⚠️

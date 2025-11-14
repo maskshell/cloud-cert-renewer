@@ -2,20 +2,19 @@ import os
 import sys
 import unittest
 
-# 添加父目录到路径，以便导入模块
+# Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from cloud_cert_renewer.utils.ssl_cert_parser import (  # noqa: I001
     is_domain_name_match,
 )
 
-
 class TestSslCertParser(unittest.TestCase):
-    """SSL证书解析器测试"""
+    """SSL certificate parser tests"""
 
     def setUp(self):
-        """测试前准备"""
-        # 这是一个有效的测试证书（示例）
+        """Test setup"""
+        # This is a valid test certificate (example)
         self.valid_cert = """-----BEGIN CERTIFICATE-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy5+4y3z8v5x9w2q1r3t5
 y7u9v1w4x6z8a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7
@@ -33,13 +32,13 @@ QwIDAQAB
         self.wildcard_domain = "*.example.com"
 
     def test_is_domain_name_match_exact(self):
-        """测试精确域名匹配"""
+        """Test exact domain name matching"""
         domain_list = ["test.example.com", "other.example.com"]
         self.assertTrue(is_domain_name_match("test.example.com", domain_list))
         self.assertFalse(is_domain_name_match("unknown.example.com", domain_list))
 
     def test_is_domain_name_match_wildcard(self):
-        """测试通配符域名匹配"""
+        """Test wildcard domain name matching"""
         domain_list = ["*.example.com"]
         self.assertTrue(is_domain_name_match("test.example.com", domain_list))
         self.assertTrue(is_domain_name_match("sub.test.example.com", domain_list))
@@ -47,7 +46,7 @@ QwIDAQAB
         self.assertFalse(is_domain_name_match("other.com", domain_list))
 
     def test_is_domain_name_match_mixed(self):
-        """测试混合域名列表匹配"""
+        """Test mixed domain name list matching"""
         domain_list = ["example.com", "*.example.com", "test.example.com"]
         self.assertTrue(is_domain_name_match("example.com", domain_list))
         self.assertTrue(is_domain_name_match("test.example.com", domain_list))
@@ -55,21 +54,21 @@ QwIDAQAB
         self.assertFalse(is_domain_name_match("other.com", domain_list))
 
     def test_is_cert_valid_with_valid_cert(self):
-        """测试有效证书验证"""
-        # 注意：这个测试需要真实的证书，这里只是示例
-        # 实际测试时需要使用真实的证书内容
+        """Test valid certificate validation"""
+        # Note: This test requires a real certificate, this is just an example
+        # Actual testing should use real certificate content
         pass
 
     def test_is_cert_valid_with_invalid_domain(self):
-        """测试域名不匹配的证书验证"""
-        # 注意：这个测试需要真实的证书，这里只是示例
-        # 实际测试时需要使用真实的证书内容
+        """Test certificate validation with mismatched domain"""
+        # Note: This test requires a real certificate, this is just an example
+        # Actual testing should use real certificate content
         pass
 
     def test_is_cert_valid_with_expired_cert(self):
-        """测试过期证书验证"""
-        # 注意：这个测试需要真实的过期证书，这里只是示例
-        # 实际测试时需要使用真实的过期证书内容
+        """Test expired certificate validation"""
+        # Note: This test requires a real expired certificate, this is just an example
+        # Actual testing should use real expired certificate content
         pass
 
 

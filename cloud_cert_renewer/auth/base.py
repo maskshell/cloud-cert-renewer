@@ -1,6 +1,6 @@
-"""鉴权提供者基类
+"""Authentication provider base class
 
-定义鉴权提供者的抽象接口。
+Defines abstract interface for authentication providers.
 """
 
 from typing import Protocol
@@ -9,13 +9,12 @@ from cloud_cert_renewer.config import Credentials
 
 
 class CredentialProvider(Protocol):
-    """凭证提供者协议接口"""
+    """Credential provider protocol interface"""
 
     def get_credentials(self) -> Credentials:
         """
-        获取凭证
-        :return: Credentials对象
-        :raises ValueError: 当无法获取凭证时抛出
+        Get credentials
+        :return: Credentials object
+        :raises ValueError: When credentials cannot be obtained
         """
         ...  # noqa: UP007
-

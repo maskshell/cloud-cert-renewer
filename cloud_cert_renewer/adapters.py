@@ -1,9 +1,10 @@
-"""云服务适配器模块（向后兼容）
+"""Cloud service adapter module (backward compatibility)
 
-此文件保留用于向后兼容，实际实现已移至 cloud_cert_renewer.providers 子模块。
+This file is kept for backward compatibility. The actual implementation
+has been moved to the cloud_cert_renewer.providers submodule.
 """
 
-# 向后兼容：从新模块导入所有内容
+# Backward compatibility: Import everything from the new module
 from cloud_cert_renewer.providers import (  # noqa: F401
     AlibabaCloudAdapter,
     AWSAdapter,

@@ -11,10 +11,10 @@ cdn:
   region: cn-hangzhou
 
 secrets:
-  # 使用通用命名（推荐）
+  # Use generic naming (recommended)
   cloudCredentials:
     name: cloud-credentials
-  # 或使用旧命名（向后兼容）
+  # Or use old naming (backward compatible)
   # alibabaCloudCredentials:
   #   name: alibaba-cloud-credentials
   certificate:

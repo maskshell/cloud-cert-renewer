@@ -1,6 +1,6 @@
-"""阿里云适配器
+"""Alibaba Cloud adapter
 
-实现阿里云CDN和负载均衡器证书更新的适配器。
+Implements adapter for Alibaba Cloud CDN and Load Balancer certificate renewal.
 """
 
 from cloud_cert_renewer.config import Credentials
@@ -8,7 +8,7 @@ from cloud_cert_renewer.providers.base import CloudAdapter
 
 
 class AlibabaCloudAdapter(CloudAdapter):
-    """阿里云适配器（Alibaba Cloud Adapter）"""
+    """Alibaba Cloud adapter (Alibaba Cloud Adapter)"""
 
     def update_cdn_certificate(
         self,
@@ -18,7 +18,7 @@ class AlibabaCloudAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
     ) -> bool:
-        """更新阿里云CDN证书（通过阿里云适配器）"""
+        """Update Alibaba Cloud CDN certificate (via Alibaba Cloud adapter)"""
         from cloud_cert_renewer.clients.alibaba import CdnCertRenewer
 
         return CdnCertRenewer.renew_cert(
@@ -40,7 +40,7 @@ class AlibabaCloudAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
     ) -> bool:
-        """更新阿里云负载均衡器证书（通过阿里云适配器）"""
+        """Update Alibaba Cloud Load Balancer certificate (via Alibaba Cloud adapter)"""
         from cloud_cert_renewer.clients.alibaba import LoadBalancerCertRenewer
 
         return LoadBalancerCertRenewer.renew_cert(
@@ -57,7 +57,7 @@ class AlibabaCloudAdapter(CloudAdapter):
     def get_current_cdn_certificate(
         self, domain_name: str, region: str, credentials: Credentials
     ) -> str | None:
-        """获取阿里云CDN当前证书（通过阿里云适配器）"""
+        """Get Alibaba Cloud CDN current certificate (via Alibaba Cloud adapter)"""
         from cloud_cert_renewer.clients.alibaba import CdnCertRenewer
 
         return CdnCertRenewer.get_current_cert(
@@ -73,7 +73,7 @@ class AlibabaCloudAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
     ) -> str | None:
-        """获取阿里云负载均衡器当前证书指纹（通过阿里云适配器）"""
+        """Get Alibaba Cloud Load Balancer current certificate fingerprint (via Alibaba Cloud adapter)"""
         from cloud_cert_renewer.clients.alibaba import LoadBalancerCertRenewer
 
         return LoadBalancerCertRenewer.get_current_cert_fingerprint(
@@ -83,4 +83,3 @@ class AlibabaCloudAdapter(CloudAdapter):
             access_key_id=credentials.access_key_id,
             access_key_secret=credentials.access_key_secret,
         )
-

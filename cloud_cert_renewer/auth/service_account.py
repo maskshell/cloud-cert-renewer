@@ -1,6 +1,6 @@
-"""ServiceAccount凭证提供者
+"""ServiceAccount credential provider
 
-提供基于Kubernetes ServiceAccount的凭证获取。
+Provides credential retrieval based on Kubernetes ServiceAccount.
 """
 
 from cloud_cert_renewer.config import Credentials
@@ -8,26 +8,25 @@ from cloud_cert_renewer.auth.base import CredentialProvider
 
 
 class ServiceAccountCredentialProvider:
-    """ServiceAccount凭证提供者（用于Kubernetes环境）"""
+    """ServiceAccount credential provider (for Kubernetes environments)"""
 
     def __init__(
         self,
         service_account_path: str = "/var/run/secrets/kubernetes.io/serviceaccount",
     ) -> None:
         """
-        初始化ServiceAccount凭证提供者
-        :param service_account_path: ServiceAccount token路径
+        Initialize ServiceAccount credential provider
+        :param service_account_path: ServiceAccount token path
         """
         self.service_account_path = service_account_path
 
     def get_credentials(self) -> Credentials:
         """
-        获取ServiceAccount凭证
-        注意：此实现需要从Kubernetes ServiceAccount读取token并调用云服务商API
-        当前仅返回占位符，实际实现需要根据云服务商进行适配
+        Get ServiceAccount credentials
+        Note: This implementation needs to read token from Kubernetes ServiceAccount and call cloud provider API
+        Currently only returns a placeholder, actual implementation needs to be adapted based on cloud provider
         """
-        # TODO: 实现ServiceAccount token读取和云服务商API调用逻辑
+        # TODO: Implement ServiceAccount token reading and cloud provider API call logic
         raise NotImplementedError(
-            "ServiceAccount凭证提供者尚未实现，需要根据云服务商实现token读取和API调用逻辑"
+            "ServiceAccount credential provider is not yet implemented, needs to implement token reading and API call logic based on cloud provider"
         )
-

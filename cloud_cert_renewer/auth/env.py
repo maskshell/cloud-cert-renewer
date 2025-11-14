@@ -1,27 +1,26 @@
-"""环境变量凭证提供者
+"""Environment variable credential provider
 
-提供从环境变量读取凭证的功能。
+Provides functionality to read credentials from environment variables.
 """
 
 import os
 
 from cloud_cert_renewer.config import Credentials
-from cloud_cert_renewer.auth.base import CredentialProvider
 
 
 class EnvCredentialProvider:
-    """环境变量凭证提供者（从环境变量读取）"""
+    """Environment variable credential provider (reads from environment variables)"""
 
     def __init__(self) -> None:
-        """初始化环境变量凭证提供者"""
+        """Initialize environment variable credential provider"""
 
     def get_credentials(self) -> Credentials:
         """
-        从环境变量获取凭证
-        支持的环境变量：
-        - CLOUD_ACCESS_KEY_ID 或 ALIBABA_CLOUD_ACCESS_KEY_ID
-        - CLOUD_ACCESS_KEY_SECRET 或 ALIBABA_CLOUD_ACCESS_KEY_SECRET
-        - CLOUD_SECURITY_TOKEN（可选，用于STS）
+        Get credentials from environment variables
+        Supported environment variables:
+        - CLOUD_ACCESS_KEY_ID or ALIBABA_CLOUD_ACCESS_KEY_ID
+        - CLOUD_ACCESS_KEY_SECRET or ALIBABA_CLOUD_ACCESS_KEY_SECRET
+        - CLOUD_SECURITY_TOKEN (optional, for STS)
         """
         access_key_id = os.environ.get("CLOUD_ACCESS_KEY_ID") or os.environ.get(
             "ALIBABA_CLOUD_ACCESS_KEY_ID"
@@ -33,7 +32,8 @@ class EnvCredentialProvider:
 
         if not access_key_id or not access_key_secret:
             raise ValueError(
-                "缺少必要的环境变量: CLOUD_ACCESS_KEY_ID 或 CLOUD_ACCESS_KEY_SECRET"
+                "Missing required environment variables: "
+                "CLOUD_ACCESS_KEY_ID or CLOUD_ACCESS_KEY_SECRET"
             )
 
         return Credentials(
@@ -41,4 +41,3 @@ class EnvCredentialProvider:
             access_key_secret=access_key_secret,
             security_token=security_token,
         )
-

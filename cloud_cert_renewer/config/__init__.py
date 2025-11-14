@@ -1,12 +1,12 @@
-"""配置管理模块
+"""Configuration management module
 
-提供配置对象的定义和加载逻辑，支持多云和多种鉴权方式。
+Provides definition and loading logic for configuration objects, supporting multi-cloud and multiple authentication methods.
 """
 
 from cloud_cert_renewer.config import loader
 from cloud_cert_renewer.config import models
 
-# 从子模块导入
+# Import from submodules
 ConfigError = loader.ConfigError
 load_config = loader.load_config
 
@@ -23,4 +23,3 @@ __all__ = [
     "LoadBalancerConfig",
     "load_config",
 ]
-

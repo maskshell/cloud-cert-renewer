@@ -1,6 +1,6 @@
-"""凭证提供者工厂
+"""Credential provider factory
 
-提供凭证提供者的创建逻辑。
+Provides creation logic for credential providers.
 """
 
 from cloud_cert_renewer.auth.access_key import AccessKeyCredentialProvider
@@ -13,7 +13,7 @@ from cloud_cert_renewer.config import Credentials
 
 
 class CredentialProviderFactory:
-    """凭证提供者工厂"""
+    """Credential provider factory"""
 
     @staticmethod
     def create(
@@ -22,12 +22,12 @@ class CredentialProviderFactory:
         **kwargs,
     ) -> CredentialProvider:
         """
-        创建凭证提供者
-        :param auth_method: 鉴权方式（access_key, sts, iam_role, service_account, env）
-        :param credentials: 已有的凭证对象（可选）
-        :param kwargs: 其他参数
-        :return: CredentialProvider实例
-        :raises ValueError: 当auth_method不支持时抛出
+        Create credential provider
+        :param auth_method: Authentication method (access_key, sts, iam_role, service_account, env)
+        :param credentials: Existing credentials object (optional)
+        :param kwargs: Other parameters
+        :return: CredentialProvider instance
+        :raises ValueError: Raises when auth_method is not supported
         """
         auth_method = auth_method.lower()
 
@@ -37,12 +37,12 @@ class CredentialProviderFactory:
                     access_key_id=credentials.access_key_id,
                     access_key_secret=credentials.access_key_secret,
                 )
-            # 从kwargs获取
+            # Get from kwargs
             access_key_id = kwargs.get("access_key_id")
             access_key_secret = kwargs.get("access_key_secret")
             if not access_key_id or not access_key_secret:
                 raise ValueError(
-                    "access_key鉴权方式需要提供access_key_id和access_key_secret"
+                    "access_key authentication method requires access_key_id and access_key_secret"
                 )
             return AccessKeyCredentialProvider(
                 access_key_id=access_key_id, access_key_secret=access_key_secret
@@ -55,13 +55,13 @@ class CredentialProviderFactory:
                     access_key_secret=credentials.access_key_secret,
                     security_token=credentials.security_token,
                 )
-            # 从kwargs获取
+            # Get from kwargs
             access_key_id = kwargs.get("access_key_id")
             access_key_secret = kwargs.get("access_key_secret")
             security_token = kwargs.get("security_token")
             if not access_key_id or not access_key_secret or not security_token:
                 raise ValueError(
-                    "sts鉴权方式需要提供access_key_id、access_key_secret和security_token"
+                    "sts authentication method requires access_key_id, access_key_secret and security_token"
                 )
             return STSCredentialProvider(
                 access_key_id=access_key_id,
@@ -72,7 +72,7 @@ class CredentialProviderFactory:
         elif auth_method == "iam_role":
             role_arn = kwargs.get("role_arn")
             if not role_arn:
-                raise ValueError("iam_role鉴权方式需要提供role_arn")
+                raise ValueError("iam_role authentication method requires role_arn")
             role_session_name = kwargs.get("role_session_name")
             return IAMRoleCredentialProvider(
                 role_arn=role_arn, role_session_name=role_session_name
@@ -92,7 +92,6 @@ class CredentialProviderFactory:
 
         else:
             raise ValueError(
-                f"不支持的鉴权方式: {auth_method}，"
-                f"支持的方式: access_key, sts, iam_role, service_account, env"
+                f"Unsupported authentication method: {auth_method}, "
+                f"supported methods: access_key, sts, iam_role, service_account, env"
             )
-

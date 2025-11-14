@@ -1,6 +1,6 @@
-"""云服务提供商适配器模块
+"""Cloud service provider adapter module
 
-提供多云适配器接口和实现，支持不同云服务商的证书更新。
+Provides multi-cloud adapter interfaces and implementations, supporting certificate renewal for different cloud service providers.
 """
 
 from cloud_cert_renewer.providers.alibaba import AlibabaCloudAdapter
@@ -15,4 +15,3 @@ __all__ = [
     "CloudAdapter",
     "CloudAdapterFactory",
 ]
-

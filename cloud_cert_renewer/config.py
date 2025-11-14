@@ -1,9 +1,10 @@
-"""配置管理模块（向后兼容）
+"""Configuration management module (backward compatibility)
 
-此文件保留用于向后兼容，实际实现已移至 cloud_cert_renewer.config 子模块。
+This file is kept for backward compatibility. The actual implementation
+has been moved to the cloud_cert_renewer.config submodule.
 """
 
-# 向后兼容：从新模块导入所有内容
+# Backward compatibility: Import everything from the new module
 from cloud_cert_renewer.config import (  # noqa: F401
     AppConfig,
     CdnConfig,

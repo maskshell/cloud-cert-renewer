@@ -1,6 +1,6 @@
-"""客户端模块
+"""Client module
 
-提供云服务商客户端的封装和工厂。
+Provides cloud service provider client wrappers and factories.
 """
 
 from cloud_cert_renewer.clients.alibaba import (
@@ -8,7 +8,7 @@ from cloud_cert_renewer.clients.alibaba import (
     LoadBalancerCertRenewer,
 )
 
-# 向后兼容：保留旧的类名作为别名
+# Backward compatibility: Keep old class names as aliases
 CdnCertsRenewer = CdnCertRenewer  # noqa: N816
 SlbCertsRenewer = LoadBalancerCertRenewer  # noqa: N816
 

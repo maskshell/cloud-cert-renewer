@@ -1,6 +1,7 @@
-"""鉴权模块
+"""Authentication module
 
-提供多种鉴权方式的抽象接口和实现，支持access_key、STS、IAM Role等。
+Provides abstract interfaces and implementations for various authentication methods,
+supporting access_key, STS, IAM Role, etc.
 """
 
 from cloud_cert_renewer.auth.access_key import AccessKeyCredentialProvider
@@ -20,4 +21,3 @@ __all__ = [
     "ServiceAccountCredentialProvider",
     "STSCredentialProvider",
 ]
-

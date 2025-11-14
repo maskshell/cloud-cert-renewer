@@ -1,6 +1,6 @@
-"""负载均衡器证书更新策略
+"""Load Balancer certificate renewal strategy
 
-实现负载均衡器证书更新的具体策略。
+Implements specific strategy for Load Balancer certificate renewal.
 """
 
 import logging
@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
-    """负载均衡器证书更新策略"""
+    """Load Balancer certificate renewal strategy"""
 
     def _get_cert_info(self) -> tuple[str, str, str]:
-        """获取负载均衡器证书信息"""
+        """Get Load Balancer certificate information"""
         if not self.config.lb_config:
-            raise ValueError("负载均衡器配置不存在")
+            raise ValueError("Load Balancer configuration does not exist")
         return (
             self.config.lb_config.cert,
             self.config.lb_config.cert_private_key,
@@ -30,34 +30,34 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
         )
 
     def _validate_cert(self, cert: str, instance_id: str) -> bool:
-        """验证负载均衡器证书（LB不需要域名验证，只验证证书格式）"""
-        # LB证书不需要域名验证，只需要验证证书格式
+        """Validate Load Balancer certificate (LB does not require domain validation, only certificate format validation)"""
+        # LB certificates do not require domain validation, only certificate format validation
         try:
             x509.load_pem_x509_certificate(cert.encode(), default_backend())
             return True
         except Exception as e:
-            logger.warning("证书格式验证失败: %s", e)
+            logger.warning("Certificate format validation failed: %s", e)
             return False
 
     def _calculate_fingerprint(self, cert: str) -> str:
-        """计算负载均衡器证书指纹（SHA1）"""
+        """Calculate Load Balancer certificate fingerprint (SHA1)"""
         return get_cert_fingerprint_sha1(cert)
 
     def get_current_cert_fingerprint(self) -> str | None:
-        """获取负载均衡器当前证书指纹"""
+        """Get current Load Balancer certificate fingerprint"""
         if not self.config.lb_config:
             return None
 
-        # 延迟导入避免循环依赖
-        # 动态导入clients模块
+        # Lazy import to avoid circular dependencies
+        # Dynamically import clients module
         if "cloud_cert_renewer.clients.alibaba" not in sys.modules:
             clients_module = import_module("cloud_cert_renewer.clients.alibaba")
         else:
             clients_module = sys.modules["cloud_cert_renewer.clients.alibaba"]
 
-        LoadBalancerCertRenewer = getattr(clients_module, "LoadBalancerCertRenewer")
+        load_balancer_cert_renewer = getattr(clients_module, "LoadBalancerCertRenewer")
 
-        return LoadBalancerCertRenewer.get_current_cert_fingerprint(
+        return load_balancer_cert_renewer.get_current_cert_fingerprint(
             instance_id=self.config.lb_config.instance_id,
             listener_port=self.config.lb_config.listener_port,
             region=self.config.lb_config.region,
@@ -66,20 +66,20 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
         )
 
     def _do_renew(self, cert: str, cert_private_key: str) -> bool:
-        """执行负载均衡器证书更新"""
+        """Execute Load Balancer certificate renewal"""
         if not self.config.lb_config:
-            raise ValueError("负载均衡器配置不存在")
+            raise ValueError("Load Balancer configuration does not exist")
 
-        # 延迟导入避免循环依赖
-        # 动态导入clients模块
+        # Lazy import to avoid circular dependencies
+        # Dynamically import clients module
         if "cloud_cert_renewer.clients.alibaba" not in sys.modules:
             clients_module = import_module("cloud_cert_renewer.clients.alibaba")
         else:
             clients_module = sys.modules["cloud_cert_renewer.clients.alibaba"]
 
-        LoadBalancerCertRenewer = getattr(clients_module, "LoadBalancerCertRenewer")
+        load_balancer_cert_renewer = getattr(clients_module, "LoadBalancerCertRenewer")
 
-        return LoadBalancerCertRenewer.renew_cert(
+        return load_balancer_cert_renewer.renew_cert(
             instance_id=self.config.lb_config.instance_id,
             listener_port=self.config.lb_config.listener_port,
             cert=cert,
@@ -89,4 +89,3 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
             access_key_secret=self.config.credentials.access_key_secret,
             force=self.config.force_update,
         )
-

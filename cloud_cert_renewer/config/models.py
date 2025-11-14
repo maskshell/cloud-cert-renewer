@@ -1,6 +1,6 @@
-"""配置数据模型
+"""Configuration data models
 
-定义配置相关的数据类。
+Defines data classes related to configuration.
 """
 
 from dataclasses import dataclass
@@ -9,16 +9,16 @@ from typing import Literal
 
 @dataclass
 class Credentials:
-    """凭证数据类"""
+    """Credentials data class"""
 
     access_key_id: str
     access_key_secret: str
-    security_token: str | None = None  # 用于STS临时凭证
+    security_token: str | None = None  # For STS temporary credentials
 
 
 @dataclass
 class CdnConfig:
-    """CDN配置"""
+    """CDN configuration"""
 
     domain_name: str
     cert: str
@@ -28,7 +28,7 @@ class CdnConfig:
 
 @dataclass
 class LoadBalancerConfig:
-    """负载均衡器配置（原SLB）"""
+    """Load Balancer configuration (formerly SLB)"""
 
     instance_id: str
     listener_port: int
@@ -39,21 +39,20 @@ class LoadBalancerConfig:
 
 @dataclass
 class AppConfig:
-    """应用配置"""
+    """Application configuration"""
 
     service_type: Literal["cdn", "lb"]
-    cloud_provider: str  # 云服务提供商：alibaba, aws, azure等
-    auth_method: str  # 鉴权方式：access_key, sts, iam_role, service_account, env
+    cloud_provider: str  # Cloud service provider: alibaba, aws, azure, etc.
+    auth_method: str  # Authentication method: access_key, sts, iam_role, service_account, env
     credentials: Credentials
     force_update: bool = False
-    # 服务特定配置
+    # Service-specific configuration
     cdn_config: CdnConfig | None = None
     lb_config: LoadBalancerConfig | None = None
 
     def __post_init__(self) -> None:
-        """配置验证"""
+        """Configuration validation"""
         if self.service_type == "cdn" and not self.cdn_config:
-            raise ValueError("CDN服务类型必须提供cdn_config")
+            raise ValueError("CDN service type must provide cdn_config")
         if self.service_type == "lb" and not self.lb_config:
-            raise ValueError("LB服务类型必须提供lb_config")
-
+            raise ValueError("LB service type must provide lb_config")

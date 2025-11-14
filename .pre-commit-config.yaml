@@ -37,3 +37,12 @@ repos:
       - id: prettier
         types_or: [markdown, yaml]
         exclude: ^helm/
+
+  - repo: local
+    hooks:
+      - id: check-language
+        name: Check for non-English content
+        entry: scripts/check_language.sh
+        language: system
+        files: \.(py|md|yaml|yml)$
+        exclude: ^(helm/|\.pytest_cache/|__pycache__/)

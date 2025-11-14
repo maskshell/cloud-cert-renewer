@@ -1,7 +1,7 @@
 [project]
 name = "cloud-cert-renewer"
 version = "0.1.0"
-description = "自动更新云服务HTTPS证书工具，支持CDN和负载均衡器（支持多云，当前支持阿里云）"
+description = "Automated HTTPS certificate renewal tool for cloud services, supporting CDN and Load Balancer (multi-cloud support, currently supports Alibaba Cloud)"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
@@ -38,7 +38,7 @@ target-version = "py38"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
-ignore = ["B018", "UP007"]  # 允许 Protocol 中使用 ...
+ignore = ["B018", "UP007"]  # Allow ... in Protocol
 
 [tool.ruff.format]
 quote-style = "double"

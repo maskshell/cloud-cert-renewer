@@ -1,6 +1,6 @@
-"""STS临时凭证提供者
+"""STS temporary credential provider
 
-提供基于STS临时凭证的凭证获取。
+Provides credential retrieval based on STS temporary credentials.
 """
 
 from cloud_cert_renewer.config import Credentials
@@ -8,7 +8,7 @@ from cloud_cert_renewer.auth.base import CredentialProvider
 
 
 class STSCredentialProvider:
-    """STS临时凭证提供者"""
+    """STS temporary credential provider"""
 
     def __init__(
         self,
@@ -17,7 +17,7 @@ class STSCredentialProvider:
         security_token: str,
     ) -> None:
         """
-        初始化STS凭证提供者
+        Initialize STS credential provider
         :param access_key_id: STS AccessKey ID
         :param access_key_secret: STS AccessKey Secret
         :param security_token: STS Security Token
@@ -27,10 +27,9 @@ class STSCredentialProvider:
         self.security_token = security_token
 
     def get_credentials(self) -> Credentials:
-        """获取STS临时凭证"""
+        """Get STS temporary credentials"""
         return Credentials(
             access_key_id=self.access_key_id,
             access_key_secret=self.access_key_secret,
             security_token=self.security_token,
         )
-

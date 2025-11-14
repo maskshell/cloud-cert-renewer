@@ -14,21 +14,21 @@ def parse_cert_info(cert_content: str) -> (List[str], str):
     :param cert_content: cert content (may contain certificate chain)
     :return: domain name list and expire date
     """
-    # 对于证书链，只解析第一个证书（服务器证书）
-    # load_pem_x509_certificate 会自动处理，只加载第一个证书
+    # For certificate chains, only parse the first certificate (server certificate)
+    # load_pem_x509_certificate will automatically handle this, only loading the first certificate
     cert = x509.load_pem_x509_certificate(cert_content.encode(), default_backend())
     cert_expire_date = cert.not_valid_after.strftime("%Y-%m-%d %H:%M:%S")
 
-    # 获取域名列表（从 Subject 和 SAN 扩展中）
+    # Get domain name list (from Subject and SAN extension)
     cert_domain_name_list = []
 
-    # 从 Subject CN 获取域名
+    # Get domain name from Subject CN
     for domain_name in cert.subject.get_attributes_for_oid(
         x509.oid.NameOID.COMMON_NAME
     ):
         cert_domain_name_list.append(domain_name.value)
 
-    # 从 SAN (Subject Alternative Name) 扩展获取域名
+    # Get domain name from SAN (Subject Alternative Name) extension
     try:
         san_ext = cert.extensions.get_extension_for_oid(
             x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME
@@ -37,7 +37,7 @@ def parse_cert_info(cert_content: str) -> (List[str], str):
             if isinstance(name, x509.DNSName):
                 cert_domain_name_list.append(name.value)
     except x509.ExtensionNotFound:
-        # SAN 扩展不存在，只使用 CN
+        # SAN extension does not exist, only use CN
         pass
 
     return cert_domain_name_list, cert_expire_date

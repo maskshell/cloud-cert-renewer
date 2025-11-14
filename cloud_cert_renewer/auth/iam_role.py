@@ -1,6 +1,6 @@
-"""IAM Role凭证提供者
+"""IAM Role credential provider
 
-提供基于IAM Role的凭证获取（用于云环境中的IAM角色）。
+Provides credential retrieval based on IAM Role (for IAM roles in cloud environments).
 """
 
 from cloud_cert_renewer.config import Credentials
@@ -8,25 +8,24 @@ from cloud_cert_renewer.auth.base import CredentialProvider
 
 
 class IAMRoleCredentialProvider:
-    """IAM Role凭证提供者（用于云环境中的IAM角色）"""
+    """IAM Role credential provider (for IAM roles in cloud environments)"""
 
     def __init__(self, role_arn: str, role_session_name: str | None = None) -> None:
         """
-        初始化IAM Role凭证提供者
+        Initialize IAM Role credential provider
         :param role_arn: IAM Role ARN
-        :param role_session_name: 会话名称（可选）
+        :param role_session_name: Session name (optional)
         """
         self.role_arn = role_arn
         self.role_session_name = role_session_name or "cert-renewer-session"
 
     def get_credentials(self) -> Credentials:
         """
-        获取IAM Role凭证
-        注意：此实现需要调用云服务商的AssumeRole API
-        当前仅返回占位符，实际实现需要根据云服务商进行适配
+        Get IAM Role credentials
+        Note: This implementation needs to call the cloud provider's AssumeRole API
+        Currently only returns a placeholder, actual implementation needs to be adapted based on cloud provider
         """
-        # TODO: 实现AssumeRole逻辑
+        # TODO: Implement AssumeRole logic
         raise NotImplementedError(
-            "IAM Role凭证提供者尚未实现，需要根据云服务商实现AssumeRole逻辑"
+            "IAM Role credential provider is not yet implemented, needs to implement AssumeRole logic based on cloud provider"
         )
-

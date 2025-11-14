@@ -1,6 +1,6 @@
-"""云服务提供商适配器基类
+"""Cloud service provider adapter base class
 
-定义云服务提供商适配器的抽象接口和工厂。
+Defines abstract interfaces and factories for cloud service provider adapters.
 """
 
 import logging
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class CloudAdapter(ABC):
-    """云服务适配器接口"""
+    """Cloud service adapter interface"""
 
     @abstractmethod
     def update_cdn_certificate(
@@ -24,13 +24,13 @@ class CloudAdapter(ABC):
         credentials: Credentials,
     ) -> bool:
         """
-        更新CDN证书
-        :param domain_name: 域名
-        :param cert: 证书内容
-        :param cert_private_key: 证书私钥
-        :param region: 区域
-        :param credentials: 凭证
-        :return: 是否成功
+        Update CDN certificate
+        :param domain_name: Domain name
+        :param cert: Certificate content
+        :param cert_private_key: Certificate private key
+        :param region: Region
+        :param credentials: Credentials
+        :return: Whether successful
         """
         pass
 
@@ -45,14 +45,14 @@ class CloudAdapter(ABC):
         credentials: Credentials,
     ) -> bool:
         """
-        更新负载均衡器证书
-        :param instance_id: 实例ID
-        :param listener_port: 监听器端口
-        :param cert: 证书内容
-        :param cert_private_key: 证书私钥
-        :param region: 区域
-        :param credentials: 凭证
-        :return: 是否成功
+        Update Load Balancer certificate
+        :param instance_id: Instance ID
+        :param listener_port: Listener port
+        :param cert: Certificate content
+        :param cert_private_key: Certificate private key
+        :param region: Region
+        :param credentials: Credentials
+        :return: Whether successful
         """
         pass
 
@@ -61,11 +61,11 @@ class CloudAdapter(ABC):
         self, domain_name: str, region: str, credentials: Credentials
     ) -> str | None:
         """
-        获取当前CDN证书
-        :param domain_name: 域名
-        :param region: 区域
-        :param credentials: 凭证
-        :return: 证书内容，如果查询失败则返回None
+        Get current CDN certificate
+        :param domain_name: Domain name
+        :param region: Region
+        :param credentials: Credentials
+        :return: Certificate content, or None if query fails
         """
         pass
 
@@ -78,24 +78,24 @@ class CloudAdapter(ABC):
         credentials: Credentials,
     ) -> str | None:
         """
-        获取当前负载均衡器证书指纹
-        :param instance_id: 实例ID
-        :param listener_port: 监听器端口
-        :param region: 区域
-        :param credentials: 凭证
-        :return: 证书指纹，如果查询失败则返回None
+        Get current Load Balancer certificate fingerprint
+        :param instance_id: Instance ID
+        :param listener_port: Listener port
+        :param region: Region
+        :param credentials: Credentials
+        :return: Certificate fingerprint, or None if query fails
         """
         pass
 
 
 class CloudAdapterFactory:
-    """云服务适配器工厂"""
+    """Cloud service adapter factory"""
 
     _adapters: dict[str, type[CloudAdapter]] = {}
 
     @classmethod
     def _register_default_adapters(cls) -> None:
-        """注册默认适配器"""
+        """Register default adapters"""
         if not cls._adapters:
             from cloud_cert_renewer.providers.alibaba import AlibabaCloudAdapter
             from cloud_cert_renewer.providers.aws import AWSAdapter
@@ -110,17 +110,17 @@ class CloudAdapterFactory:
     @classmethod
     def create(cls, cloud_provider: str) -> CloudAdapter:
         """
-        创建云服务适配器
-        :param cloud_provider: 云服务提供商（alibaba, aws, azure等）
-        :return: CloudAdapter实例
-        :raises ValueError: 当云服务提供商不支持时抛出
+        Create cloud service adapter
+        :param cloud_provider: Cloud service provider (alibaba, aws, azure, etc.)
+        :return: CloudAdapter instance
+        :raises ValueError: Raises when cloud service provider is not supported
         """
         cls._register_default_adapters()
         cloud_provider = cloud_provider.lower()
         adapter_class = cls._adapters.get(cloud_provider)
         if not adapter_class:
             raise ValueError(
-                f"不支持的云服务提供商: {cloud_provider}，支持: {', '.join(cls._adapters.keys())}"
+                f"Unsupported cloud service provider: {cloud_provider}, supported: {', '.join(cls._adapters.keys())}"
             )
         return adapter_class()
 
@@ -129,10 +129,9 @@ class CloudAdapterFactory:
         cls, cloud_provider: str, adapter_class: type[CloudAdapter]
     ) -> None:
         """
-        注册自定义适配器
-        :param cloud_provider: 云服务提供商名称
-        :param adapter_class: 适配器类
+        Register custom adapter
+        :param cloud_provider: Cloud service provider name
+        :param adapter_class: Adapter class
         """
         cls._adapters[cloud_provider.lower()] = adapter_class
-        logger.info("注册云服务适配器: %s", cloud_provider)
-
+        logger.info("Registered cloud service adapter: %s", cloud_provider)

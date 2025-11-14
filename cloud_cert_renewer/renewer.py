@@ -1,9 +1,10 @@
-"""证书更新器模块（向后兼容）
+"""Certificate renewer module (backward compatibility)
 
-此文件保留用于向后兼容，实际实现已移至 cloud_cert_renewer.cert_renewer 子模块。
+This file is kept for backward compatibility. The actual implementation
+has been moved to the cloud_cert_renewer.cert_renewer submodule.
 """
 
-# 向后兼容：从新模块导入所有内容
+# Backward compatibility: Import everything from the new module
 from cloud_cert_renewer.cert_renewer import (  # noqa: F401
     BaseCertRenewer,
     CertRenewerFactory,
@@ -12,7 +13,7 @@ from cloud_cert_renewer.cert_renewer import (  # noqa: F401
     LoadBalancerCertRenewerStrategy,
 )
 
-# 向后兼容：保留旧的接口名称
+# Backward compatibility: Keep old interface name
 CertRenewerStrategy = BaseCertRenewer  # noqa: N816
 
 __all__ = [

@@ -1,23 +1,23 @@
-# 使用 Python 3.11 作为基础镜像
+# Use Python 3.11 as base image
 FROM python:3.11-slim
 LABEL maintainer="analyser <analyser@gmail.com>"
 
-# 设置工作目录
+# Set working directory
 WORKDIR /app
 
-# 安装 uv
+# Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# 复制项目文件
+# Copy project files
 COPY pyproject.toml ./
 COPY main.py ./
 COPY cloud_cert_renewer/ ./cloud_cert_renewer/
 
-# 使用 uv 安装依赖
+# Install dependencies using uv
 RUN uv pip install --system --no-cache -e .
 
-# 设置 Python 路径
+# Set Python path
 ENV PYTHONPATH=/app
 
-# 运行主程序
+# Run main program
 CMD ["python", "main.py"]

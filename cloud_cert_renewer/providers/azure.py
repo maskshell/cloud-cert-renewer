@@ -1,6 +1,6 @@
-"""Azure适配器
+"""Azure adapter
 
-实现Azure CDN和Load Balancer证书更新的适配器（占位符实现）。
+Implements adapter for Azure CDN and Load Balancer certificate renewal (placeholder implementation).
 """
 
 from cloud_cert_renewer.config import Credentials
@@ -8,7 +8,7 @@ from cloud_cert_renewer.providers.base import CloudAdapter
 
 
 class AzureAdapter(CloudAdapter):
-    """Azure适配器（占位符实现）"""
+    """Azure adapter (placeholder implementation)"""
 
     def update_cdn_certificate(
         self,
@@ -18,9 +18,9 @@ class AzureAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
     ) -> bool:
-        """更新Azure CDN证书"""
-        # TODO: 实现Azure CDN证书更新逻辑
-        raise NotImplementedError("Azure适配器尚未实现")
+        """Update Azure CDN certificate"""
+        # TODO: Implement Azure CDN certificate renewal logic
+        raise NotImplementedError("Azure adapter is not yet implemented")
 
     def update_load_balancer_certificate(
         self,
@@ -31,16 +31,16 @@ class AzureAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
     ) -> bool:
-        """更新Azure Load Balancer证书"""
-        # TODO: 实现Azure Load Balancer证书更新逻辑
-        raise NotImplementedError("Azure适配器尚未实现")
+        """Update Azure Load Balancer certificate"""
+        # TODO: Implement Azure Load Balancer certificate renewal logic
+        raise NotImplementedError("Azure adapter is not yet implemented")
 
     def get_current_cdn_certificate(
         self, domain_name: str, region: str, credentials: Credentials
     ) -> str | None:
-        """获取Azure CDN当前证书"""
-        # TODO: 实现Azure CDN证书查询逻辑
-        raise NotImplementedError("Azure适配器尚未实现")
+        """Get Azure CDN current certificate"""
+        # TODO: Implement Azure CDN certificate query logic
+        raise NotImplementedError("Azure adapter is not yet implemented")
 
     def get_current_lb_certificate_fingerprint(
         self,
@@ -49,7 +49,6 @@ class AzureAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
     ) -> str | None:
-        """获取Azure Load Balancer当前证书指纹"""
-        # TODO: 实现Azure Load Balancer证书指纹查询逻辑
-        raise NotImplementedError("Azure适配器尚未实现")
-
+        """Get Azure Load Balancer current certificate fingerprint"""
+        # TODO: Implement Azure Load Balancer certificate fingerprint query logic
+        raise NotImplementedError("Azure adapter is not yet implemented")

@@ -1,5 +1,36 @@
 # Iterative Development Rules
 
+## Language Policy
+
+**All project content must be in English:**
+
+- All code comments and docstrings must be written in English
+- All documentation files (README.md, CHANGELOG.md, etc.) must be in English
+- All commit messages must be in English
+- All configuration file comments must be in English
+- All error messages and log messages should be in English
+- All variable names, function names, and class names should use English words (following Python naming conventions)
+
+**Exceptions:**
+
+- Proper nouns (brand names, product names, company names) should use their official/standard names (e.g., "Alibaba Cloud" is the official English brand name, not "阿里云")
+- Test data or example values that are intentionally in other languages for testing purposes
+- Strings that are explicitly designated as non-English content (e.g., translation files, language-specific prompts, multilingual content) should be preserved as-is, even if they contain mixed languages
+
+**Enforcement:**
+
+- Code reviews should verify compliance with this policy
+- Pre-commit hooks or CI/CD pipelines can be configured to check for non-English content in code and documentation
+- When adding new files or modifying existing ones, ensure all text content follows this policy
+- If you encounter non-English content that should be translated, create a separate issue or PR to address it
+
+**Guidelines for Contributors:**
+
+- If you're not a native English speaker, don't worry - clear and simple English is preferred over complex grammar
+- Use tools like spell checkers and grammar checkers if needed
+- When in doubt, ask for review or use translation tools, but always have a native speaker or experienced contributor review the final text
+- Focus on clarity and correctness over perfect grammar - the goal is effective communication
+
 ## Core Principles
 
 1. **Independent commits for each small iteration**

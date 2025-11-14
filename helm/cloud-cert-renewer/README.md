@@ -39,7 +39,7 @@ The following table lists the configurable parameters and their default values:
 
 | Parameter                              | Description                           | Default                      |
 | -------------------------------------- | ------------------------------------- | ---------------------------- |
-| `serviceType`                          | Service type: `cdn` or `lb` (向后兼容：`slb`) | `cdn`                        |
+| `serviceType`                          | Service type: `cdn` or `lb` (backward compatible: `slb`) | `cdn`                        |
 | `cloudProvider`                         | Cloud provider: `alibaba`, `aws`, `azure`, etc. (currently supports Alibaba Cloud) | `alibaba`                    |
 | `authMethod`                           | Authentication method: `access_key`, `sts`, `iam_role`, `service_account`, `env` | `access_key`                 |
 | `image.repository`                     | Image repository                      | `cloud-cert-renewer`         |
@@ -48,13 +48,13 @@ The following table lists the configurable parameters and their default values:
 | `replicas`                             | Number of replicas                    | `1`                          |
 | `cdn.domainName`                       | CDN domain name                       | `schema.amugua.com`          |
 | `cdn.region`                           | CDN region                            | `cn-hangzhou`                |
-| `lb.instanceId`                        | Load Balancer instance ID (新名称，优先使用) | `""`                         |
+| `lb.instanceId`                        | Load Balancer instance ID (new name, preferred) | `""`                         |
 | `lb.listenerPort`                      | Load Balancer listener port           | `443`                        |
 | `lb.region`                            | Load Balancer region                  | `cn-hangzhou`                |
-| `slb.instanceId`                       | SLB instance ID (旧名称，向后兼容)    | `""`                         |
-| `slb.region`                           | SLB region (旧名称，向后兼容)         | `cn-hangzhou`                |
-| `secrets.cloudCredentials.name`        | Cloud service credentials secret name (新名称，优先使用) | `cloud-credentials`           |
-| `secrets.alibabaCloudCredentials.name` | Alibaba Cloud credentials secret name (旧名称，向后兼容) | `alibaba-cloud-credentials`  |
+| `slb.instanceId`                       | SLB instance ID (old name, backward compatible)    | `""`                         |
+| `slb.region`                           | SLB region (old name, backward compatible)         | `cn-hangzhou`                |
+| `secrets.cloudCredentials.name`        | Cloud service credentials secret name (new name, preferred) | `cloud-credentials`           |
+| `secrets.alibabaCloudCredentials.name` | Alibaba Cloud credentials secret name (old name, backward compatible) | `alibaba-cloud-credentials`  |
 | `secrets.certificate.name`             | Certificate secret name               | `cert-secret`                |
 | `reloader.enabled`                     | Enable Reloader annotations           | `true`                       |
 | `namespace`                            | Kubernetes namespace                  | `default`                    |
@@ -66,12 +66,12 @@ The following table lists the configurable parameters and their default values:
 Create a secret with your cloud service credentials (example: Alibaba Cloud):
 
 ```bash
-# 使用通用命名（推荐）
+# Use generic naming (recommended)
 kubectl create secret generic cloud-credentials \
   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
 
-# 或使用旧命名（向后兼容）
+# Or use old naming (backward compatible)
 kubectl create secret generic alibaba-cloud-credentials \
   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
@@ -99,7 +99,7 @@ cdn:
 ### Load Balancer Certificate Renewal
 
 ```yaml
-serviceType: lb  # 或使用 slb（向后兼容）
+serviceType: lb  # or use slb (backward compatible)
 cloudProvider: alibaba
 lb:
   instanceId: lb-xxxxxxxxx

@@ -1,6 +1,6 @@
-"""证书更新器工厂
+"""Certificate renewer factory
 
-提供证书更新器的创建逻辑。
+Provides certificate renewer creation logic.
 """
 
 from cloud_cert_renewer.config import AppConfig
@@ -12,20 +12,19 @@ from cloud_cert_renewer.cert_renewer.load_balancer_renewer import (
 
 
 class CertRenewerFactory:
-    """证书更新器工厂"""
+    """Certificate renewer factory"""
 
     @staticmethod
     def create(config: AppConfig) -> BaseCertRenewer:
         """
-        创建证书更新器
-        :param config: 应用配置
-        :return: BaseCertRenewer实例
-        :raises ValueError: 当服务类型不支持时抛出
+        Create certificate renewer
+        :param config: Application configuration
+        :return: BaseCertRenewer instance
+        :raises ValueError: When service type is not supported
         """
         if config.service_type == "cdn":
             return CdnCertRenewerStrategy(config)
         elif config.service_type == "lb":
             return LoadBalancerCertRenewerStrategy(config)
         else:
-            raise ValueError(f"不支持的服务类型: {config.service_type}")
-
+            raise ValueError(f"Unsupported service type: {config.service_type}")

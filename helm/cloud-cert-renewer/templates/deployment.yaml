@@ -24,23 +24,23 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      # Init 容器：执行证书更新
+      # Init container: Execute certificate renewal
       initContainers:
         - name: cert-renewer
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["python", "main.py"]
           env:
-            # 服务类型：cdn 或 lb（向后兼容：slb）
+            # Service type: cdn or lb (backward compatible: slb)
             - name: SERVICE_TYPE
               value: {{ .Values.serviceType | quote }}
-            # 云服务提供商（默认：alibaba，支持 alibaba/aws/azure 等）
+            # Cloud service provider (default: alibaba, supports alibaba/aws/azure, etc.)
             - name: CLOUD_PROVIDER
               value: {{ .Values.cloudProvider | default "alibaba" | quote }}
-            # 鉴权方式（默认：access_key）
+            # Authentication method (default: access_key)
             - name: AUTH_METHOD
               value: {{ .Values.authMethod | default "access_key" | quote }}
-            # 云服务访问凭证（新名称，优先使用）
+            # Cloud service access credentials (new name, preferred)
             - name: CLOUD_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -51,7 +51,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.cloudCredentials.name | default .Values.secrets.alibabaCloudCredentials.name }}
                   key: {{ .Values.secrets.cloudCredentials.accessKeySecretKey | default .Values.secrets.alibabaCloudCredentials.accessKeySecretKey }}
-            # 阿里云访问凭证（旧名称，向后兼容）
+            # Alibaba Cloud access credentials (old name, backward compatible)
             - name: ALIBABA_CLOUD_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -63,12 +63,12 @@ spec:
                   name: {{ .Values.secrets.cloudCredentials.name | default .Values.secrets.alibabaCloudCredentials.name }}
                   key: {{ .Values.secrets.cloudCredentials.accessKeySecretKey | default .Values.secrets.alibabaCloudCredentials.accessKeySecretKey }}
             {{- if eq .Values.serviceType "cdn" }}
-            # CDN 配置
+            # CDN configuration
             - name: CDN_DOMAIN_NAME
               value: {{ .Values.cdn.domainName | quote }}
             - name: CDN_REGION
               value: {{ .Values.cdn.region | quote }}
-            # CDN 证书和私钥（从 Secret 读取）
+            # CDN certificate and private key (read from Secret)
             - name: CDN_CERT
               valueFrom:
                 secretKeyRef:
@@ -80,14 +80,14 @@ spec:
                   name: {{ .Values.secrets.certificate.name }}
                   key: {{ .Values.secrets.certificate.privateKeyKey }}
             {{- else if or (eq .Values.serviceType "lb") (eq .Values.serviceType "slb") }}
-            # 负载均衡器配置（新名称，优先使用）
+            # Load Balancer configuration (new name, preferred)
             - name: LB_INSTANCE_ID
               value: {{ .Values.lb.instanceId | default .Values.slb.instanceId | quote }}
             - name: LB_LISTENER_PORT
               value: {{ .Values.lb.listenerPort | default .Values.slb.listenerPort | quote }}
             - name: LB_REGION
               value: {{ .Values.lb.region | default .Values.slb.region | quote }}
-            # 负载均衡器证书和私钥（从 Secret 读取）
+            # Load Balancer certificate and private key (read from Secret)
             - name: LB_CERT
               valueFrom:
                 secretKeyRef:
@@ -98,7 +98,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.certificate.name }}
                   key: {{ .Values.secrets.certificate.privateKeyKey }}
-            # SLB 配置（旧名称，向后兼容）
+            # SLB configuration (old name, backward compatible)
             - name: SLB_INSTANCE_ID
               value: {{ .Values.slb.instanceId | default .Values.lb.instanceId | quote }}
             - name: SLB_LISTENER_PORT
@@ -118,7 +118,7 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.initContainer.resources | nindent 12 }}
-      # 主容器：占位容器，保持 Deployment 运行（永不退出）
+      # Main container: Placeholder container to keep Deployment running (never exits)
       containers:
         - name: placeholder
           image: {{ .Values.mainContainer.image }}
@@ -126,9 +126,9 @@ spec:
             - "sh"
             - "-c"
             - |
-              # 捕获 SIGTERM 信号，优雅退出（仅在 Pod 被删除时）
+              # Capture SIGTERM signal for graceful exit (only when Pod is deleted)
               trap 'exit 0' SIGTERM
-              # 无限循环，确保容器永不退出
+              # Infinite loop to ensure container never exits
               while true; do
                 sleep 3600
               done

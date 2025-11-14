@@ -1,6 +1,6 @@
-"""证书更新器基类
+"""Certificate renewer base class
 
-定义证书更新器的抽象接口和模板方法。
+Defines abstract interfaces and template methods for certificate renewers.
 """
 
 import logging
@@ -12,63 +12,64 @@ logger = logging.getLogger(__name__)
 
 
 class CertValidationError(Exception):
-    """证书验证错误异常"""
+    """Certificate validation error exception"""
 
     pass
 
 
 class BaseCertRenewer(ABC):
-    """证书更新器基类（模板方法模式）"""
+    """Certificate renewer base class (Template Method pattern)"""
 
     def __init__(self, config: AppConfig) -> None:
         """
-        初始化证书更新器
-        :param config: 应用配置
+        Initialize certificate renewer
+        :param config: Application configuration
         """
         self.config = config
 
     def renew(self) -> bool:
         """
-        更新证书（模板方法）
-        定义了证书更新的标准流程：
-        1. 验证证书
-        2. 比较证书指纹（如果不需要强制更新）
-        3. 执行更新
-        :return: 是否成功
+        Renew certificate (template method)
+        Defines the standard certificate renewal process:
+        1. Validate certificate
+        2. Compare certificate fingerprints (if force update is not required)
+        3. Execute renewal
+        :return: Whether successful
         """
-        # 获取证书和私钥
+        # Get certificate and private key
         cert, cert_private_key, domain_or_instance = self._get_cert_info()
 
-        # 步骤1：验证证书
+        # Step 1: Validate certificate
         if not self._validate_cert(cert, domain_or_instance):
             raise CertValidationError(
-                f"证书验证失败：域名 {domain_or_instance} 不在证书中或证书已过期"
+                f"Certificate validation failed: domain {domain_or_instance} is not in the certificate or certificate has expired"
             )
 
-        # 步骤2：比较证书指纹（如果不需要强制更新）
+        # Step 2: Compare certificate fingerprints (if force update is not required)
         if not self.config.force_update:
             current_fingerprint = self.get_current_cert_fingerprint()
             if current_fingerprint:
                 new_fingerprint = self._calculate_fingerprint(cert)
                 if new_fingerprint == current_fingerprint:
                     logger.info(
-                        "证书未变化，跳过更新: %s, 指纹=%s",
+                        "Certificate unchanged, skipping renewal: %s, fingerprint=%s",
                         domain_or_instance,
                         new_fingerprint[:20] + "...",
                     )
                     return True
         else:
             logger.info(
-                "强制更新模式已启用，即使证书相同也会更新: %s", domain_or_instance
+                "Force update mode enabled, will update even if certificate is the same: %s",
+                domain_or_instance,
             )
 
-        # 步骤3：执行更新
+        # Step 3: Execute renewal
         return self._do_renew(cert, cert_private_key)
 
     @abstractmethod
     def _get_cert_info(self) -> tuple[str, str, str]:
         """
-        获取证书信息
+        Get certificate information
         :return: (cert, cert_private_key, domain_or_instance)
         """
         pass
@@ -76,37 +77,36 @@ class BaseCertRenewer(ABC):
     @abstractmethod
     def _validate_cert(self, cert: str, domain_or_instance: str) -> bool:
         """
-        验证证书
-        :param cert: 证书内容
-        :param domain_or_instance: 域名或实例ID
-        :return: 是否有效
+        Validate certificate
+        :param cert: Certificate content
+        :param domain_or_instance: Domain name or instance ID
+        :return: Whether valid
         """
         pass
 
     @abstractmethod
     def _calculate_fingerprint(self, cert: str) -> str:
         """
-        计算证书指纹
-        :param cert: 证书内容
-        :return: 证书指纹
+        Calculate certificate fingerprint
+        :param cert: Certificate content
+        :return: Certificate fingerprint
         """
         pass
 
     @abstractmethod
     def get_current_cert_fingerprint(self) -> str | None:
         """
-        获取当前证书指纹
-        :return: 证书指纹，如果查询失败则返回None
+        Get current certificate fingerprint
+        :return: Certificate fingerprint, or None if query fails
         """
         pass
 
     @abstractmethod
     def _do_renew(self, cert: str, cert_private_key: str) -> bool:
         """
-        执行证书更新（子类实现具体逻辑）
-        :param cert: 证书内容
-        :param cert_private_key: 证书私钥
-        :return: 是否成功
+        Execute certificate renewal (subclasses implement specific logic)
+        :param cert: Certificate content
+        :param cert_private_key: Certificate private key
+        :return: Whether successful
         """
         pass
-

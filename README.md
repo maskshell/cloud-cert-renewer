@@ -1,197 +1,203 @@
-# 自动更新云服务HTTPS证书
+# Cloud Certificate Renewer
 
-自动更新云服务HTTPS证书工具，支持CDN和负载均衡器产品。当前主要支持阿里云，架构设计支持多云扩展。
+Automated HTTPS certificate renewal tool for cloud services, supporting CDN and Load Balancer products. Currently supports Alibaba Cloud, with architecture designed for multi-cloud extension.
 
-## 目录
+## Table of Contents
 
-- [功能特性](#功能特性)
-- [环境要求](#环境要求)
-- [安装](#安装)
-- [配置](#配置)
-- [使用方法](#使用方法)
-- [Kubernetes 部署](#kubernetes-部署)
-- [开发](#开发)
-- [故障排查](#故障排查)
-- [注意事项](#注意事项)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Kubernetes Deployment](#kubernetes-deployment)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+- [Notes](#notes)
 
-## 功能特性
+## Features
 
-- 支持云服务CDN证书自动更新（当前支持阿里云）
-- 支持云服务负载均衡器证书自动更新（当前支持阿里云SLB）
-- 证书有效性验证（域名匹配、过期时间检查）
-- 支持通配符域名证书
-- 支持从环境变量或Kubernetes Secret读取配置
-- 完善的错误处理和日志记录
-- 支持 Helm Chart 部署
-- 与 cert-manager 和 Reloader 集成
+- Automatic certificate renewal for cloud CDN services (currently supports Alibaba Cloud)
+- Automatic certificate renewal for cloud Load Balancer services (currently supports Alibaba Cloud SLB)
+- Certificate validation (domain matching, expiration checking)
+- Support for wildcard domain certificates
+- Configuration via environment variables or Kubernetes Secrets
+- Comprehensive error handling and logging
+- Helm Chart deployment support
+- Integration with cert-manager and Reloader
 
-## 快速开始
+## Quick Start
 
-### 本地快速测试
+### Local Quick Test
 
 ```bash
-# 1. 克隆项目
+# 1. Clone the repository
 git clone <repository-url>
 cd cloud-cert-renewer
 
-# 2. 安装依赖
+# 2. Install dependencies
 uv sync --extra dev
 
-# 3. 配置环境变量
+# 3. Configure environment variables
 cp .env.example .env
-# 编辑 .env 文件，填入你的配置
+# Edit .env file and fill in your configuration
 
-# 4. 运行程序
+# 4. Run the program
 uv run python main.py
 ```
 
-### Kubernetes 快速部署
+### Kubernetes Quick Deployment
 
 ```bash
-# 1. 创建 Secret（使用通用命名，推荐）
+# 1. Create Secret (using generic naming, recommended)
 kubectl create secret generic cloud-credentials \
   --from-literal=access-key-id=YOUR_KEY \
   --from-literal=access-key-secret=YOUR_SECRET
 
-# 或使用旧命名（向后兼容）
+# Or use legacy naming (backward compatible)
 # kubectl create secret generic alibaba-cloud-credentials \
 #   --from-literal=access-key-id=YOUR_KEY \
 #   --from-literal=access-key-secret=YOUR_SECRET
 
-# 2. 使用 Helm 部署
+# 2. Deploy using Helm
 helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set serviceType=cdn \
   --set cdn.domainName=your-domain.com
 ```
 
-## 环境要求
+## Requirements
 
 - Python 3.8+
-- uv（Python包管理工具）
+- uv (Python package manager)
 
-## 安装
+## Installation
 
-### 使用 uv 安装依赖
+### Install Dependencies with uv
 
 ```bash
-# 安装 uv（如果尚未安装）
+# Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 安装项目依赖
+# Install project dependencies
 uv sync
 ```
 
-## 配置
+## Configuration
 
-### 环境变量
+### Environment Variables
 
-项目支持通过环境变量或 `.env` 文件配置。参考 `.env.example` 文件创建 `.env` 文件。
+The project supports configuration via environment variables or `.env` files. Refer to `.env.example` to create your `.env` file.
 
-#### 必需的环境变量
+#### Required Environment Variables
 
-- `CLOUD_ACCESS_KEY_ID`: 云服务AccessKey ID（新名称，优先使用）
-- `CLOUD_ACCESS_KEY_SECRET`: 云服务AccessKey Secret（新名称，优先使用）
-- `ALIBABA_CLOUD_ACCESS_KEY_ID`: 阿里云AccessKey ID（旧名称，向后兼容）
-- `ALIBABA_CLOUD_ACCESS_KEY_SECRET`: 阿里云AccessKey Secret（旧名称，向后兼容）
-- `SERVICE_TYPE`: 服务类型，可选值：`cdn` 或 `slb`
+- `CLOUD_ACCESS_KEY_ID`: Cloud service AccessKey ID (new name, preferred)
+- `CLOUD_ACCESS_KEY_SECRET`: Cloud service AccessKey Secret (new name, preferred)
+- `ALIBABA_CLOUD_ACCESS_KEY_ID`: Alibaba Cloud AccessKey ID (legacy name, backward compatible)
+- `ALIBABA_CLOUD_ACCESS_KEY_SECRET`: Alibaba Cloud AccessKey Secret (legacy name, backward compatible)
+- `SERVICE_TYPE`: Service type, options: `cdn` or `lb` (backward compatible: `slb`)
 
-#### CDN 配置（当 SERVICE_TYPE=cdn 时）
+#### CDN Configuration (when SERVICE_TYPE=cdn)
 
-- `CDN_DOMAIN_NAME`: CDN域名
-- `CDN_CERT`: SSL证书内容（PEM格式，支持多行）
-- `CDN_CERT_PRIVATE_KEY`: SSL证书私钥（PEM格式，支持多行）
-- `CDN_REGION`: 区域（默认：`cn-hangzhou`）
+- `CDN_DOMAIN_NAME`: CDN domain name
+- `CDN_CERT`: SSL certificate content (PEM format, supports multi-line)
+- `CDN_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line)
+- `CDN_REGION`: Region (default: `cn-hangzhou`)
 
-#### SLB 配置（当 SERVICE_TYPE=slb 时）
+#### Load Balancer Configuration (when SERVICE_TYPE=lb or slb)
 
-- `SLB_INSTANCE_ID`: SLB实例ID
-- `SLB_CERT`: SSL证书内容（PEM格式，支持多行）
-- `SLB_CERT_PRIVATE_KEY`: SSL证书私钥（PEM格式，支持多行）
-- `SLB_REGION`: 区域（默认：`cn-hangzhou`）
+- `LB_INSTANCE_ID`: Load Balancer instance ID (new name, preferred)
+- `LB_LISTENER_PORT`: Listener port (new name, preferred)
+- `LB_CERT`: SSL certificate content (PEM format, supports multi-line) (new name, preferred)
+- `LB_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line) (new name, preferred)
+- `LB_REGION`: Region (default: `cn-hangzhou`) (new name, preferred)
+- `SLB_INSTANCE_ID`: SLB instance ID (legacy name, backward compatible)
+- `SLB_LISTENER_PORT`: Listener port (legacy name, backward compatible)
+- `SLB_CERT`: SSL certificate content (PEM format, supports multi-line) (legacy name, backward compatible)
+- `SLB_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line) (legacy name, backward compatible)
+- `SLB_REGION`: Region (default: `cn-hangzhou`) (legacy name, backward compatible)
 
-### 证书格式说明
+### Certificate Format
 
-在 `.env` 文件中，证书和私钥可以使用多行格式，使用三引号包裹：
+In `.env` files, certificates and private keys can use multi-line format with triple quotes:
 
 ```env
 CDN_CERT="""-----BEGIN CERTIFICATE-----
-证书内容...
+Certificate content...
 -----END CERTIFICATE-----"""
 ```
 
-这样可以确保证书内容不被转义或变形。
+This ensures the certificate content is not escaped or corrupted.
 
-## 使用方法
+## Usage
 
-### 本地运行
+### Local Execution
 
-1. 创建 `.env` 文件（参考 `.env.example`）
+1. Create `.env` file (refer to `.env.example`)
 
    ```bash
    cp .env.example .env
    ```
 
-2. 编辑 `.env` 文件，配置必要的环境变量
+2. Edit `.env` file and configure necessary environment variables
 
-3. 运行程序：
+3. Run the program:
 
    ```bash
    uv run python main.py
    ```
 
-### 测试运行
+### Running Tests
 
-运行所有测试：
+Run all tests:
 
 ```bash
-# 安装开发依赖（如果还没有安装）
+# Install development dependencies (if not already installed)
 uv sync --extra dev
 
-# 运行所有测试
+# Run all tests
 uv run pytest
 
-# 运行测试（详细输出）
+# Run tests with verbose output
 uv run pytest -v
 
-# 运行特定测试文件
+# Run specific test file
 uv run pytest tests/test_main.py
 
-# 运行特定测试类
-uv run pytest tests/test_main.py::TestCdnCertsRenewer
+# Run specific test class
+uv run pytest tests/test_main.py::TestCdnCertRenewer
 
-# 显示覆盖率
+# Show coverage
 uv run pytest --cov=. --cov-report=html
 ```
 
-### Kubernetes 部署
+### Kubernetes Deployment
 
-#### 前置条件
+#### Prerequisites
 
-- Kubernetes 集群
-- cert-manager（用于自动获取和更新证书）
-- Reloader（用于监听证书Secret变化并触发重新部署）
+- Kubernetes cluster
+- cert-manager (for automatic certificate acquisition and renewal)
+- Reloader (for monitoring certificate Secret changes and triggering redeployment)
 
-#### 部署方式
+#### Deployment Methods
 
-##### 方式一：使用 Helm Chart（推荐）
+##### Method 1: Using Helm Chart (Recommended)
 
-1. **创建云服务凭证Secret（使用通用命名，推荐）**
+1. **Create Cloud Service Credentials Secret (using generic naming, recommended)**
 
 ```bash
-# 使用通用命名（推荐）
+# Using generic naming (recommended)
 kubectl create secret generic cloud-credentials \
   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
 
-# 或使用旧命名（向后兼容）
+# Or use legacy naming (backward compatible)
 # kubectl create secret generic alibaba-cloud-credentials \
 #   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
 #   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
 ```
 
-2. **创建证书Secret**
+2. **Create Certificate Secret**
 
-证书Secret通常由cert-manager自动创建，格式如下：
+Certificate Secrets are typically created automatically by cert-manager, with the following format:
 
 ```yaml
 apiVersion: v1
@@ -200,276 +206,286 @@ metadata:
   name: cert-secret
 type: kubernetes.io/tls
 data:
-  tls.crt: <base64编码的证书>
-  tls.key: <base64编码的私钥>
+  tls.crt: <base64-encoded certificate>
+  tls.key: <base64-encoded private key>
 ```
 
-3. **构建Docker镜像**
+3. **Build Docker Image**
 
 ```bash
 docker build -t cloud-cert-renewer:latest .
 ```
 
-4. **使用 Helm 部署**
+4. **Deploy with Helm**
 
 ```bash
-# 使用默认配置部署（CDN）
+# Deploy with default configuration (CDN)
 helm install cloud-cert-renewer ./helm/cloud-cert-renewer
 
-# 使用自定义配置部署
+# Deploy with custom configuration
 helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set serviceType=cdn \
   --set cdn.domainName=example.com \
   --set image.tag=latest
 
-# 使用示例 values 文件部署
+# Deploy using example values file
 helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   -f ./helm/cloud-cert-renewer/values-cdn.yaml
 ```
 
-##### 方式二：使用原生 Kubernetes YAML
+##### Method 2: Using Native Kubernetes YAML
 
-1. **创建云服务凭证Secret（使用通用命名，推荐）**
+1. **Create Cloud Service Credentials Secret (using generic naming, recommended)**
 
 ```bash
-# 使用通用命名（推荐）
+# Using generic naming (recommended)
 kubectl create secret generic cloud-credentials \
   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
 
-# 或使用旧命名（向后兼容）
+# Or use legacy naming (backward compatible)
 # kubectl create secret generic alibaba-cloud-credentials \
 #   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
 #   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
 ```
 
-2. **创建证书Secret**
+2. **Create Certificate Secret**
 
-证书Secret通常由cert-manager自动创建。
+Certificate Secrets are typically created automatically by cert-manager.
 
-3. **构建Docker镜像**
+3. **Build Docker Image**
 
 ```bash
 docker build -t cloud-cert-renewer:latest .
 ```
 
-4. **部署应用**
+4. **Deploy Application**
 
-修改 `k8s/deployment.yaml` 中的配置，然后部署：
+Modify the configuration in `k8s/deployment.yaml`, then deploy:
 
 ```bash
 kubectl apply -f k8s/deployment.yaml
 ```
 
-#### Reloader 配置
+#### Reloader Configuration
 
-Deployment 中已配置 Reloader 注解，当 `cert-secret` Secret 发生变化时，会自动触发 Deployment 重新部署，init 容器会执行证书更新。
+The Deployment is configured with Reloader annotations. When the `cert-secret` Secret changes, it automatically triggers Deployment redeployment, and the init container will execute certificate renewal.
 
-#### 工作原理
+#### How It Works
 
-1. cert-manager 自动获取/更新 Let's Encrypt 证书，并更新到 `cert-secret` Secret
-2. Reloader 检测到 Secret 变化，触发 Deployment 重新部署
-3. init 容器启动，从 Secret 读取证书，调用云服务API更新证书
-4. init 容器执行完成后退出
-5. 主容器（占位容器）保持运行，确保 Deployment 状态正常
+1. cert-manager automatically acquires/updates Let's Encrypt certificates and updates the `cert-secret` Secret
+2. Reloader detects Secret changes and triggers Deployment redeployment
+3. Init container starts, reads certificate from Secret, and calls cloud service API to update certificate
+4. Init container exits after completion
+5. Main container (placeholder) keeps running to ensure Deployment status is normal
 
-#### Helm Chart 详细使用
+#### Helm Chart Detailed Usage
 
-**查看所有可配置参数：**
+**View all configurable parameters:**
 
 ```bash
 helm show values ./helm/cloud-cert-renewer
 ```
 
-**使用示例 values 文件：**
+**Using example values files:**
 
 ```bash
-# CDN 证书更新
+# CDN certificate renewal
 helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   -f ./helm/cloud-cert-renewer/values-cdn.yaml
 
-# SLB 证书更新
+# Load Balancer certificate renewal
 helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   -f ./helm/cloud-cert-renewer/values-slb.yaml
 ```
 
-**升级部署：**
+**Upgrade deployment:**
 
 ```bash
-# 升级到新版本
+# Upgrade to new version
 helm upgrade cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set image.tag=v0.2.0
 
-# 升级并修改配置
+# Upgrade and modify configuration
 helm upgrade cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set cdn.domainName=new-domain.com
 ```
 
-**验证模板渲染：**
+**Validate template rendering:**
 
 ```bash
-# 查看渲染后的 YAML（不实际部署）
+# View rendered YAML (without actual deployment)
 helm template cloud-cert-renewer ./helm/cloud-cert-renewer
 
-# 使用自定义 values 查看
+# View with custom values
 helm template cloud-cert-renewer ./helm/cloud-cert-renewer \
   -f ./helm/cloud-cert-renewer/values-cdn.yaml
 ```
 
-**检查 Chart：**
+**Check Chart:**
 
 ```bash
 helm lint ./helm/cloud-cert-renewer
 ```
 
-## 现有环境说明
+## Existing Environment
 
-Let's Encrypt SSL 证书当前使用 Kubernetes 部署的 `cert-manager` 来自动获取和自动更新。
+Let's Encrypt SSL certificates currently use Kubernetes-deployed `cert-manager` for automatic acquisition and renewal.
 
-已部署"[stakater/Reloader](https://github.com/stakater/Reloader)"应用。在 Deployment 当中加入特定注解，即可跟踪某一 ConfigMap/Secret 的变化。当 ConfigMap/Secret 发生变化时，可自动重新部署（如 Rollout Restart）该 Deployment。
+The "[stakater/Reloader](https://github.com/stakater/Reloader)" application is deployed. By adding specific annotations to the Deployment, it can track changes to a ConfigMap/Secret. When a ConfigMap/Secret changes, it can automatically redeploy (e.g., Rollout Restart) the Deployment.
 
-## 设计思路
+## Design Approach
 
-建立一个 Deployment，其中有两个容器，一个是 init 容器，另一个是名义上的主容器。
+Create a Deployment with two containers: one init container and one nominal main container.
 
-1. **主容器**：主容器为一个占位应用（busybox），只是用来占位，实际上不会被使用。
-2. **init 容器**：init 容器用来响应前述的 Reloader，用以获取证书的 secret，并调用云服务的 API，更新相应产品项（负载均衡器实例或CDN实例）的证书。
+1. **Main Container**: The main container is a placeholder application (busybox), used only as a placeholder and not actually used.
+2. **Init Container**: The init container responds to the aforementioned Reloader, retrieves the certificate secret, and calls the cloud service API to update the certificate for the corresponding product (Load Balancer instance or CDN instance).
 
-将证书更新的动作放在 init 容器中，是因为主容器的生命周期是长期的，而 init 容器是一次性的，运行完成后可以退出。而主容器需要一直运行，以保证 Deployment 不会处于失败状态。
+The certificate renewal action is placed in the init container because the main container has a long lifecycle, while the init container is one-time and can exit after completion. The main container needs to keep running to ensure the Deployment does not enter a failed state.
 
-每个 SLB 实例或 CDN 实例，都需要一个对应的 Deployment，用以更新证书。
+Each SLB instance or CDN instance requires a corresponding Deployment for certificate renewal.
 
-## 开发
+## Contributing
 
-### 环境设置
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Language Policy
+
+**All project content must be in English:**
+- Code comments, docstrings, documentation, commit messages, and error messages should be in English
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for full language policy and exceptions
+
+## Development
+
+### Environment Setup
 
 ```bash
-# 安装 uv（如果尚未安装）
+# Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 安装项目依赖和开发依赖
+# Install project dependencies and development dependencies
 uv sync --extra dev
 ```
 
-### 代码格式化
+### Code Formatting
 
 ```bash
-# 使用 ruff 格式化代码
+# Format code with ruff
 uv run ruff format .
 
-# 使用 black 格式化代码
+# Format code with black
 uv run black .
 
-# 检查代码格式（不修改）
+# Check code format (without modification)
 uv run black . --check
 ```
 
-### 代码检查
+### Code Linting
 
 ```bash
-# 使用 ruff 进行 lint 检查
+# Lint check with ruff
 uv run ruff check .
 
-# 使用 ruff 自动修复问题
+# Auto-fix issues with ruff
 uv run ruff check . --fix
 ```
 
-### YAML 文件格式化
+### YAML File Formatting
 
-项目已配置 `yamllint` 和 `pre-commit` 用于 YAML 文件检查和格式化。
+The project is configured with `yamllint` and `pre-commit` for YAML file checking and formatting.
 
-**使用 yamllint 检查 YAML 文件：**
+**Using yamllint to check YAML files:**
 
 ```bash
-# 检查所有 YAML 文件
+# Check all YAML files
 uv run yamllint .
 
-# 检查特定文件
+# Check specific file
 uv run yamllint k8s/deployment.yaml
 
-# 检查并自动修复（部分问题）
+# Check and auto-fix (some issues)
 uv run yamllint --format parsable k8s/deployment.yaml
 ```
 
-**使用 pre-commit（推荐）：**
+**Using pre-commit (recommended):**
 
 ```bash
-# 安装 pre-commit 钩子（在 git commit 时自动运行）
+# Install pre-commit hooks (automatically run on git commit)
 uv run pre-commit install
 
-# 手动运行所有检查
+# Manually run all checks
 uv run pre-commit run --all-files
 
-# 只检查 YAML 文件
+# Only check YAML files
 uv run pre-commit run yamllint --all-files
 ```
 
-**推荐的 YAML 格式化工具：**
+**Recommended YAML formatting tools:**
 
-1. **yamllint**（已安装）- YAML 语法检查和风格检查
-   - 优点：轻量、快速、可配置
-   - 缺点：不直接格式化，只检查和报告问题
+1. **yamllint** (installed) - YAML syntax and style checking
+   - Pros: Lightweight, fast, configurable
+   - Cons: Does not directly format, only checks and reports issues
 
-2. **pre-commit**（已安装）- Git 钩子管理工具
-   - 优点：集成多种工具，自动化检查
-   - 缺点：需要 Git 仓库
+2. **pre-commit** (installed) - Git hook management tool
+   - Pros: Integrates multiple tools, automated checking
+   - Cons: Requires Git repository
 
-3. **yamlfmt**（可选）- 专门的 YAML 格式化工具
+3. **yamlfmt** (optional) - Dedicated YAML formatting tool
 
    ```bash
-   # 使用 Go 安装
+   # Install with Go
    go install github.com/google/yamlfmt/cmd/yamlfmt@latest
    ```
 
-4. **prettier**（可选）- 通用代码格式化工具
+4. **prettier** (optional) - General code formatting tool
 
    ```bash
-   # 使用 npm 安装
+   # Install with npm
    npm install -g prettier
    prettier --write "**/*.yaml" "**/*.yml"
    ```
 
-### 运行测试
+### Running Tests
 
 ```bash
-# 运行所有测试
+# Run all tests
 uv run pytest
 
-# 运行测试（详细输出）
+# Run tests with verbose output
 uv run pytest -v
 
-# 运行测试（显示打印输出）
+# Run tests with print output
 uv run pytest -s
 
-# 运行特定测试文件
+# Run specific test file
 uv run pytest tests/test_main.py
 
-# 运行特定测试类
-uv run pytest tests/test_main.py::TestCdnCertsRenewer
+# Run specific test class
+uv run pytest tests/test_main.py::TestCdnCertRenewer
 
-# 运行特定测试方法
-uv run pytest tests/test_main.py::TestCdnCertsRenewer::test_create_client
+# Run specific test method
+uv run pytest tests/test_main.py::TestCdnCertRenewer::test_create_client
 
-# 在第一个失败时停止
+# Stop at first failure
 uv run pytest -x
 
-# 显示最慢的 10 个测试
+# Show top 10 slowest tests
 uv run pytest --durations=10
 
-# 生成覆盖率报告
+# Generate coverage report
 uv run pytest --cov=. --cov-report=html
 ```
 
-### 构建 Docker 镜像
+### Building Docker Image
 
 ```bash
-# 构建镜像
+# Build image
 docker build -t cloud-cert-renewer:latest .
 
-# 构建并指定标签
+# Build with specific tag
 docker build -t cloud-cert-renewer:v0.1.0 .
 
-# 测试运行镜像
+# Test run image
 docker run --rm \
   -e ALIBABA_CLOUD_ACCESS_KEY_ID=your_key \
   -e ALIBABA_CLOUD_ACCESS_KEY_SECRET=your_secret \
@@ -480,208 +496,204 @@ docker run --rm \
   cloud-cert-renewer:latest
 ```
 
-### 代码结构
+### Code Structure
 
 ```
 cloud-cert-renewer/
-├── main.py                    # 主程序入口
-├── cloud_cert_renewer/        # 核心功能模块
-│   ├── auth/                  # 鉴权模块（支持多种鉴权方式）
-│   │   ├── base.py            # 鉴权提供者抽象接口
-│   │   ├── access_key.py      # AK/SK鉴权提供者
-│   │   ├── sts.py             # STS临时凭证鉴权提供者
-│   │   ├── iam_role.py        # IAM Role鉴权提供者
-│   │   ├── service_account.py # ServiceAccount鉴权提供者
-│   │   ├── env.py             # 环境变量鉴权提供者
-│   │   └── factory.py         # 鉴权提供者工厂
-│   ├── cert_renewer/          # 证书更新器模块（策略模式）
-│   │   ├── base.py            # 抽象基类（模板方法模式）
-│   │   ├── cdn_renewer.py     # CDN证书更新策略
-│   │   ├── load_balancer_renewer.py # 负载均衡器证书更新策略
-│   │   └── factory.py         # 证书更新器工厂
-│   ├── clients/               # 客户端模块
-│   │   └── alibaba.py        # 阿里云客户端封装
-│   ├── config/                # 配置模块
-│   │   ├── models.py          # 配置数据类
-│   │   └── loader.py          # 配置加载器
-│   ├── providers/             # 云服务提供商适配器（适配器模式）
-│   │   ├── base.py            # 云服务适配器接口
-│   │   ├── alibaba.py         # 阿里云适配器
-│   │   ├── aws.py             # AWS适配器（预留）
-│   │   └── azure.py           # Azure适配器（预留）
-│   ├── utils/                 # 工具模块
-│   │   └── ssl_cert_parser.py # SSL证书解析和验证工具
-│   ├── container.py           # 依赖注入容器
-│   ├── config.py              # 向后兼容导入
-│   ├── renewer.py             # 向后兼容导入
-│   └── adapters.py            # 向后兼容导入
-├── tests/                     # 测试文件
+├── main.py                    # Main program entry point
+├── cloud_cert_renewer/        # Core functionality module
+│   ├── auth/                  # Authentication module (supports multiple auth methods)
+│   │   ├── base.py            # Authentication provider abstract interface
+│   │   ├── access_key.py      # Access Key/Security Key authentication provider
+│   │   ├── sts.py             # STS temporary credentials authentication provider
+│   │   ├── iam_role.py        # IAM Role authentication provider
+│   │   ├── service_account.py # ServiceAccount authentication provider
+│   │   ├── env.py             # Environment variable authentication provider
+│   │   └── factory.py         # Authentication provider factory
+│   ├── cert_renewer/          # Certificate renewer module (Strategy pattern)
+│   │   ├── base.py            # Abstract base class (Template Method pattern)
+│   │   ├── cdn_renewer.py     # CDN certificate renewal strategy
+│   │   ├── load_balancer_renewer.py # Load Balancer certificate renewal strategy
+│   │   └── factory.py         # Certificate renewer factory
+│   ├── clients/               # Client module
+│   │   └── alibaba.py        # Alibaba Cloud client wrapper
+│   ├── config/                # Configuration module
+│   │   ├── models.py          # Configuration data classes
+│   │   └── loader.py          # Configuration loader
+│   ├── providers/             # Cloud service provider adapters (Adapter pattern)
+│   │   ├── base.py            # Cloud service adapter interface
+│   │   ├── alibaba.py         # Alibaba Cloud adapter
+│   │   ├── aws.py             # AWS adapter (reserved)
+│   │   └── azure.py           # Azure adapter (reserved)
+│   ├── utils/                 # Utility module
+│   │   └── ssl_cert_parser.py # SSL certificate parsing and validation utility
+│   ├── container.py           # Dependency injection container
+│   ├── config.py              # Backward compatibility imports
+│   ├── renewer.py             # Backward compatibility imports
+│   └── adapters.py            # Backward compatibility imports
+├── tests/                     # Test files
 │   ├── __init__.py
-│   ├── test_main.py           # 主程序测试
-│   └── test_ssl_cert_parser.py # SSL证书解析器测试
-├── k8s/                       # Kubernetes原生部署配置
-│   └── deployment.yaml        # Deployment配置
+│   ├── test_main.py           # Main program tests
+│   └── test_ssl_cert_parser.py # SSL certificate parser tests
+├── k8s/                       # Kubernetes native deployment configuration
+│   └── deployment.yaml        # Deployment configuration
 ├── helm/                      # Helm Chart
 │   └── cloud-cert-renewer/
-│       ├── Chart.yaml         # Chart元数据
-│       ├── values.yaml        # 默认配置值
-│       ├── values-cdn.yaml    # CDN示例配置
-│       ├── values-slb.yaml    # SLB示例配置
-│       └── templates/         # Kubernetes资源模板
-│           ├── _helpers.tpl   # 辅助模板
+│       ├── Chart.yaml         # Chart metadata
+│       ├── values.yaml        # Default configuration values
+│       ├── values-cdn.yaml    # CDN example configuration
+│       ├── values-slb.yaml    # SLB example configuration
+│       └── templates/         # Kubernetes resource templates
+│           ├── _helpers.tpl   # Helper templates
 │           └── deployment.yaml
-├── Dockerfile                 # Docker镜像构建文件
-├── .env.example               # 环境变量配置示例
-├── pyproject.toml             # 项目配置和依赖（使用uv）
-└── README.md                  # 项目说明
+├── Dockerfile                 # Docker image build file
+├── .env.example               # Environment variable configuration example
+├── pyproject.toml             # Project configuration and dependencies (using uv)
+└── README.md                  # Project documentation
 ```
 
-## 故障排查
+## Troubleshooting
 
-### 常见问题
+### Common Issues
 
-#### 1. 证书验证失败
+#### 1. Certificate Validation Failed
 
-**症状：** 日志显示 "证书验证失败：域名 xxx 不在证书中或证书已过期"
+**Symptoms:** Log shows "Certificate validation failed: domain xxx is not in the certificate or certificate has expired"
 
-**解决方案：**
+**Solutions:**
 
-- 检查证书是否包含目标域名
-- 检查证书是否已过期
-- 确认证书格式正确（PEM格式）
-- 对于通配符证书，确认域名匹配规则
+- Check if the certificate contains the target domain
+- Check if the certificate has expired
+- Verify certificate format is correct (PEM format)
+- For wildcard certificates, verify domain matching rules
 
-#### 2. 配置错误
+#### 2. Configuration Error
 
-**症状：** 日志显示 "配置错误：缺少必要的环境变量"
+**Symptoms:** Log shows "Configuration error: missing required environment variables"
 
-**解决方案：**
+**Solutions:**
 
-- 检查所有必需的环境变量是否已设置
-- 确认环境变量名称拼写正确
-- 检查 Secret 是否存在且包含正确的 key
+- Check if all required environment variables are set
+- Verify environment variable names are spelled correctly
+- Check if Secret exists and contains correct keys
 
-#### 3. API 调用失败
+#### 3. API Call Failed
 
-**症状：** 日志显示 "CDN证书更新失败" 或 "SLB证书更新失败"
+**Symptoms:** Log shows "CDN certificate renewal failed" or "Load Balancer certificate renewal failed"
 
-**解决方案：**
+**Solutions:**
 
-- 检查 AccessKey 是否正确且有相应权限
-- 确认区域配置正确
-- 检查网络连接
-- 查看错误消息中的诊断地址
+- Check if AccessKey is correct and has appropriate permissions
+- Verify region configuration is correct
+- Check network connectivity
+- View diagnostic URL in error message
 
-#### 4. Kubernetes 部署问题
+#### 4. Kubernetes Deployment Issues
 
-**检查 Pod 状态：**
+**Check Pod Status:**
 
 ```bash
-# 查看 Pod 列表
+# View Pod list
 kubectl get pods -l app.kubernetes.io/name=cloud-cert-renewer
 
-# 查看 Pod 详细信息
+# View Pod details
 kubectl describe pod <pod-name>
 
-# 查看 init 容器日志
+# View init container logs
 kubectl logs <pod-name> -c cert-renewer
 
-# 查看主容器日志
+# View main container logs
 kubectl logs <pod-name> -c placeholder
 
-# 查看 Pod 事件
+# View Pod events
 kubectl get events --field-selector involvedObject.name=<pod-name>
 ```
 
-**检查 Secret：**
+**Check Secrets:**
 
 ```bash
-# 查看 Secret 是否存在
-kubectl get secret alibaba-cloud-credentials
+# Check if Secrets exist
+kubectl get secret cloud-credentials
 kubectl get secret cert-secret
 
-# 查看 Secret 内容（base64 解码）
+# View Secret content (base64 decoded)
 kubectl get secret cert-secret -o jsonpath='{.data.tls\.crt}' | base64 -d
 ```
 
-**检查 Reloader：**
+**Check Reloader:**
 
 ```bash
-# 查看 Reloader 是否运行
+# Check if Reloader is running
 kubectl get pods -n <reloader-namespace> -l app=reloader
 
-# 查看 Reloader 日志
+# View Reloader logs
 kubectl logs -n <reloader-namespace> <reloader-pod-name>
 ```
 
-### 调试技巧
+### Debugging Tips
 
-1. **本地测试配置：**
+1. **Local Test Configuration:**
 
    ```bash
-   # 从 Kubernetes Secret 导出环境变量进行本地测试
+   # Export environment variables from Kubernetes Secret for local testing
    kubectl get secret cert-secret -o jsonpath='{.data.tls\.crt}' | base64 -d > cert.pem
    kubectl get secret cert-secret -o jsonpath='{.data.tls\.key}' | base64 -d > key.pem
    ```
 
-2. **启用详细日志：**
-   程序使用 Python logging，日志级别可通过环境变量控制（如果实现）
+2. **Enable Verbose Logging:**
+   The program uses Python logging, log level can be controlled via environment variables (if implemented)
 
-3. **验证证书内容：**
+3. **Verify Certificate Content:**
 
    ```bash
-   # 查看证书信息
+   # View certificate information
    openssl x509 -in cert.pem -text -noout
 
-   # 检查证书过期时间
+   # Check certificate expiration date
    openssl x509 -in cert.pem -noout -dates
    ```
 
-## 注意事项
+## Notes
 
-1. **安全性**：
-   - 生产环境中，请使用更安全的认证方式（如STS），而不是直接使用AccessKey
-   - 不要在代码中硬编码敏感信息
-   - 使用 Kubernetes Secret 管理敏感数据
+1. **Security**:
+   - In production environments, use more secure authentication methods (such as STS) instead of directly using AccessKey
+   - Do not hardcode sensitive information in code
+   - Use Kubernetes Secrets to manage sensitive data
 
-2. **证书格式**：
-   - 确保证书和私钥格式正确，使用PEM格式
-   - 证书链应包含完整的证书链（服务器证书 + 中间证书 + 根证书）
-   - 私钥格式应为 RSA 或 ECDSA
+2. **Certificate Format**:
+   - Ensure certificate and private key formats are correct, use PEM format
+   - Certificate chain should include complete chain (server certificate + intermediate certificate + root certificate)
+   - Private key format should be RSA or ECDSA
 
-3. **区域配置**：
-   - 根据实际使用的云服务区域配置正确的区域代码
-   - 常见区域：`cn-hangzhou`、`cn-beijing`、`cn-shanghai`、`cn-shenzhen` 等
+3. **Region Configuration**:
+   - Configure correct region codes according to actual cloud service regions used
+   - Common regions: `cn-hangzhou`, `cn-beijing`, `cn-shanghai`, `cn-shenzhen`, etc.
 
-4. **错误处理**：
-   - 程序会记录详细的日志，便于排查问题
-   - 建议配置日志收集系统（如 ELK、Loki）进行集中管理
+4. **Error Handling**:
+   - The program logs detailed information for troubleshooting
+   - Recommend configuring log collection systems (such as ELK, Loki) for centralized management
 
-5. **资源限制**：
-   - 根据实际负载调整资源请求和限制
-   - init 容器执行时间通常很短，但需要足够的资源完成 API 调用
+5. **Resource Limits**:
+   - Adjust resource requests and limits according to actual load
+   - Init container execution time is usually short, but sufficient resources are needed to complete API calls
 
-6. **多实例部署**：
-   - 每个 CDN 域名或 SLB 实例需要单独的 Deployment
-   - 使用不同的 release name 或 namespace 进行区分
+6. **Multi-Instance Deployment**:
+   - Each CDN domain or Load Balancer instance requires a separate Deployment for certificate renewal
+   - Use different release names or namespaces for distinction
 
-## 贡献指南
+## Contributing
 
-欢迎贡献代码！请遵循以下步骤：
+Contributions are welcome! Please follow these steps:
 
-1. Fork 本项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
+1. Fork this project
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### 代码规范
+### Code Standards
 
-- 使用 `black` 格式化代码
-- 使用 `ruff` 进行代码检查
-- 编写单元测试
-- 更新相关文档
-
-## 许可证
-
-[根据项目实际情况添加许可证信息]
+- Use `black` to format code
+- Use `ruff` for code linting
+- Write unit tests
+- Update relevant documentation

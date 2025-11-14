@@ -1,6 +1,6 @@
-"""阿里云客户端封装
+"""Alibaba Cloud client wrapper
 
-提供阿里云CDN和负载均衡器证书更新的客户端封装。
+Provides client wrappers for Alibaba Cloud CDN and Load Balancer certificate renewal.
 """
 
 import logging
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class CdnCertRenewer:
-    """CDN证书更新器（已重命名，原CdnCertsRenewer）"""
+    """CDN certificate renewer (renamed from CdnCertsRenewer)"""
 
     @staticmethod
     def create_client(
@@ -31,10 +31,10 @@ class CdnCertRenewer:
         access_key_secret: str,
     ) -> Cdn20180510Client:
         """
-        使用AK&SK初始化账号Client
-        :param access_key_id: 云服务AccessKey ID
-        :param access_key_secret: 云服务AccessKey Secret
-        :return: CDN Client实例
+        Initialize account Client using AccessKey ID and Secret
+        :param access_key_id: Cloud service AccessKey ID
+        :param access_key_secret: Cloud service AccessKey Secret
+        :return: CDN Client instance
         """
         config = open_api_models.Config(
             access_key_id=access_key_id,
@@ -50,11 +50,11 @@ class CdnCertRenewer:
         access_key_secret: str,
     ) -> str | None:
         """
-        查询CDN域名当前配置的证书内容
-        :param domain_name: CDN域名
-        :param access_key_id: 云服务AccessKey ID
-        :param access_key_secret: 云服务AccessKey Secret
-        :return: 证书内容（PEM格式），如果查询失败或没有证书则返回None
+        Query the current certificate content configured for CDN domain
+        :param domain_name: CDN domain name
+        :param access_key_id: Cloud service AccessKey ID
+        :param access_key_secret: Cloud service AccessKey Secret
+        :return: Certificate content (PEM format), or None if query fails or no certificate exists
         """
         try:
             client = CdnCertRenewer.create_client(access_key_id, access_key_secret)
@@ -77,7 +77,10 @@ class CdnCertRenewer:
                     return server_cert
             return None
         except Exception as e:
-            logger.warning("查询CDN当前证书失败: %s，将跳过证书比较", str(e))
+            logger.warning(
+                "Failed to query CDN current certificate: %s, will skip certificate comparison",
+                str(e),
+            )
             return None
 
     @staticmethod
@@ -91,24 +94,24 @@ class CdnCertRenewer:
         force: bool = False,
     ) -> bool:
         """
-        更新CDN域名SSL证书
-        :param domain_name: CDN域名
-        :param cert: SSL证书内容
-        :param cert_private_key: SSL证书私钥
-        :param region: 区域
-        :param access_key_id: 云服务AccessKey ID
-        :param access_key_secret: 云服务AccessKey Secret
-        :param force: 是否强制更新（即使证书相同也更新，用于测试）
-        :return: 是否成功
+        Update CDN domain SSL certificate
+        :param domain_name: CDN domain name
+        :param cert: SSL certificate content
+        :param cert_private_key: SSL certificate private key
+        :param region: Region
+        :param access_key_id: Cloud service AccessKey ID
+        :param access_key_secret: Cloud service AccessKey Secret
+        :param force: Whether to force update (update even if certificate is the same, for testing)
+        :return: Whether successful
         """
         try:
-            # 验证证书
+            # Validate certificate
             if not is_cert_valid(cert, domain_name):
                 raise CertValidationError(
-                    f"证书验证失败：域名 {domain_name} 不在证书中或证书已过期"
+                    f"Certificate validation failed: domain {domain_name} is not in the certificate or certificate has expired"
                 )
 
-            # 查询当前证书并比较
+            # Query current certificate and compare
             current_cert = CdnCertRenewer.get_current_cert(
                 domain_name, access_key_id, access_key_secret
             )
@@ -117,20 +120,21 @@ class CdnCertRenewer:
                 current_fingerprint = get_cert_fingerprint_sha256(current_cert)
                 if new_fingerprint == current_fingerprint:
                     logger.info(
-                        "CDN证书未变化，跳过更新: 域名=%s, 指纹=%s",
+                        "CDN certificate unchanged, skipping update: domain=%s, fingerprint=%s",
                         domain_name,
                         new_fingerprint[:20] + "...",
                     )
                     return True
             elif force:
                 logger.info(
-                    "强制更新模式已启用，即使证书相同也会更新: 域名=%s", domain_name
+                    "Force update mode enabled, will update even if certificate is the same: domain=%s",
+                    domain_name,
                 )
 
-            # 创建客户端
+            # Create client
             client = CdnCertRenewer.create_client(access_key_id, access_key_secret)
 
-            # 构建请求
+            # Build request
             request = cdn_20180510_models.SetCdnDomainSSLCertificateRequest(
                 domain_name=domain_name,
                 cert_type="upload",
@@ -140,14 +144,16 @@ class CdnCertRenewer:
                 cert_region=region,
             )
 
-            # 执行请求
+            # Execute request
             runtime = util_models.RuntimeOptions()
             response = client.set_cdn_domain_sslcertificate_with_options(
                 request, runtime
             )
 
             logger.info(
-                "CDN证书更新成功: 域名=%s, 状态码=%s", domain_name, response.status_code
+                "CDN certificate updated successfully: domain=%s, status_code=%s",
+                domain_name,
+                response.status_code,
             )
             return True
 
@@ -157,17 +163,17 @@ class CdnCertRenewer:
             error_msg = str(e)
             if hasattr(e, "message"):
                 error_msg = e.message
-            logger.error("CDN证书更新失败: %s", error_msg)
+            logger.error("CDN certificate update failed: %s", error_msg)
             data = getattr(e, "data", None)
             if data and isinstance(data, dict):
                 recommend = data.get("Recommend")
                 if recommend:
-                    logger.error("诊断地址: %s", recommend)
+                    logger.error("Diagnostic URL: %s", recommend)
             raise
 
 
 class LoadBalancerCertRenewer:
-    """负载均衡器证书更新器（已重命名，原SlbCertsRenewer）"""
+    """Load Balancer certificate renewer (renamed from SlbCertsRenewer)"""
 
     @staticmethod
     def create_client(
@@ -175,10 +181,10 @@ class LoadBalancerCertRenewer:
         access_key_secret: str,
     ) -> Slb20140515Client:
         """
-        使用AK&SK初始化账号Client
-        :param access_key_id: 云服务AccessKey ID
-        :param access_key_secret: 云服务AccessKey Secret
-        :return: SLB Client实例
+        Initialize account Client using AccessKey ID and Secret
+        :param access_key_id: Cloud service AccessKey ID
+        :param access_key_secret: Cloud service AccessKey Secret
+        :return: SLB Client instance
         """
         config = open_api_models.Config(
             access_key_id=access_key_id,
@@ -196,13 +202,13 @@ class LoadBalancerCertRenewer:
         access_key_secret: str,
     ) -> str | None:
         """
-        查询SLB HTTPS监听器当前使用的证书ID
-        :param instance_id: SLB实例ID
-        :param listener_port: HTTPS监听器端口
-        :param region: 区域
-        :param access_key_id: 云服务AccessKey ID
-        :param access_key_secret: 云服务AccessKey Secret
-        :return: 证书ID，如果查询失败或监听器不存在则返回None
+        Query the certificate ID currently used by SLB HTTPS listener
+        :param instance_id: SLB instance ID
+        :param listener_port: HTTPS listener port
+        :param region: Region
+        :param access_key_id: Cloud service AccessKey ID
+        :param access_key_secret: Cloud service AccessKey Secret
+        :return: Certificate ID, or None if query fails or listener does not exist
         """
         try:
             client = LoadBalancerCertRenewer.create_client(
@@ -227,7 +233,7 @@ class LoadBalancerCertRenewer:
             return None
         except Exception as e:
             logger.warning(
-                "查询SLB监听器配置失败: 实例ID=%s, 端口=%s, 错误=%s",
+                "Failed to query SLB listener configuration: instance_id=%s, port=%s, error=%s",
                 instance_id,
                 listener_port,
                 str(e),
@@ -243,23 +249,23 @@ class LoadBalancerCertRenewer:
         access_key_secret: str,
     ) -> str | None:
         """
-        查询SLB实例当前使用的证书指纹
-        :param instance_id: SLB实例ID
-        :param listener_port: HTTPS监听器端口
-        :param region: 区域
-        :param access_key_id: 云服务AccessKey ID
-        :param access_key_secret: 云服务AccessKey Secret
-        :return: 证书指纹（SHA1格式），如果查询失败则返回None
+        Query the certificate fingerprint currently used by SLB instance
+        :param instance_id: SLB instance ID
+        :param listener_port: HTTPS listener port
+        :param region: Region
+        :param access_key_id: Cloud service AccessKey ID
+        :param access_key_secret: Cloud service AccessKey Secret
+        :return: Certificate fingerprint (SHA1 format), or None if query fails
         """
         try:
-            # 先查询监听器使用的证书ID
+            # First query the certificate ID used by the listener
             cert_id = LoadBalancerCertRenewer.get_listener_cert_id(
                 instance_id, listener_port, region, access_key_id, access_key_secret
             )
             if not cert_id:
                 return None
 
-            # 查询证书详情获取指纹
+            # Query certificate details to get fingerprint
             client = LoadBalancerCertRenewer.create_client(
                 access_key_id, access_key_secret
             )
@@ -282,7 +288,10 @@ class LoadBalancerCertRenewer:
                     return certs[0].fingerprint
             return None
         except Exception as e:
-            logger.warning("查询SLB当前证书指纹失败: %s，将跳过证书比较", str(e))
+            logger.warning(
+                "Failed to query SLB current certificate fingerprint: %s, will skip certificate comparison",
+                str(e),
+            )
             return None
 
     @staticmethod
@@ -297,19 +306,19 @@ class LoadBalancerCertRenewer:
         force: bool = False,
     ) -> bool:
         """
-        更新SLB实例SSL证书
-        :param instance_id: SLB实例ID
-        :param listener_port: HTTPS监听器端口
-        :param cert: SSL证书内容
-        :param cert_private_key: SSL证书私钥
-        :param region: 区域
-        :param access_key_id: 云服务AccessKey ID
-        :param access_key_secret: 云服务AccessKey Secret
-        :param force: 是否强制更新（即使证书相同也更新，用于测试）
-        :return: 是否成功
+        Update SLB instance SSL certificate
+        :param instance_id: SLB instance ID
+        :param listener_port: HTTPS listener port
+        :param cert: SSL certificate content
+        :param cert_private_key: SSL certificate private key
+        :param region: Region
+        :param access_key_id: Cloud service AccessKey ID
+        :param access_key_secret: Cloud service AccessKey Secret
+        :param force: Whether to force update (update even if certificate is the same, for testing)
+        :return: Whether successful
         """
         try:
-            # 查询当前证书指纹并比较
+            # Query current certificate fingerprint and compare
             current_fingerprint = LoadBalancerCertRenewer.get_current_cert_fingerprint(
                 instance_id, listener_port, region, access_key_id, access_key_secret
             )
@@ -317,7 +326,7 @@ class LoadBalancerCertRenewer:
                 new_fingerprint = get_cert_fingerprint_sha1(cert)
                 if new_fingerprint == current_fingerprint:
                     logger.info(
-                        "SLB证书未变化，跳过更新: 实例ID=%s, 端口=%s, 指纹=%s",
+                        "SLB certificate unchanged, skipping update: instance_id=%s, port=%s, fingerprint=%s",
                         instance_id,
                         listener_port,
                         new_fingerprint[:20] + "...",
@@ -325,17 +334,17 @@ class LoadBalancerCertRenewer:
                     return True
             elif force:
                 logger.info(
-                    "强制更新模式已启用，即使证书相同也会更新: 实例ID=%s, 端口=%s",
+                    "Force update mode enabled, will update even if certificate is the same: instance_id=%s, port=%s",
                     instance_id,
                     listener_port,
                 )
 
-            # 创建客户端
+            # Create client
             client = LoadBalancerCertRenewer.create_client(
                 access_key_id, access_key_secret
             )
 
-            # 构建请求 - 上传证书
+            # Build request - Upload certificate
             upload_request = slb_20140515_models.UploadServerCertificateRequest(
                 server_certificate=cert,
                 private_key=cert_private_key,
@@ -348,11 +357,11 @@ class LoadBalancerCertRenewer:
             )
 
             cert_id = upload_response.body.server_certificate_id
-            logger.info("SLB证书上传成功: 证书ID=%s", cert_id)
+            logger.info("SLB certificate uploaded successfully: cert_id=%s", cert_id)
 
-            # 构建请求 - 绑定证书到监听器
-            # 注意：SetLoadBalancerHTTPSListenerAttribute 只需要传递需要更新的参数
-            # 其他参数如果不传递会保持原值，因此只需要传递 server_certificate_id
+            # Build request - Bind certificate to listener
+            # Note: SetLoadBalancerHTTPSListenerAttribute only needs to pass parameters that need to be updated
+            # Other parameters will keep their original values if not passed, so only server_certificate_id needs to be passed
             bind_request = (
                 slb_20140515_models.SetLoadBalancerHTTPSListenerAttributeRequest(
                     load_balancer_id=instance_id,
@@ -369,7 +378,7 @@ class LoadBalancerCertRenewer:
             )
 
             logger.info(
-                "SLB证书绑定成功: 实例ID=%s, 端口=%s, 证书ID=%s, 状态码=%s",
+                "SLB certificate bound successfully: instance_id=%s, port=%s, cert_id=%s, status_code=%s",
                 instance_id,
                 listener_port,
                 cert_id,
@@ -377,7 +386,7 @@ class LoadBalancerCertRenewer:
             )
 
             logger.info(
-                "SLB证书更新成功: 实例ID=%s, 端口=%s, 证书ID=%s",
+                "SLB certificate updated successfully: instance_id=%s, port=%s, cert_id=%s",
                 instance_id,
                 listener_port,
                 cert_id,
@@ -388,11 +397,10 @@ class LoadBalancerCertRenewer:
             error_msg = str(e)
             if hasattr(e, "message"):
                 error_msg = e.message
-            logger.error("SLB证书更新失败: %s", error_msg)
+            logger.error("SLB certificate update failed: %s", error_msg)
             data = getattr(e, "data", None)
             if data and isinstance(data, dict):
                 recommend = data.get("Recommend")
                 if recommend:
-                    logger.error("诊断地址: %s", recommend)
+                    logger.error("Diagnostic URL: %s", recommend)
             raise
-

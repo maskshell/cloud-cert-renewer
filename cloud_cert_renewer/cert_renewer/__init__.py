@@ -1,6 +1,7 @@
-"""证书更新器模块
+"""Certificate renewer module
 
-提供证书更新器的抽象接口和实现，使用策略模式和模板方法模式。
+Provides abstract interfaces and implementations for certificate renewers,
+using Strategy pattern and Template Method pattern.
 """
 
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer, CertValidationError

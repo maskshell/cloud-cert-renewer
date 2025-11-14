@@ -8,7 +8,7 @@ from cloud_cert_renewer.cert_renewer import (
 from cloud_cert_renewer.config import ConfigError, load_config
 from cloud_cert_renewer.container import get_container, register_service
 
-# 配置日志
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -17,23 +17,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# CdnCertRenewer 和 LoadBalancerCertRenewer 已移至
-# cloud_cert_renewer.clients.alibaba 模块
+# CdnCertRenewer and LoadBalancerCertRenewer have been moved to
+# cloud_cert_renewer.clients.alibaba module
 
 
 def main() -> None:
     """
-    主函数：根据配置更新CDN或负载均衡器证书
+    Main function: Update CDN or Load Balancer certificate based on configuration
     """
     try:
-        # 加载配置
+        # Load configuration
         config = load_config()
 
-        # 注册配置到依赖注入容器
+        # Register configuration to dependency injection container
         container = get_container()
         register_service("config", instance=config, singleton=True)
 
-        # 注册证书更新器工厂
+        # Register certificate renewer factory
         register_service(
             "cert_renewer_factory",
             instance=CertRenewerFactory,
@@ -41,7 +41,7 @@ def main() -> None:
         )
 
         logger.info(
-            "开始更新证书: 服务类型=%s, 云服务商=%s, 鉴权方式=%s, 区域=%s, 强制更新=%s",
+            "Starting certificate renewal: service_type=%s, cloud_provider=%s, auth_method=%s, region=%s, force_update=%s",
             config.service_type,
             config.cloud_provider,
             config.auth_method,
@@ -53,27 +53,27 @@ def main() -> None:
             config.force_update,
         )
 
-        # 使用依赖注入容器获取证书更新器工厂
+        # Get certificate renewer factory from dependency injection container
         factory = container.get("cert_renewer_factory")
         renewer = factory.create(config)
         success = renewer.renew()
 
         if success:
-            logger.info("证书更新完成")
+            logger.info("Certificate renewal completed")
             sys.exit(0)
         else:
-            logger.error("证书更新失败")
+            logger.error("Certificate renewal failed")
             sys.exit(1)
 
     except ConfigError as e:
-        logger.error("配置错误: %s", e)
+        logger.error("Configuration error: %s", e)
         sys.exit(1)
     except CertValidationError as e:
-        logger.error("证书验证错误: %s", e)
+        logger.error("Certificate validation error: %s", e)
         sys.exit(1)
     except Exception as e:  # noqa: BLE001
-        # 主函数需要捕获所有异常以确保程序优雅退出
-        logger.exception("发生未预期的错误: %s", e)
+        # Main function needs to catch all exceptions to ensure graceful exit
+        logger.exception("Unexpected error occurred: %s", e)
         sys.exit(1)
 
 
