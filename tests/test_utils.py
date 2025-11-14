@@ -1,12 +1,18 @@
 import os
 import sys
 import unittest
+from datetime import datetime, timedelta
+from unittest.mock import patch
 
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from cloud_cert_renewer.utils.ssl_cert_parser import (  # noqa: I001
+    get_cert_fingerprint_sha1,
+    get_cert_fingerprint_sha256,
+    is_cert_valid,
     is_domain_name_match,
+    parse_cert_info,
 )
 
 class TestSslCertParser(unittest.TestCase):
@@ -14,22 +20,8 @@ class TestSslCertParser(unittest.TestCase):
 
     def setUp(self):
         """Test setup"""
-        # This is a valid test certificate (example)
-        self.valid_cert = """-----BEGIN CERTIFICATE-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy5+4y3z8v5x9w2q1r3t5
-y7u9v1w4x6z8a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7
-a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2p3q4r5s6t7u8v9w0x1y2z3a4b5c6d7e8f9
-g0h1i2j3k4l5m6n7o8p9q0r1s2t3u4v5w6x7y8z9a0b1c2d3e4f5g6h7i8j9k0l1
-m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1q2r3
-s4t5u6v7w8x9y0z1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5
-y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2p3q4r5s6t7u8v9w0x1y2z3a4b5c6d7
-e8f9g0h1i2j3k4l5m6n7o8p9q0r1s2t3u4v5w6x7y8z9a0b1c2d3e4f5g6h7i8j9
-k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1
-QwIDAQAB
------END CERTIFICATE-----"""
-
-        self.test_domain = "test.example.com"
-        self.wildcard_domain = "*.example.com"
+        # Note: Test certificates are generated dynamically in individual tests
+        # to ensure they are valid and can be parsed correctly
 
     def test_is_domain_name_match_exact(self):
         """Test exact domain name matching"""
@@ -53,23 +45,225 @@ QwIDAQAB
         self.assertTrue(is_domain_name_match("sub.example.com", domain_list))
         self.assertFalse(is_domain_name_match("other.com", domain_list))
 
-    def test_is_cert_valid_with_valid_cert(self):
+    def test_parse_cert_info(self):
+        """Test parsing certificate information"""
+        # Generate a simple test certificate using cryptography
+        from cryptography import x509
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+
+        # Create a simple self-signed certificate
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+            backend=default_backend()
+        )
+        subject = issuer = x509.Name([
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Test"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Org"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
+        ])
+        cert = x509.CertificateBuilder().subject_name(
+            subject
+        ).issuer_name(
+            issuer
+        ).public_key(
+            private_key.public_key()
+        ).serial_number(
+            x509.random_serial_number()
+        ).not_valid_before(
+            datetime.utcnow()
+        ).not_valid_after(
+            datetime.utcnow() + timedelta(days=365)
+        ).add_extension(
+            x509.SubjectAlternativeName([
+                x509.DNSName("test.example.com"),
+                x509.DNSName("*.example.com"),
+            ]),
+            critical=False,
+        ).sign(private_key, hashes.SHA256(), default_backend())
+
+        cert_pem = cert.public_bytes(
+            encoding=serialization.Encoding.PEM
+        ).decode('utf-8')
+
+        domain_list, expire_date = parse_cert_info(cert_pem)
+
+        self.assertIsInstance(domain_list, list)
+        self.assertIsInstance(expire_date, str)
+        # Expire date should be in format "YYYY-MM-DD HH:MM:SS"
+        self.assertRegex(expire_date, r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
+        # Should contain test.example.com from CN
+        self.assertIn("test.example.com", domain_list)
+        # Should also contain SAN domains
+        self.assertIn("*.example.com", domain_list)
+
+    def test_parse_cert_info_no_san_extension(self):
+        """Test parsing certificate information without SAN extension"""
+        # Generate a certificate without SAN extension
+        from cryptography import x509
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+            backend=default_backend()
+        )
+        subject = issuer = x509.Name([
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
+        ])
+        cert = x509.CertificateBuilder().subject_name(
+            subject
+        ).issuer_name(
+            issuer
+        ).public_key(
+            private_key.public_key()
+        ).serial_number(
+            x509.random_serial_number()
+        ).not_valid_before(
+            datetime.utcnow()
+        ).not_valid_after(
+            datetime.utcnow() + timedelta(days=365)
+        ).sign(private_key, hashes.SHA256(), default_backend())
+
+        cert_pem = cert.public_bytes(
+            encoding=serialization.Encoding.PEM
+        ).decode('utf-8')
+
+        domain_list, _ = parse_cert_info(cert_pem)
+
+        self.assertIsInstance(domain_list, list)
+        self.assertIn("test.example.com", domain_list)  # Should have CN
+
+    @patch("cloud_cert_renewer.utils.ssl_cert_parser.parse_cert_info")
+    @patch("cloud_cert_renewer.utils.ssl_cert_parser.is_domain_name_match")
+    def test_is_cert_valid_with_valid_cert(self, mock_match, mock_parse):
         """Test valid certificate validation"""
-        # Note: This test requires a real certificate, this is just an example
-        # Actual testing should use real certificate content
-        pass
+        # Mock parse_cert_info to return valid cert info
+        future_date = (
+            datetime.now() + timedelta(days=30)
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        mock_parse.return_value = (["test.example.com"], future_date)
+        mock_match.return_value = True
 
-    def test_is_cert_valid_with_invalid_domain(self):
+        result = is_cert_valid("cert_content", "test.example.com")
+
+        self.assertTrue(result)
+        mock_parse.assert_called_once_with("cert_content")
+        mock_match.assert_called_once()
+
+    @patch("cloud_cert_renewer.utils.ssl_cert_parser.parse_cert_info")
+    @patch("cloud_cert_renewer.utils.ssl_cert_parser.is_domain_name_match")
+    def test_is_cert_valid_with_invalid_domain(self, mock_match, mock_parse):
         """Test certificate validation with mismatched domain"""
-        # Note: This test requires a real certificate, this is just an example
-        # Actual testing should use real certificate content
-        pass
+        future_date = (
+            datetime.now() + timedelta(days=30)
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        mock_parse.return_value = (["other.example.com"], future_date)
+        mock_match.return_value = False
 
-    def test_is_cert_valid_with_expired_cert(self):
+        result = is_cert_valid("cert_content", "test.example.com")
+
+        self.assertFalse(result)
+
+    @patch("cloud_cert_renewer.utils.ssl_cert_parser.parse_cert_info")
+    @patch("cloud_cert_renewer.utils.ssl_cert_parser.is_domain_name_match")
+    def test_is_cert_valid_with_expired_cert(self, mock_match, mock_parse):
         """Test expired certificate validation"""
-        # Note: This test requires a real expired certificate, this is just an example
-        # Actual testing should use real expired certificate content
-        pass
+        past_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        mock_parse.return_value = (["test.example.com"], past_date)
+        mock_match.return_value = True
+
+        result = is_cert_valid("cert_content", "test.example.com")
+
+        self.assertFalse(result)
+
+    def _generate_test_certificate(self):
+        """Generate a test certificate for testing"""
+        from cryptography import x509
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+
+        # Create a simple self-signed certificate
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+            backend=default_backend()
+        )
+        subject = issuer = x509.Name([
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Test"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Org"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
+        ])
+        cert = x509.CertificateBuilder().subject_name(
+            subject
+        ).issuer_name(
+            issuer
+        ).public_key(
+            private_key.public_key()
+        ).serial_number(
+            x509.random_serial_number()
+        ).not_valid_before(
+            datetime.utcnow()
+        ).not_valid_after(
+            datetime.utcnow() + timedelta(days=365)
+        ).add_extension(
+            x509.SubjectAlternativeName([
+                x509.DNSName("test.example.com"),
+                x509.DNSName("*.example.com"),
+            ]),
+            critical=False,
+        ).sign(private_key, hashes.SHA256(), default_backend())
+
+        return cert.public_bytes(
+            encoding=serialization.Encoding.PEM
+        ).decode('utf-8')
+
+    def test_get_cert_fingerprint_sha256(self):
+        """Test SHA256 fingerprint calculation"""
+        cert_content = self._generate_test_certificate()
+
+        fingerprint = get_cert_fingerprint_sha256(cert_content)
+
+        self.assertIsInstance(fingerprint, str)
+        # SHA256 fingerprint should be 64 hex characters (32 bytes * 2)
+        # in colon-separated format
+        # Format: "XX:XX:XX:..." (64 hex chars = 32 pairs)
+        parts = fingerprint.split(":")
+        # 32 bytes = 32 colon-separated parts
+        self.assertEqual(len(parts), 32)
+        # Each part should be 2 hex characters
+        for part in parts:
+            self.assertEqual(len(part), 2)
+            self.assertTrue(all(c in "0123456789ABCDEF" for c in part))
+
+    def test_get_cert_fingerprint_sha1(self):
+        """Test SHA1 fingerprint calculation"""
+        cert_content = self._generate_test_certificate()
+
+        fingerprint = get_cert_fingerprint_sha1(cert_content)
+
+        self.assertIsInstance(fingerprint, str)
+        # SHA1 fingerprint should be 40 hex characters (20 bytes * 2)
+        # in colon-separated format
+        # Format: "xx:xx:xx:..." (40 hex chars = 20 pairs)
+        parts = fingerprint.split(":")
+        # 20 bytes = 20 colon-separated parts
+        self.assertEqual(len(parts), 20)
+        # Each part should be 2 hex characters (lowercase)
+        for part in parts:
+            self.assertEqual(len(part), 2)
+            self.assertTrue(all(c in "0123456789abcdef" for c in part))
 
 
 if __name__ == "__main__":

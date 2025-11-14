@@ -43,3 +43,8 @@ ignore = ["B018", "UP007"]  # Allow ... in Protocol
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=5.0.0",
+]

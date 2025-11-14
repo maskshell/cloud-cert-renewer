@@ -14,6 +14,8 @@ from cloud_cert_renewer.auth.factory import CredentialProviderFactory
 from cloud_cert_renewer.auth.access_key import AccessKeyCredentialProvider
 from cloud_cert_renewer.auth.sts import STSCredentialProvider
 from cloud_cert_renewer.auth.env import EnvCredentialProvider
+from cloud_cert_renewer.auth.iam_role import IAMRoleCredentialProvider
+from cloud_cert_renewer.auth.service_account import ServiceAccountCredentialProvider
 from cloud_cert_renewer.config.models import Credentials
 
 
@@ -123,6 +125,47 @@ class TestCredentialProviderFactory(unittest.TestCase):
 
         self.assertIsInstance(provider1, AccessKeyCredentialProvider)
         self.assertIsInstance(provider2, AccessKeyCredentialProvider)
+
+    def test_factory_create_iam_role(self):
+        """Test factory creates IAM Role credential provider"""
+        provider = CredentialProviderFactory.create(
+            auth_method="iam_role",
+            role_arn="arn:aws:iam::123456789012:role/test-role",
+            role_session_name="test-session",
+        )
+
+        self.assertIsInstance(provider, IAMRoleCredentialProvider)
+
+    def test_factory_create_iam_role_missing_role_arn(self):
+        """Test factory raises error when iam_role method missing role_arn"""
+        with self.assertRaises(ValueError) as context:
+            CredentialProviderFactory.create(auth_method="iam_role")
+
+        self.assertIn("iam_role authentication method requires role_arn", str(context.exception))
+
+    def test_factory_create_iam_role_without_session_name(self):
+        """Test factory creates IAM Role provider without session name"""
+        provider = CredentialProviderFactory.create(
+            auth_method="iam_role",
+            role_arn="arn:aws:iam::123456789012:role/test-role",
+        )
+
+        self.assertIsInstance(provider, IAMRoleCredentialProvider)
+
+    def test_factory_create_service_account(self):
+        """Test factory creates ServiceAccount credential provider"""
+        provider = CredentialProviderFactory.create(
+            auth_method="service_account",
+            service_account_path="/custom/path/to/serviceaccount",
+        )
+
+        self.assertIsInstance(provider, ServiceAccountCredentialProvider)
+
+    def test_factory_create_service_account_default_path(self):
+        """Test factory creates ServiceAccount provider with default path"""
+        provider = CredentialProviderFactory.create(auth_method="service_account")
+
+        self.assertIsInstance(provider, ServiceAccountCredentialProvider)
 
 
 if __name__ == "__main__":

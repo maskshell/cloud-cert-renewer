@@ -48,6 +48,20 @@ class TestCdnCertRenewerStrategy(unittest.TestCase):
         )
         self.strategy = CdnCertRenewerStrategy(self.config)
 
+    def test_get_cert_info_missing_config(self):
+        """Test get_cert_info raises error when cdn_config is missing"""
+        # Create a strategy and manually set config.cdn_config to None to test the error
+        from unittest.mock import MagicMock
+        
+        mock_config = MagicMock()
+        mock_config.cdn_config = None
+        strategy = CdnCertRenewerStrategy(mock_config)
+
+        with self.assertRaises(ValueError) as context:
+            strategy._get_cert_info()
+
+        self.assertIn("CDN configuration does not exist", str(context.exception))
+
     def test_get_cert_info(self):
         """Test getting certificate information"""
         cert, cert_key, domain = self.strategy._get_cert_info()
@@ -262,6 +276,61 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
 
         self.assertTrue(result)
         # Verify renewal was skipped
+
+    def test_get_cert_info_missing_config(self):
+        """Test get_cert_info raises error when lb_config is missing"""
+        # Create a strategy and manually set config.lb_config to None to test the error
+        from unittest.mock import MagicMock
+        
+        mock_config = MagicMock()
+        mock_config.lb_config = None
+        strategy = LoadBalancerCertRenewerStrategy(mock_config)
+
+        with self.assertRaises(ValueError) as context:
+            strategy._get_cert_info()
+
+        self.assertIn("Load Balancer configuration does not exist", str(context.exception))
+
+    @patch("cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate")
+    def test_validate_cert_invalid_format(self, mock_load_cert):
+        """Test certificate validation with invalid format"""
+        from cryptography import x509
+
+        # Mock to raise exception for invalid certificate
+        mock_load_cert.side_effect = ValueError("Invalid certificate format")
+
+        result = self.strategy._validate_cert("invalid_cert", "test-instance-id")
+
+        self.assertFalse(result)
+
+    def test_get_current_cert_fingerprint_missing_config(self):
+        """Test get_current_cert_fingerprint returns None when lb_config is missing"""
+        # Create a strategy and manually set config.lb_config to None to test the early return
+        # We can't create AppConfig with None lb_config due to validation, so we test differently
+        # by creating a mock config object
+        from unittest.mock import MagicMock
+        
+        mock_config = MagicMock()
+        mock_config.lb_config = None
+        strategy = LoadBalancerCertRenewerStrategy(mock_config)
+
+        result = strategy.get_current_cert_fingerprint()
+
+        self.assertIsNone(result)
+
+    def test_do_renew_missing_config(self):
+        """Test _do_renew raises error when lb_config is missing"""
+        # Create a strategy and manually set config.lb_config to None to test the error
+        from unittest.mock import MagicMock
+        
+        mock_config = MagicMock()
+        mock_config.lb_config = None
+        strategy = LoadBalancerCertRenewerStrategy(mock_config)
+
+        with self.assertRaises(ValueError) as context:
+            strategy._do_renew("test_cert", "test_key")
+
+        self.assertIn("Load Balancer configuration does not exist", str(context.exception))
 
 
 if __name__ == "__main__":
