@@ -5,7 +5,7 @@ import unittest
 # 添加父目录到路径，以便导入模块
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from dianplus.utils.ssl_cert_parser import (  # noqa: I001
+from cloud_cert_renewer.utils.ssl_cert_parser import (  # noqa: I001
     is_domain_name_match,
 )
 

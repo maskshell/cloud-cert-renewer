@@ -1,7 +1,7 @@
 [project]
-name = "alibaba-cloud-cert-renewer"
+name = "cloud-cert-renewer"
 version = "0.1.0"
-description = "自动更新阿里云HTTPS证书工具，支持CDN和SLB"
+description = "自动更新云服务HTTPS证书工具，支持CDN和负载均衡器（支持多云，当前支持阿里云）"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
@@ -26,7 +26,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["dianplus"]
+packages = ["cloud_cert_renewer"]
 
 [tool.black]
 target-version = ['py38', 'py39', 'py310', 'py311']
@@ -37,6 +37,7 @@ target-version = "py38"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["B018", "UP007"]  # 允许 Protocol 中使用 ...
 
 [tool.ruff.format]
 quote-style = "double"

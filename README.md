@@ -1,6 +1,6 @@
-# 自动更新阿里云HTTPS证书
+# 自动更新云服务HTTPS证书
 
-自动更新阿里云HTTPS证书工具，支持CDN和SLB产品。
+自动更新云服务HTTPS证书工具，支持CDN和负载均衡器产品。当前主要支持阿里云，架构设计支持多云扩展。
 
 ## 目录
 
@@ -16,8 +16,8 @@
 
 ## 功能特性
 
-- 支持阿里云CDN证书自动更新
-- 支持阿里云SLB证书自动更新
+- 支持云服务CDN证书自动更新（当前支持阿里云）
+- 支持云服务负载均衡器证书自动更新（当前支持阿里云SLB）
 - 证书有效性验证（域名匹配、过期时间检查）
 - 支持通配符域名证书
 - 支持从环境变量或Kubernetes Secret读取配置
@@ -32,7 +32,7 @@
 ```bash
 # 1. 克隆项目
 git clone <repository-url>
-cd alibaba-cloud-cert-renewer
+cd cloud-cert-renewer
 
 # 2. 安装依赖
 uv sync --extra dev
@@ -48,13 +48,18 @@ uv run python main.py
 ### Kubernetes 快速部署
 
 ```bash
-# 1. 创建 Secret
-kubectl create secret generic alibaba-cloud-credentials \
+# 1. 创建 Secret（使用通用命名，推荐）
+kubectl create secret generic cloud-credentials \
   --from-literal=access-key-id=YOUR_KEY \
   --from-literal=access-key-secret=YOUR_SECRET
 
+# 或使用旧命名（向后兼容）
+# kubectl create secret generic alibaba-cloud-credentials \
+#   --from-literal=access-key-id=YOUR_KEY \
+#   --from-literal=access-key-secret=YOUR_SECRET
+
 # 2. 使用 Helm 部署
-helm install alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer \
+helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set serviceType=cdn \
   --set cdn.domainName=your-domain.com
 ```
@@ -84,8 +89,10 @@ uv sync
 
 #### 必需的环境变量
 
-- `ALIBABA_CLOUD_ACCESS_KEY_ID`: 阿里云AccessKey ID
-- `ALIBABA_CLOUD_ACCESS_KEY_SECRET`: 阿里云AccessKey Secret
+- `CLOUD_ACCESS_KEY_ID`: 云服务AccessKey ID（新名称，优先使用）
+- `CLOUD_ACCESS_KEY_SECRET`: 云服务AccessKey Secret（新名称，优先使用）
+- `ALIBABA_CLOUD_ACCESS_KEY_ID`: 阿里云AccessKey ID（旧名称，向后兼容）
+- `ALIBABA_CLOUD_ACCESS_KEY_SECRET`: 阿里云AccessKey Secret（旧名称，向后兼容）
 - `SERVICE_TYPE`: 服务类型，可选值：`cdn` 或 `slb`
 
 #### CDN 配置（当 SERVICE_TYPE=cdn 时）
@@ -168,12 +175,18 @@ uv run pytest --cov=. --cov-report=html
 
 ##### 方式一：使用 Helm Chart（推荐）
 
-1. **创建阿里云凭证Secret**
+1. **创建云服务凭证Secret（使用通用命名，推荐）**
 
 ```bash
-kubectl create secret generic alibaba-cloud-credentials \
+# 使用通用命名（推荐）
+kubectl create secret generic cloud-credentials \
   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
+
+# 或使用旧命名（向后兼容）
+# kubectl create secret generic alibaba-cloud-credentials \
+#   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
+#   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
 ```
 
 2. **创建证书Secret**
@@ -194,34 +207,40 @@ data:
 3. **构建Docker镜像**
 
 ```bash
-docker build -t alibaba-cloud-cert-renewer:latest .
+docker build -t cloud-cert-renewer:latest .
 ```
 
 4. **使用 Helm 部署**
 
 ```bash
 # 使用默认配置部署（CDN）
-helm install alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer
+helm install cloud-cert-renewer ./helm/cloud-cert-renewer
 
 # 使用自定义配置部署
-helm install alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer \
+helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set serviceType=cdn \
   --set cdn.domainName=example.com \
   --set image.tag=latest
 
 # 使用示例 values 文件部署
-helm install alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer \
-  -f ./helm/alibaba-cloud-cert-renewer/values-cdn.yaml
+helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
+  -f ./helm/cloud-cert-renewer/values-cdn.yaml
 ```
 
 ##### 方式二：使用原生 Kubernetes YAML
 
-1. **创建阿里云凭证Secret**
+1. **创建云服务凭证Secret（使用通用命名，推荐）**
 
 ```bash
-kubectl create secret generic alibaba-cloud-credentials \
+# 使用通用命名（推荐）
+kubectl create secret generic cloud-credentials \
   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
+
+# 或使用旧命名（向后兼容）
+# kubectl create secret generic alibaba-cloud-credentials \
+#   --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
+#   --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET
 ```
 
 2. **创建证书Secret**
@@ -231,7 +250,7 @@ kubectl create secret generic alibaba-cloud-credentials \
 3. **构建Docker镜像**
 
 ```bash
-docker build -t alibaba-cloud-cert-renewer:latest .
+docker build -t cloud-cert-renewer:latest .
 ```
 
 4. **部署应用**
@@ -250,7 +269,7 @@ Deployment 中已配置 Reloader 注解，当 `cert-secret` Secret 发生变化�
 
 1. cert-manager 自动获取/更新 Let's Encrypt 证书，并更新到 `cert-secret` Secret
 2. Reloader 检测到 Secret 变化，触发 Deployment 重新部署
-3. init 容器启动，从 Secret 读取证书，调用阿里云API更新证书
+3. init 容器启动，从 Secret 读取证书，调用云服务API更新证书
 4. init 容器执行完成后退出
 5. 主容器（占位容器）保持运行，确保 Deployment 状态正常
 
@@ -259,30 +278,30 @@ Deployment 中已配置 Reloader 注解，当 `cert-secret` Secret 发生变化�
 **查看所有可配置参数：**
 
 ```bash
-helm show values ./helm/alibaba-cloud-cert-renewer
+helm show values ./helm/cloud-cert-renewer
 ```
 
 **使用示例 values 文件：**
 
 ```bash
 # CDN 证书更新
-helm install alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer \
-  -f ./helm/alibaba-cloud-cert-renewer/values-cdn.yaml
+helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
+  -f ./helm/cloud-cert-renewer/values-cdn.yaml
 
 # SLB 证书更新
-helm install alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer \
-  -f ./helm/alibaba-cloud-cert-renewer/values-slb.yaml
+helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
+  -f ./helm/cloud-cert-renewer/values-slb.yaml
 ```
 
 **升级部署：**
 
 ```bash
 # 升级到新版本
-helm upgrade alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer \
+helm upgrade cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set image.tag=v0.2.0
 
 # 升级并修改配置
-helm upgrade alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer \
+helm upgrade cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set cdn.domainName=new-domain.com
 ```
 
@@ -290,17 +309,17 @@ helm upgrade alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer \
 
 ```bash
 # 查看渲染后的 YAML（不实际部署）
-helm template alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer
+helm template cloud-cert-renewer ./helm/cloud-cert-renewer
 
 # 使用自定义 values 查看
-helm template alibaba-cloud-cert-renewer ./helm/alibaba-cloud-cert-renewer \
-  -f ./helm/alibaba-cloud-cert-renewer/values-cdn.yaml
+helm template cloud-cert-renewer ./helm/cloud-cert-renewer \
+  -f ./helm/cloud-cert-renewer/values-cdn.yaml
 ```
 
 **检查 Chart：**
 
 ```bash
-helm lint ./helm/alibaba-cloud-cert-renewer
+helm lint ./helm/cloud-cert-renewer
 ```
 
 ## 现有环境说明
@@ -314,7 +333,7 @@ Let's Encrypt SSL 证书当前使用 Kubernetes 部署的 `cert-manager` 来自�
 建立一个 Deployment，其中有两个容器，一个是 init 容器，另一个是名义上的主容器。
 
 1. **主容器**：主容器为一个占位应用（busybox），只是用来占位，实际上不会被使用。
-2. **init 容器**：init 容器用来响应前述的 Reloader，用以获取证书的 secret，并调用阿里云的 API，更新相应产品项（SLB实例或CDN实例）的证书。
+2. **init 容器**：init 容器用来响应前述的 Reloader，用以获取证书的 secret，并调用云服务的 API，更新相应产品项（负载均衡器实例或CDN实例）的证书。
 
 将证书更新的动作放在 init 容器中，是因为主容器的生命周期是长期的，而 init 容器是一次性的，运行完成后可以退出。而主容器需要一直运行，以保证 Deployment 不会处于失败状态。
 
@@ -445,10 +464,10 @@ uv run pytest --cov=. --cov-report=html
 
 ```bash
 # 构建镜像
-docker build -t alibaba-cloud-cert-renewer:latest .
+docker build -t cloud-cert-renewer:latest .
 
 # 构建并指定标签
-docker build -t alibaba-cloud-cert-renewer:v0.1.0 .
+docker build -t cloud-cert-renewer:v0.1.0 .
 
 # 测试运行镜像
 docker run --rm \
@@ -458,17 +477,44 @@ docker run --rm \
   -e CDN_DOMAIN_NAME=example.com \
   -e CDN_CERT="$(cat cert.pem)" \
   -e CDN_CERT_PRIVATE_KEY="$(cat key.pem)" \
-  alibaba-cloud-cert-renewer:latest
+  cloud-cert-renewer:latest
 ```
 
 ### 代码结构
 
 ```
-alibaba-cloud-cert-renewer/
+cloud-cert-renewer/
 ├── main.py                    # 主程序入口
-├── dianplus/                  # 核心功能模块
-│   └── utils/
-│       └── ssl_cert_parser.py # SSL证书解析和验证工具
+├── cloud_cert_renewer/        # 核心功能模块
+│   ├── auth/                  # 鉴权模块（支持多种鉴权方式）
+│   │   ├── base.py            # 鉴权提供者抽象接口
+│   │   ├── access_key.py      # AK/SK鉴权提供者
+│   │   ├── sts.py             # STS临时凭证鉴权提供者
+│   │   ├── iam_role.py        # IAM Role鉴权提供者
+│   │   ├── service_account.py # ServiceAccount鉴权提供者
+│   │   ├── env.py             # 环境变量鉴权提供者
+│   │   └── factory.py         # 鉴权提供者工厂
+│   ├── cert_renewer/          # 证书更新器模块（策略模式）
+│   │   ├── base.py            # 抽象基类（模板方法模式）
+│   │   ├── cdn_renewer.py     # CDN证书更新策略
+│   │   ├── load_balancer_renewer.py # 负载均衡器证书更新策略
+│   │   └── factory.py         # 证书更新器工厂
+│   ├── clients/               # 客户端模块
+│   │   └── alibaba.py        # 阿里云客户端封装
+│   ├── config/                # 配置模块
+│   │   ├── models.py          # 配置数据类
+│   │   └── loader.py          # 配置加载器
+│   ├── providers/             # 云服务提供商适配器（适配器模式）
+│   │   ├── base.py            # 云服务适配器接口
+│   │   ├── alibaba.py         # 阿里云适配器
+│   │   ├── aws.py             # AWS适配器（预留）
+│   │   └── azure.py           # Azure适配器（预留）
+│   ├── utils/                 # 工具模块
+│   │   └── ssl_cert_parser.py # SSL证书解析和验证工具
+│   ├── container.py           # 依赖注入容器
+│   ├── config.py              # 向后兼容导入
+│   ├── renewer.py             # 向后兼容导入
+│   └── adapters.py            # 向后兼容导入
 ├── tests/                     # 测试文件
 │   ├── __init__.py
 │   ├── test_main.py           # 主程序测试
@@ -476,7 +522,7 @@ alibaba-cloud-cert-renewer/
 ├── k8s/                       # Kubernetes原生部署配置
 │   └── deployment.yaml        # Deployment配置
 ├── helm/                      # Helm Chart
-│   └── alibaba-cloud-cert-renewer/
+│   └── cloud-cert-renewer/
 │       ├── Chart.yaml         # Chart元数据
 │       ├── values.yaml        # 默认配置值
 │       ├── values-cdn.yaml    # CDN示例配置
@@ -532,7 +578,7 @@ alibaba-cloud-cert-renewer/
 
 ```bash
 # 查看 Pod 列表
-kubectl get pods -l app.kubernetes.io/name=alibaba-cloud-cert-renewer
+kubectl get pods -l app.kubernetes.io/name=cloud-cert-renewer
 
 # 查看 Pod 详细信息
 kubectl describe pod <pod-name>
@@ -604,7 +650,7 @@ kubectl logs -n <reloader-namespace> <reloader-pod-name>
    - 私钥格式应为 RSA 或 ECDSA
 
 3. **区域配置**：
-   - 根据实际使用的阿里云区域配置正确的区域代码
+   - 根据实际使用的云服务区域配置正确的区域代码
    - 常见区域：`cn-hangzhou`、`cn-beijing`、`cn-shanghai`、`cn-shenzhen` 等
 
 4. **错误处理**：

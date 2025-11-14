@@ -2,7 +2,7 @@
 serviceType: cdn
 
 image:
-  repository: alibaba-cloud-cert-renewer
+  repository: cloud-cert-renewer
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -11,8 +11,12 @@ cdn:
   region: cn-hangzhou
 
 secrets:
-  alibabaCloudCredentials:
-    name: alibaba-cloud-credentials
+  # 使用通用命名（推荐）
+  cloudCredentials:
+    name: cloud-credentials
+  # 或使用旧命名（向后兼容）
+  # alibabaCloudCredentials:
+  #   name: alibaba-cloud-credentials
   certificate:
     name: cert-secret
 

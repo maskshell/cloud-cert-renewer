@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: alibaba-cloud-cert-renewer
+  name: cloud-cert-renewer
   namespace: default
   labels:
-    app: alibaba-cloud-cert-renewer
+    app: cloud-cert-renewer
   annotations:
     # Reloader 注解：监听证书 Secret 的变化
     # 当 secret/cert-secret 发生变化时，自动重新部署
@@ -14,32 +14,49 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: alibaba-cloud-cert-renewer
+      app: cloud-cert-renewer
   template:
     metadata:
       labels:
-        app: alibaba-cloud-cert-renewer
+        app: cloud-cert-renewer
     spec:
       # Init 容器：执行证书更新
       initContainers:
         - name: cert-renewer
-          image: alibaba-cloud-cert-renewer:latest
+          image: cloud-cert-renewer:latest
           imagePullPolicy: IfNotPresent
           command: ["python", "main.py"]
           env:
-            # 服务类型：cdn 或 slb
+            # 服务类型：cdn 或 lb（向后兼容：slb）
             - name: SERVICE_TYPE
               value: "cdn"
-            # 阿里云访问凭证（从 Secret 读取）
+            # 云服务提供商（默认：alibaba，支持 alibaba/aws/azure 等）
+            - name: CLOUD_PROVIDER
+              value: "alibaba"
+            # 鉴权方式（默认：access_key）
+            - name: AUTH_METHOD
+              value: "access_key"
+            # 云服务访问凭证（新名称，优先使用）
+            - name: CLOUD_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-credentials
+                  key: access-key-id
+            - name: CLOUD_ACCESS_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-credentials
+                  key: access-key-secret
+            # 阿里云访问凭证（旧名称，向后兼容）
             - name: ALIBABA_CLOUD_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
-                  name: alibaba-cloud-credentials
+                  name: cloud-credentials
                   key: access-key-id
             - name: ALIBABA_CLOUD_ACCESS_KEY_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: alibaba-cloud-credentials
+                  name: cloud-credentials
                   key: access-key-secret
             # CDN 配置
             - name: CDN_DOMAIN_NAME
@@ -57,9 +74,28 @@ spec:
                 secretKeyRef:
                   name: cert-secret
                   key: tls.key
-            # SLB 配置（如果 SERVICE_TYPE=slb）
+            # 负载均衡器配置（如果 SERVICE_TYPE=lb 或 slb）
+            # - name: LB_INSTANCE_ID
+            #   value: "your-lb-instance-id"
+            # - name: LB_LISTENER_PORT
+            #   value: "443"
+            # - name: LB_REGION
+            #   value: "cn-hangzhou"
+            # - name: LB_CERT
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: cert-secret
+            #       key: tls.crt
+            # - name: LB_CERT_PRIVATE_KEY
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: cert-secret
+            #       key: tls.key
+            # SLB 配置（旧名称，向后兼容）
             # - name: SLB_INSTANCE_ID
             #   value: "your-slb-instance-id"
+            # - name: SLB_LISTENER_PORT
+            #   value: "443"
             # - name: SLB_REGION
             #   value: "cn-hangzhou"
             # - name: SLB_CERT

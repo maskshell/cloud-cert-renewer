@@ -1,0 +1,150 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cloud-cert-renewer.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "cloud-cert-renewer.labels" . | nindent 4 }}
+  annotations:
+    {{- include "cloud-cert-renewer.reloaderAnnotations" . | nindent 4 }}
+    {{- with .Values.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "cloud-cert-renewer.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cloud-cert-renewer.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      # Init 容器：执行证书更新
+      initContainers:
+        - name: cert-renewer
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "main.py"]
+          env:
+            # 服务类型：cdn 或 lb（向后兼容：slb）
+            - name: SERVICE_TYPE
+              value: {{ .Values.serviceType | quote }}
+            # 云服务提供商（默认：alibaba，支持 alibaba/aws/azure 等）
+            - name: CLOUD_PROVIDER
+              value: {{ .Values.cloudProvider | default "alibaba" | quote }}
+            # 鉴权方式（默认：access_key）
+            - name: AUTH_METHOD
+              value: {{ .Values.authMethod | default "access_key" | quote }}
+            # 云服务访问凭证（新名称，优先使用）
+            - name: CLOUD_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.cloudCredentials.name | default .Values.secrets.alibabaCloudCredentials.name }}
+                  key: {{ .Values.secrets.cloudCredentials.accessKeyIdKey | default .Values.secrets.alibabaCloudCredentials.accessKeyIdKey }}
+            - name: CLOUD_ACCESS_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.cloudCredentials.name | default .Values.secrets.alibabaCloudCredentials.name }}
+                  key: {{ .Values.secrets.cloudCredentials.accessKeySecretKey | default .Values.secrets.alibabaCloudCredentials.accessKeySecretKey }}
+            # 阿里云访问凭证（旧名称，向后兼容）
+            - name: ALIBABA_CLOUD_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.cloudCredentials.name | default .Values.secrets.alibabaCloudCredentials.name }}
+                  key: {{ .Values.secrets.cloudCredentials.accessKeyIdKey | default .Values.secrets.alibabaCloudCredentials.accessKeyIdKey }}
+            - name: ALIBABA_CLOUD_ACCESS_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.cloudCredentials.name | default .Values.secrets.alibabaCloudCredentials.name }}
+                  key: {{ .Values.secrets.cloudCredentials.accessKeySecretKey | default .Values.secrets.alibabaCloudCredentials.accessKeySecretKey }}
+            {{- if eq .Values.serviceType "cdn" }}
+            # CDN 配置
+            - name: CDN_DOMAIN_NAME
+              value: {{ .Values.cdn.domainName | quote }}
+            - name: CDN_REGION
+              value: {{ .Values.cdn.region | quote }}
+            # CDN 证书和私钥（从 Secret 读取）
+            - name: CDN_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.certificate.name }}
+                  key: {{ .Values.secrets.certificate.certKey }}
+            - name: CDN_CERT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.certificate.name }}
+                  key: {{ .Values.secrets.certificate.privateKeyKey }}
+            {{- else if or (eq .Values.serviceType "lb") (eq .Values.serviceType "slb") }}
+            # 负载均衡器配置（新名称，优先使用）
+            - name: LB_INSTANCE_ID
+              value: {{ .Values.lb.instanceId | default .Values.slb.instanceId | quote }}
+            - name: LB_LISTENER_PORT
+              value: {{ .Values.lb.listenerPort | default .Values.slb.listenerPort | quote }}
+            - name: LB_REGION
+              value: {{ .Values.lb.region | default .Values.slb.region | quote }}
+            # 负载均衡器证书和私钥（从 Secret 读取）
+            - name: LB_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.certificate.name }}
+                  key: {{ .Values.secrets.certificate.certKey }}
+            - name: LB_CERT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.certificate.name }}
+                  key: {{ .Values.secrets.certificate.privateKeyKey }}
+            # SLB 配置（旧名称，向后兼容）
+            - name: SLB_INSTANCE_ID
+              value: {{ .Values.slb.instanceId | default .Values.lb.instanceId | quote }}
+            - name: SLB_LISTENER_PORT
+              value: {{ .Values.slb.listenerPort | default .Values.lb.listenerPort | quote }}
+            - name: SLB_REGION
+              value: {{ .Values.slb.region | default .Values.lb.region | quote }}
+            - name: SLB_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.certificate.name }}
+                  key: {{ .Values.secrets.certificate.certKey }}
+            - name: SLB_CERT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.certificate.name }}
+                  key: {{ .Values.secrets.certificate.privateKeyKey }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.initContainer.resources | nindent 12 }}
+      # 主容器：占位容器，保持 Deployment 运行（永不退出）
+      containers:
+        - name: placeholder
+          image: {{ .Values.mainContainer.image }}
+          command:
+            - "sh"
+            - "-c"
+            - |
+              # 捕获 SIGTERM 信号，优雅退出（仅在 Pod 被删除时）
+              trap 'exit 0' SIGTERM
+              # 无限循环，确保容器永不退出
+              while true; do
+                sleep 3600
+              done
+          resources:
+            {{- toYaml .Values.mainContainer.resources | nindent 12 }}
+      restartPolicy: Always
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+

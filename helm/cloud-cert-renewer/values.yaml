@@ -1,12 +1,18 @@
-# Default values for alibaba-cloud-cert-renewer
+# Default values for cloud-cert-renewer
 # This is a YAML-formatted file.
 
 # Service configuration
-serviceType: cdn # cdn or slb
+serviceType: cdn # cdn or lb (向后兼容：slb)
+
+# Cloud provider configuration
+cloudProvider: alibaba # alibaba, aws, azure, etc. (currently supports Alibaba Cloud)
+
+# Authentication method
+authMethod: access_key # access_key, sts, iam_role, service_account, env
 
 # Image configuration
 image:
-  repository: alibaba-cloud-cert-renewer
+  repository: cloud-cert-renewer
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -39,14 +45,26 @@ cdn:
   domainName: schema.amugua.com
   region: cn-hangzhou
 
-# SLB configuration
+# Load Balancer configuration (新名称，优先使用)
+lb:
+  instanceId: ""
+  listenerPort: 443
+  region: cn-hangzhou
+
+# SLB configuration (旧名称，向后兼容)
 slb:
   instanceId: ""
+  listenerPort: 443
   region: cn-hangzhou
 
 # Secrets configuration
 secrets:
-  # Alibaba Cloud credentials secret name
+  # Cloud service credentials secret (新名称，优先使用)
+  cloudCredentials:
+    name: cloud-credentials
+    accessKeyIdKey: access-key-id
+    accessKeySecretKey: access-key-secret
+  # Alibaba Cloud credentials secret name (旧名称，向后兼容)
   alibabaCloudCredentials:
     name: alibaba-cloud-credentials
     accessKeyIdKey: access-key-id

@@ -11,7 +11,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 # 复制项目文件
 COPY pyproject.toml ./
 COPY main.py ./
-COPY dianplus/ ./dianplus/
+COPY cloud_cert_renewer/ ./cloud_cert_renewer/
 
 # 使用 uv 安装依赖
 RUN uv pip install --system --no-cache -e .
