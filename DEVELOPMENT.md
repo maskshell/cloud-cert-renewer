@@ -5,6 +5,10 @@ This document provides detailed information for developers working on the Cloud 
 ## Table of Contents
 
 - [Environment Setup](#environment-setup)
+  - [Requirements](#requirements)
+  - [Quick Start](#quick-start)
+  - [Detailed Setup](#detailed-setup)
+- [Configuration](#configuration)
 - [Code Formatting](#code-formatting)
 - [Code Linting](#code-linting)
 - [YAML File Formatting](#yaml-file-formatting)
@@ -14,6 +18,31 @@ This document provides detailed information for developers working on the Cloud 
 
 ## Environment Setup
 
+### Requirements
+
+- Python 3.8+
+- uv (Python package manager)
+
+### Quick Start
+
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd cloud-cert-renewer
+
+# 2. Install dependencies
+uv sync --extra dev
+
+# 3. Configure environment variables
+cp .env.example .env
+# Edit .env file and fill in your configuration
+
+# 4. Run the program
+uv run python main.py
+```
+
+### Detailed Setup
+
 ```bash
 # Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -21,6 +50,58 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install project dependencies and development dependencies
 uv sync --extra dev
 ```
+
+## Configuration
+
+The project supports configuration via environment variables or `.env` files. Refer to `.env.example` to create your `.env` file.
+
+### Required Environment Variables
+
+- `CLOUD_ACCESS_KEY_ID`: Cloud service AccessKey ID (new name, preferred)
+- `CLOUD_ACCESS_KEY_SECRET`: Cloud service AccessKey Secret (new name, preferred)
+- `SERVICE_TYPE`: Service type, options: `cdn` or `lb` (backward compatible: `slb`)
+
+### Optional Environment Variables
+
+- `CLOUD_PROVIDER`: Cloud provider, options: `alibaba`, `aws`, `azure`, etc. (default: `alibaba`)
+- `AUTH_METHOD`: Authentication method, options: `access_key`, `sts`, `iam_role`, `service_account`, `env` (default: `access_key`)
+- `CLOUD_SECURITY_TOKEN`: STS temporary security token (optional, required when `AUTH_METHOD=sts`)
+- `FORCE_UPDATE`: Force update certificate even if it's the same (default: `false`)
+
+### CDN Configuration (when SERVICE_TYPE=cdn)
+
+- `CDN_DOMAIN_NAME`: CDN domain name
+- `CDN_CERT`: SSL certificate content (PEM format, supports multi-line)
+- `CDN_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line)
+- `CDN_REGION`: Region (default: `cn-hangzhou`)
+
+### Load Balancer Configuration (when SERVICE_TYPE=lb or slb)
+
+- `LB_INSTANCE_ID`: Load Balancer instance ID (new name, preferred)
+- `LB_LISTENER_PORT`: Listener port (new name, preferred)
+- `LB_CERT`: SSL certificate content (PEM format, supports multi-line) (new name, preferred)
+- `LB_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line) (new name, preferred)
+- `LB_REGION`: Region (default: `cn-hangzhou`) (new name, preferred)
+
+### Legacy Environment Variables
+
+For backward compatibility, the following legacy variable names are also supported:
+
+- `ALIBABA_CLOUD_ACCESS_KEY_ID` → use `CLOUD_ACCESS_KEY_ID` instead
+- `ALIBABA_CLOUD_ACCESS_KEY_SECRET` → use `CLOUD_ACCESS_KEY_SECRET` instead
+- `SLB_*` variables → use `LB_*` variables instead
+
+### Certificate Format
+
+In `.env` files, certificates and private keys can use multi-line format with triple quotes:
+
+```env
+CDN_CERT="""-----BEGIN CERTIFICATE-----
+Certificate content...
+-----END CERTIFICATE-----"""
+```
+
+This ensures the certificate content is not escaped or corrupted.
 
 ## Code Formatting
 
@@ -157,7 +238,7 @@ docker run --rm \
 
 ## Code Structure
 
-```
+```text
 cloud-cert-renewer/
 ├── main.py                    # Main program entry point
 ├── cloud_cert_renewer/        # Core functionality module
@@ -231,4 +312,3 @@ The project follows several design patterns:
 - **Dependency Injection**: `DIContainer`
 
 For more details, see [testing-design-principles.mdc](testing-design-principles.mdc).
-

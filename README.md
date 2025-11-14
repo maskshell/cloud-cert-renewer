@@ -5,11 +5,6 @@ Automated HTTPS certificate renewal tool for cloud services, supporting CDN and 
 ## Table of Contents
 
 - [Features](#features)
-- [Quick Start](#quick-start)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
 - [Kubernetes Deployment](#kubernetes-deployment)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -25,27 +20,20 @@ Automated HTTPS certificate renewal tool for cloud services, supporting CDN and 
 - Helm Chart deployment support
 - Integration with cert-manager and Reloader
 
-## Quick Start
+## Kubernetes Deployment
 
-### Local Quick Test
+### Prerequisites
 
-```bash
-# 1. Clone the repository
-git clone <repository-url>
-cd cloud-cert-renewer
+**Required:**
 
-# 2. Install dependencies
-uv sync --extra dev
+- Kubernetes cluster
 
-# 3. Configure environment variables
-cp .env.example .env
-# Edit .env file and fill in your configuration
+**Recommended:**
 
-# 4. Run the program
-uv run python main.py
-```
+- cert-manager (for automatic certificate acquisition and renewal)
+- Reloader (for monitoring certificate Secret changes and automatically triggering Deployment redeployment)
 
-### Kubernetes Quick Deployment
+### Deployment
 
 ```bash
 # 1. Create Secret (using generic naming, recommended)
@@ -64,141 +52,10 @@ helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set cdn.domainName=your-domain.com
 ```
 
-For detailed Kubernetes deployment instructions, see [Helm Chart README](helm/cloud-cert-renewer/README.md).
+For detailed deployment instructions and troubleshooting, see:
 
-## Requirements
-
-- Python 3.8+
-- uv (Python package manager)
-
-## Installation
-
-### Install Dependencies with uv
-
-```bash
-# Install uv (if not already installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install project dependencies
-uv sync
-```
-
-## Configuration
-
-The project supports configuration via environment variables or `.env` files. Refer to `.env.example` to create your `.env` file.
-
-### Required Environment Variables
-
-- `CLOUD_ACCESS_KEY_ID`: Cloud service AccessKey ID (new name, preferred)
-- `CLOUD_ACCESS_KEY_SECRET`: Cloud service AccessKey Secret (new name, preferred)
-- `SERVICE_TYPE`: Service type, options: `cdn` or `lb` (backward compatible: `slb`)
-
-### Optional Environment Variables
-
-- `CLOUD_PROVIDER`: Cloud provider, options: `alibaba`, `aws`, `azure`, etc. (default: `alibaba`)
-- `AUTH_METHOD`: Authentication method, options: `access_key`, `sts`, `iam_role`, `service_account`, `env` (default: `access_key`)
-- `CLOUD_SECURITY_TOKEN`: STS temporary security token (optional, required when `AUTH_METHOD=sts`)
-- `FORCE_UPDATE`: Force update certificate even if it's the same (default: `false`)
-
-### CDN Configuration (when SERVICE_TYPE=cdn)
-
-- `CDN_DOMAIN_NAME`: CDN domain name
-- `CDN_CERT`: SSL certificate content (PEM format, supports multi-line)
-- `CDN_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line)
-- `CDN_REGION`: Region (default: `cn-hangzhou`)
-
-### Load Balancer Configuration (when SERVICE_TYPE=lb or slb)
-
-- `LB_INSTANCE_ID`: Load Balancer instance ID (new name, preferred)
-- `LB_LISTENER_PORT`: Listener port (new name, preferred)
-- `LB_CERT`: SSL certificate content (PEM format, supports multi-line) (new name, preferred)
-- `LB_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line) (new name, preferred)
-- `LB_REGION`: Region (default: `cn-hangzhou`) (new name, preferred)
-
-### Legacy Environment Variables
-
-For backward compatibility, the following legacy variable names are also supported:
-
-- `ALIBABA_CLOUD_ACCESS_KEY_ID` → use `CLOUD_ACCESS_KEY_ID` instead
-- `ALIBABA_CLOUD_ACCESS_KEY_SECRET` → use `CLOUD_ACCESS_KEY_SECRET` instead
-- `SLB_*` variables → use `LB_*` variables instead
-
-### Certificate Format
-
-In `.env` files, certificates and private keys can use multi-line format with triple quotes:
-
-```env
-CDN_CERT="""-----BEGIN CERTIFICATE-----
-Certificate content...
------END CERTIFICATE-----"""
-```
-
-This ensures the certificate content is not escaped or corrupted.
-
-## Usage
-
-### Local Execution
-
-1. Create `.env` file (refer to `.env.example`)
-
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edit `.env` file and configure necessary environment variables
-
-3. Run the program:
-
-   ```bash
-   uv run python main.py
-   ```
-
-### Running Tests
-
-```bash
-# Install development dependencies (if not already installed)
-uv sync --extra dev
-
-# Run all tests
-uv run pytest
-
-# Run tests with verbose output
-uv run pytest -v
-
-# Show coverage
-uv run pytest --cov=. --cov-report=html
-```
-
-For detailed testing information, see [DEVELOPMENT.md](DEVELOPMENT.md).
-
-## Kubernetes Deployment
-
-### Prerequisites
-
-- Kubernetes cluster
-- cert-manager (for automatic certificate acquisition and renewal)
-- Reloader (for monitoring certificate Secret changes and triggering redeployment)
-
-### Quick Deployment
-
-See [Quick Start](#kubernetes-quick-deployment) section above.
-
-### Deployment Methods
-
-#### Method 1: Using Helm Chart (Recommended)
-
-See [Helm Chart README](helm/cloud-cert-renewer/README.md) for detailed instructions.
-
-#### Method 2: Using Native Kubernetes YAML
-
-1. Create Cloud Service Credentials Secret
-2. Create Certificate Secret (typically via cert-manager)
-3. Build Docker Image
-4. Modify `k8s/deployment.yaml` and deploy:
-
-   ```bash
-   kubectl apply -f k8s/deployment.yaml
-   ```
+- [Helm Chart README](helm/cloud-cert-renewer/README.md)
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
 ### How It Works
 
@@ -208,10 +65,9 @@ See [Helm Chart README](helm/cloud-cert-renewer/README.md) for detailed instruct
 4. Init container exits after completion
 5. Main container (placeholder) keeps running to ensure Deployment status is normal
 
-For detailed deployment instructions and troubleshooting, see:
+### Development
 
-- [Helm Chart README](helm/cloud-cert-renewer/README.md)
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+For development and testing, see [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup instructions.
 
 ## Documentation
 
@@ -223,14 +79,7 @@ For detailed deployment instructions and troubleshooting, see:
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-### Language Policy
-
-**All project content must be in English:**
-
-- Code comments, docstrings, documentation, commit messages, and error messages should be in English
-- See [CONTRIBUTING.md](CONTRIBUTING.md) for full language policy and exceptions
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines, including the language policy.
 
 ## License
 

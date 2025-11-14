@@ -28,25 +28,7 @@ Thank you for your interest in contributing to this project! This document provi
 
 ## Development Setup
 
-### Prerequisites
-
-- Python 3.8+
-- [uv](https://github.com/astral-sh/uv) (Python package manager)
-- Git
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd cloud-cert-renewer
-
-# Install dependencies
-uv sync --extra dev
-
-# Install pre-commit hooks
-uv run pre-commit install
-```
+For detailed environment setup, installation, and development tools, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Development Workflow
 
@@ -60,7 +42,7 @@ git checkout -b fix/your-bug-fix
 
 ### 2. Make Changes
 
-- Follow the code style guidelines (see below)
+- Follow the code style guidelines (see [DEVELOPMENT.md](DEVELOPMENT.md) for details)
 - Write tests for new features
 - Update documentation as needed
 - Ensure all code follows the English language policy
@@ -123,31 +105,7 @@ Then create a pull request on GitHub.
 
 ## Code Style
 
-### Python Code
-
-- Follow PEP 8 style guide
-- Use `ruff` for linting and formatting
-- Maximum line length: 88 characters (Black default)
-- Use type hints where appropriate
-
-```bash
-# Format code
-uv run ruff format .
-
-# Lint code
-uv run ruff check .
-```
-
-### YAML Files
-
-- Use `yamllint` for YAML file checking
-- Follow consistent indentation (2 spaces)
-- Use quotes for strings when needed
-
-```bash
-# Check YAML files
-uv run yamllint .
-```
+For detailed code formatting, linting, and style guidelines, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Testing
 
@@ -206,22 +164,7 @@ Tests must be organized by design patterns, not by implementation details:
 
 ### Running Tests
 
-```bash
-# Run all tests
-uv run pytest
-
-# Run tests with coverage
-uv run pytest --cov=cloud_cert_renewer --cov-report=html
-
-# Run tests with coverage report (terminal)
-uv run pytest --cov=cloud_cert_renewer --cov-report=term-missing
-
-# Run specific test file
-uv run pytest tests/test_cert_renewer_factory.py
-
-# Run tests with verbose output
-uv run pytest -v
-```
+For detailed test execution commands and examples, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### Mock Usage Guidelines
 

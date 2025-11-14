@@ -4,10 +4,15 @@ A Helm chart for cloud certificate renewal service supporting CDN and Load Balan
 
 ## Prerequisites
 
+**Required:**
+
 - Kubernetes 1.19+
 - Helm 3.0+
+
+**Recommended:**
+
 - cert-manager (for automatic certificate management)
-- Reloader (optional, for automatic deployment on certificate updates)
+- Reloader (for automatic deployment on certificate updates)
 
 ## Installation
 
@@ -54,11 +59,28 @@ The following table lists the configurable parameters and their default values:
 | `slb.instanceId`                       | SLB instance ID (old name, backward compatible)    | `""`                         |
 | `slb.region`                           | SLB region (old name, backward compatible)         | `cn-hangzhou`                |
 | `secrets.cloudCredentials.name`        | Cloud service credentials secret name (new name, preferred) | `cloud-credentials`           |
+| `secrets.cloudCredentials.accessKeyIdKey` | Access key ID key name in credentials secret | `access-key-id`              |
+| `secrets.cloudCredentials.accessKeySecretKey` | Access key secret key name in credentials secret | `access-key-secret`          |
 | `secrets.cloudCredentials.securityTokenKey` | Security token key in credentials secret (optional, for STS) | `""`                         |
 | `secrets.alibabaCloudCredentials.name` | Alibaba Cloud credentials secret name (old name, backward compatible) | `alibaba-cloud-credentials`  |
+| `secrets.alibabaCloudCredentials.accessKeyIdKey` | Access key ID key name (old name, backward compatible) | `access-key-id`              |
+| `secrets.alibabaCloudCredentials.accessKeySecretKey` | Access key secret key name (old name, backward compatible) | `access-key-secret`          |
 | `secrets.certificate.name`             | Certificate secret name               | `cert-secret`                |
+| `secrets.certificate.certKey`          | Certificate key name in secret         | `tls.crt`                    |
+| `secrets.certificate.privateKeyKey`   | Private key key name in secret         | `tls.key`                    |
 | `forceUpdate`                          | Force update certificate even if same | `false`                      |
 | `reloader.enabled`                     | Enable Reloader annotations           | `true`                       |
+| `reloader.auto`                        | Enable automatic reload (Reloader)     | `true`                       |
+| `reloader.search`                      | Enable search mode (Reloader)          | `true`                       |
+| `initContainer.resources`              | Init container resource requests/limits | See [Resources](#resources)  |
+| `mainContainer.image`                  | Main container image (placeholder)     | `busybox:latest`             |
+| `mainContainer.resources`              | Main container resource requests/limits | See [Resources](#resources) |
+| `labels`                               | Additional labels for Deployment       | `{}`                         |
+| `annotations`                          | Additional annotations for Deployment  | `{}`                         |
+| `podAnnotations`                       | Additional annotations for Pods       | `{}`                         |
+| `nodeSelector`                         | Node selector for pod scheduling        | `{}`                         |
+| `tolerations`                          | Tolerations for pod scheduling          | `[]`                         |
+| `affinity`                             | Affinity rules for pod scheduling       | `{}`                         |
 | `namespace`                            | Kubernetes namespace                  | `default`                    |
 
 ## Secrets
@@ -85,12 +107,14 @@ To use STS (Security Token Service) temporary credentials:
 
 1. Set `authMethod: sts` in your values file
 2. Include `security-token` in your credentials secret:
+
    ```bash
    kubectl create secret generic cloud-credentials \
      --from-literal=access-key-id=YOUR_ACCESS_KEY_ID \
      --from-literal=access-key-secret=YOUR_ACCESS_KEY_SECRET \
      --from-literal=security-token=YOUR_SECURITY_TOKEN
    ```
+
 3. Configure `secrets.cloudCredentials.securityTokenKey: "security-token"` in values
 
 ### Force Update
@@ -102,6 +126,31 @@ forceUpdate: true
 ```
 
 This sets the `FORCE_UPDATE` environment variable to `"true"`.
+
+### Resources
+
+You can configure resource requests and limits for both the init container and main container:
+
+```yaml
+initContainer:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+mainContainer:
+  image: busybox:latest
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+```
 
 ### Certificate Secret
 
@@ -171,6 +220,51 @@ kubectl logs <pod-name> -c cert-renewer
 kubectl logs <pod-name> -c placeholder
 ```
 
+## Advanced Configuration
+
+### Custom Labels and Annotations
+
+You can add custom labels and annotations to the Deployment and Pods:
+
+```yaml
+labels:
+  environment: production
+  team: platform
+
+annotations:
+  deployment.kubernetes.io/revision: "1"
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+```
+
+### Node Selector and Affinity
+
+Configure pod scheduling using node selectors, tolerations, and affinity rules:
+
+```yaml
+nodeSelector:
+  kubernetes.io/os: linux
+  node-type: compute
+
+tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "cert-renewer"
+    effect: "NoSchedule"
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/os
+          operator: In
+          values:
+          - linux
+```
+
 ## Multi-Cloud Support
 
 This chart is designed to support multiple cloud providers. Currently, Alibaba Cloud is fully supported. The architecture allows for easy extension to other cloud providers (AWS, Azure, etc.) by implementing the corresponding adapters.
@@ -183,4 +277,4 @@ cloudProvider: aws  # or azure, etc.
 
 ## License
 
-[Add your license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
