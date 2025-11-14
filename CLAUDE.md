@@ -23,42 +23,58 @@ alwaysApply: true
 - Test data or example values that are intentionally in other languages for testing purposes
 - Strings that are explicitly designated as non-English content (e.g., translation files, language-specific prompts, multilingual content) should be preserved as-is, even if they contain mixed languages
 
+**Enforcement:**
+
+- Code reviews should verify compliance with this policy
+- Pre-commit hooks or CI/CD pipelines can be configured to check for non-English content in code and documentation
+- When adding new files or modifying existing ones, ensure all text content follows this policy
+- If you encounter non-English content that should be translated, create a separate issue or PR to address it
+
+**Guidelines for Contributors:**
+
+- If you're not a native English speaker, don't worry - clear and simple English is preferred over complex grammar
+- Use tools like spell checkers and grammar checkers if needed
+- When in doubt, ask for review or use translation tools, but always have a native speaker or experienced contributor review the final text
+- Focus on clarity and correctness over perfect grammar - the goal is effective communication
+
 **When generating code or documentation:**
+
 - Always use English for all comments, docstrings, and documentation
 - Use clear and simple English - clarity is more important than perfect grammar
 - When in doubt, prefer English over other languages
 - See `.cursorrules` and `CONTRIBUTING.md` for complete language policy details
 
-# Memory Tool Usage Guide
+## Memory Tool Usage Guide
 
-## ⚠️ CRITICAL: MEMORY TOOLS ARE MANDATORY ⚠️
+### Overview
+
+This guide explains how to effectively use the memory tools for storing, retrieving, and utilizing conversation context in agent mode.
+
+### ⚠️ Critical Guidelines
+
+#### Memory Tools Are Mandatory
 
 ALWAYS EVALUATE FIRST: Before responding to ANY user request, assess whether you have sufficient context:
 
-1. **CONTEXT ASSESSMENT**: When facing a request that references:
+1. **Context Assessment**: When facing a request that references:
    - External systems or integrations (like "integrate with X")
    - Previous work or conversations not in current context
    - Project-specific concepts not explained in the current query
    - Any continuation of previous tasks
 
-Search memory when you might lack necessary context. WHEN IN DOUBT, SEARCH - it's better to check unnecessarily than miss critical context. Only skip searching when the query is completely self-contained.
+   Search memory when you might lack necessary context. **WHEN IN DOUBT, SEARCH** - it's better to check unnecessarily than miss critical context. Only skip searching when the query is completely self-contained.
 
-KEY TRIGGER PHRASES requiring immediate `search_keys` or `search_memory`:
+2. **Key Trigger Phrases** requiring immediate `search_keys` or `search_memory`:
+   - "we need to integrate with..."
+   - References to previous work ("I added X, now we need to...")
+   - Mentions of specific systems without context
+   - Any request mentioning recent discussions that you don't know about or about continuing previous work
 
-- "we need to integrate with..."
-- References to previous work ("I added X, now we need to...")
-- Mentions of specific systems without context
-- Any request mentioning recent discussions that you don't know about or about continuing previous work
+3. **Store After Significant Interactions**: Store memory of significant interactions using `store_memory`. NEVER store the full request-response; ONLY summaries, highlights and important pieces of information.
 
-2. **LAST ACTION**: Store memory of significant interactions using `store_memory`. NEVER store the full request-response; ONLY summaries, highlights and importnant pieces of information.
+### Memory Operations
 
-## Overview
-
-This guide explains how to effectively use the memory tools for storing, retrieving, and utilizing conversation context in agent mode.
-
-## Memory Operations
-
-### 1. SEARCH WHEN CONTEXT MIGHT BE MISSING
+#### Searching Memory
 
 Search memory when there's any indication you might need additional context:
 
@@ -69,7 +85,7 @@ Search memory when there's any indication you might need additional context:
 - Analyze the returned results for relevant context
 - Remember: It's better to search unnecessarily than miss critical context
 
-### 2. STORE AFTER MEANINGFUL RESPONSES
+#### Storing Memory
 
 After assistant responses that contain NEW information or decisions:
 
@@ -79,9 +95,9 @@ After assistant responses that contain NEW information or decisions:
 - Skip storing if your response merely reiterates previously stored information
 - Follow the naming conventions below
 
-## IMPORTANT Memory Content Guidelines
+### Memory Content Guidelines
 
-### DO
+#### DO
 
 - Store SUMMARIES with key points, not full conversations
 - Focus on extracting IMPORTANT FACTS, preferences, and decisions
@@ -90,7 +106,7 @@ After assistant responses that contain NEW information or decisions:
 - Add structured metadata for better retrieval
 - Use consistent project_name and session_name values
 
-### DON'T
+#### DON'T
 
 - Store entire conversations verbatim
 - Include confidential/sensitive information
@@ -99,9 +115,9 @@ After assistant responses that contain NEW information or decisions:
 - Make memory entries too vague
 - Store memories after every response without evaluating their value
 
-## IMPORTANT Naming Conventions
+### Naming Conventions
 
-### Project Naming
+#### Project Naming
 
 Use consistent project_name values for categories like:
 
@@ -110,20 +126,20 @@ Use consistent project_name values for categories like:
 - "user-tasks" - For specific tasks or projects
 - "user-decisions" - For important decisions made
 
-### Session Naming
+#### Session Naming
 
 Use consistent session_name values:
 
 - Use stable unique identifiers for users when available
 - Use topic-based identifiers: "website-redesign"
 
-### Sequence Numbering
+#### Sequence Numbering
 
 - Use sequential numbers for ordering within a session
 
-## Search Strategies
+### Search Strategies
 
-### Effective Query Construction
+#### Effective Query Construction
 
 Form search queries with:
 
@@ -131,7 +147,7 @@ Form search queries with:
 - Related concepts that might be in memory
 - User-specific identifiers
 
-### Semantic Key Search
+#### Semantic Key Search
 
 Use `search_keys` when you need to find related memory keys:
 
@@ -139,16 +155,16 @@ Use `search_keys` when you need to find related memory keys:
 - Adjust topK for more or fewer results
 - Lower minScore (e.g., 0.65) for broader matches
 
-### Direct Key Retrieval
+#### Direct Key Retrieval
 
 When you know the exact memory key, use `get_memory`:
 
 - Format: "project-name_date_session-name_sequence"
 - Example: "user-preferences_2025-04-15_user123_1"
 
-## Advanced Usage
+### Advanced Usage
 
-### Handling Multiple Results
+#### Handling Multiple Results
 
 When search returns multiple relevant entries:
 
@@ -156,7 +172,7 @@ When search returns multiple relevant entries:
 - Consider recency (sequence numbers/dates)
 - Look for topic overlap with current query
 
-### Metadata Usage
+#### Metadata Usage
 
 Use metadata to track:
 
@@ -165,7 +181,7 @@ Use metadata to track:
 - Categories for organizing memories
 - Temporal information (expiration, relevance period)
 
-### Memory Integration
+#### Memory Integration
 
 Integrate memory seamlessly:
 
@@ -173,7 +189,7 @@ Integrate memory seamlessly:
 - Incorporate context naturally in your response
 - Use memory to enhance responses without distracting
 
-## Example Workflow
+### Example Workflow
 
 1. User asks a question
 2. EVALUATE if you might need additional context to answer properly
