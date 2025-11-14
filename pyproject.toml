@@ -3,6 +3,7 @@ name = "cloud-cert-renewer"
 version = "0.1.0"
 description = "自动更新云服务HTTPS证书工具，支持CDN和负载均衡器（支持多云，当前支持阿里云）"
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.8"
 dependencies = [
     "alibabacloud-cdn20180510>=3.1.2",
@@ -42,4 +43,3 @@ ignore = ["B018", "UP007"]  # 允许 Protocol 中使用 ...
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-
