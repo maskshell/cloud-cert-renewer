@@ -91,9 +91,19 @@ The project supports configuration via environment variables or `.env` files. Re
 
 - `CLOUD_ACCESS_KEY_ID`: Cloud service AccessKey ID (new name, preferred)
 - `CLOUD_ACCESS_KEY_SECRET`: Cloud service AccessKey Secret (new name, preferred)
-- `ALIBABA_CLOUD_ACCESS_KEY_ID`: Alibaba Cloud AccessKey ID (legacy name, backward compatible)
-- `ALIBABA_CLOUD_ACCESS_KEY_SECRET`: Alibaba Cloud AccessKey Secret (legacy name, backward compatible)
 - `SERVICE_TYPE`: Service type, options: `cdn` or `lb` (backward compatible: `slb`)
+
+#### Optional Environment Variables
+
+- `CLOUD_PROVIDER`: Cloud provider, options: `alibaba`, `aws`, `azure`, etc. (default: `alibaba`)
+- `AUTH_METHOD`: Authentication method, options: `access_key`, `sts`, `iam_role`, `service_account`, `env` (default: `access_key`)
+- `CLOUD_SECURITY_TOKEN`: STS temporary security token (optional, required when `AUTH_METHOD=sts`)
+- `FORCE_UPDATE`: Force update certificate even if it's the same (default: `false`)
+
+#### Legacy Environment Variables (Deprecated, but backward compatible)
+
+- `ALIBABA_CLOUD_ACCESS_KEY_ID`: Alibaba Cloud AccessKey ID (legacy name, use `CLOUD_ACCESS_KEY_ID` instead)
+- `ALIBABA_CLOUD_ACCESS_KEY_SECRET`: Alibaba Cloud AccessKey Secret (legacy name, use `CLOUD_ACCESS_KEY_SECRET` instead)
 
 #### CDN Configuration (when SERVICE_TYPE=cdn)
 
@@ -487,9 +497,11 @@ docker build -t cloud-cert-renewer:v0.1.0 .
 
 # Test run image
 docker run --rm \
-  -e ALIBABA_CLOUD_ACCESS_KEY_ID=your_key \
-  -e ALIBABA_CLOUD_ACCESS_KEY_SECRET=your_secret \
+  -e CLOUD_ACCESS_KEY_ID=your_key \
+  -e CLOUD_ACCESS_KEY_SECRET=your_secret \
   -e SERVICE_TYPE=cdn \
+  -e CLOUD_PROVIDER=alibaba \
+  -e AUTH_METHOD=access_key \
   -e CDN_DOMAIN_NAME=example.com \
   -e CDN_CERT="$(cat cert.pem)" \
   -e CDN_CERT_PRIVATE_KEY="$(cat key.pem)" \
