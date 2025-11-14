@@ -174,8 +174,9 @@ class CdnCertsRenewer:
             if hasattr(e, "message"):
                 error_msg = e.message
             logger.error("CDN证书更新失败: %s", error_msg)
-            if hasattr(e, "data") and e.data and isinstance(e.data, dict):
-                recommend = e.data.get("Recommend")
+            data = getattr(e, "data", None)
+            if data and isinstance(data, dict):
+                recommend = data.get("Recommend")
                 if recommend:
                     logger.error("诊断地址: %s", recommend)
             raise
@@ -317,8 +318,9 @@ class SlbCertsRenewer:
             if hasattr(e, "message"):
                 error_msg = e.message
             logger.error("SLB证书更新失败: %s", error_msg)
-            if hasattr(e, "data") and e.data and isinstance(e.data, dict):
-                recommend = e.data.get("Recommend")
+            data = getattr(e, "data", None)
+            if data and isinstance(data, dict):
+                recommend = data.get("Recommend")
                 if recommend:
                     logger.error("诊断地址: %s", recommend)
             raise
@@ -378,7 +380,7 @@ def load_config() -> Tuple[str, str, str, str, str, str, str, bool]:
             force,
         )
 
-    else:  # slb
+    elif service_type == "slb":
         instance_id = os.environ.get("SLB_INSTANCE_ID")
         cert = os.environ.get("SLB_CERT")
         cert_private_key = os.environ.get("SLB_CERT_PRIVATE_KEY")
@@ -405,6 +407,9 @@ def load_config() -> Tuple[str, str, str, str, str, str, str, bool]:
             region,
             force,
         )
+    else:
+        # 理论上不应该到达这里，因为 service_type 已经在前面验证过
+        raise ConfigError(f"不支持的服务类型: {service_type}，仅支持 cdn 或 slb")
 
 
 def main() -> None:
@@ -442,7 +447,7 @@ def main() -> None:
                 access_key_secret=access_key_secret,
                 force=force,
             )
-        else:  # slb
+        elif service_type == "slb":
             success = SlbCertsRenewer.renew_cert(
                 instance_id=domain_or_instance,
                 cert=cert,
@@ -466,7 +471,8 @@ def main() -> None:
     except CertValidationError as e:
         logger.error("证书验证错误: %s", e)
         sys.exit(1)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
+        # 主函数需要捕获所有异常以确保程序优雅退出
         logger.exception("发生未预期的错误: %s", e)
         sys.exit(1)
 

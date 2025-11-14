@@ -403,6 +403,7 @@ uv run pre-commit run yamllint --all-files
    ```
 
 4. **prettier**（可选）- 通用代码格式化工具
+
    ```bash
    # 使用 npm 安装
    npm install -g prettier

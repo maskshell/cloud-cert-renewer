@@ -291,6 +291,8 @@ class TestLoadConfig(unittest.TestCase):
         """测试前准备"""
         # 清除环境变量
         self.original_env = os.environ.copy()
+        # 确保清除可能影响测试的环境变量
+        os.environ.pop("FORCE_UPDATE", None)
 
     def tearDown(self):
         """测试后清理"""
@@ -308,6 +310,7 @@ class TestLoadConfig(unittest.TestCase):
                 "CDN_CERT": "test_cert",
                 "CDN_CERT_PRIVATE_KEY": "test_key",
                 "CDN_REGION": "cn-hangzhou",
+                "FORCE_UPDATE": "false",  # 显式设置为 false
             }
         )
 
@@ -332,6 +335,7 @@ class TestLoadConfig(unittest.TestCase):
                 "SLB_CERT": "test_cert",
                 "SLB_CERT_PRIVATE_KEY": "test_key",
                 "SLB_REGION": "cn-beijing",
+                "FORCE_UPDATE": "false",  # 显式设置为 false
             }
         )
 
