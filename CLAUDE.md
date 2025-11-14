@@ -44,6 +44,51 @@ alwaysApply: true
 - When in doubt, prefer English over other languages
 - See `.cursorrules` and `CONTRIBUTING.md` for complete language policy details
 
+## Testing Design Principles
+
+**All tests must follow the testing design principles defined in `testing-design-principles.mdc`:**
+
+### Mandatory Test Updates
+
+**When making code changes, tests MUST be updated accordingly using the same design patterns:**
+
+1. **Adding New Design Pattern Implementation:**
+   - Create corresponding test file following naming convention
+   - Test all design pattern contracts and behaviors
+   - Add integration tests if applicable
+
+2. **Modifying Existing Design Pattern:**
+   - Update corresponding test file
+   - Ensure all existing tests still pass
+   - Add new tests for new behaviors
+
+3. **Test Organization:**
+   - Tests must be organized by design patterns, not implementation details
+   - Each design pattern should have its own dedicated test file
+   - Test files should mirror the design pattern structure of the codebase
+
+4. **Test Coverage:**
+   - All design pattern implementations must have dedicated tests
+   - Design pattern layer: 100% coverage
+   - Core business logic: 80%+ coverage
+
+5. **Test Update Checklist:**
+   - [ ] All existing tests pass
+   - [ ] New functionality has corresponding tests
+   - [ ] Tests follow design pattern organization
+   - [ ] Tests use appropriate mocks at design pattern boundaries
+   - [ ] Test names are descriptive and follow conventions
+   - [ ] Integration tests cover new workflows
+
+**Key Principles:**
+- Organize tests by design patterns, not implementation details
+- Test the design pattern layer, not underlying implementations
+- Update tests with every code change following the same design patterns
+- Maintain test coverage for all design pattern implementations
+- Use appropriate mocks at design pattern boundaries
+
+**See `testing-design-principles.mdc` for complete testing guidelines.**
+
 ## Memory Tool Usage Guide
 
 ### Overview
