@@ -89,6 +89,32 @@ alwaysApply: true
 
 **See `testing-design-principles.mdc` for complete testing guidelines.**
 
+## Development Workflow Principles
+
+### File Formatting
+
+- When formatting files, first consider using the tools recommended in project rules for local formatting, rather than sending files to AI for formatting
+- Use project-standard formatting tools (e.g., `ruff format` for Python, `yamllint` for YAML)
+- Refer to [DEVELOPMENT.md](DEVELOPMENT.md) for specific formatting commands
+- Only use AI formatting when local tools are unavailable or insufficient
+
+## Rule Management
+
+1. **Rule Scale Management**
+   - When recording rules, consider their scale and complexity
+   - If a rule or set of rules becomes too large or complex, save it as a separate `.mdc` file
+   - Keep `.cursorrules` focused on core principles and high-level guidelines
+   - Use `.mdc` files for detailed, specialized rule sets (e.g., `testing-design-principles.mdc`)
+
+2. **Rule Synchronization**
+   - When adding or modifying rules, synchronize them to other similar rule files in the project
+   - Key files that should be kept in sync:
+     - `.cursorrules` - Main project rules file
+     - `CLAUDE.md` - AI assistant guide with project rules
+     - Other relevant `.mdc` files if applicable
+   - Ensure consistency across all rule files to avoid conflicts or contradictions
+   - When a rule is added to one file, check if it should also be added to related files
+
 ## Memory Tool Usage Guide
 
 ### Overview
