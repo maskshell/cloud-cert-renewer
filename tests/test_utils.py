@@ -10,7 +10,7 @@ from cloud_cert_renewer.utils.ssl_cert_parser import (  # noqa: I001
 )
 
 class TestSslCertParser(unittest.TestCase):
-    """SSL certificate parser tests"""
+    """Utility functions tests (SSL certificate parser)"""
 
     def setUp(self):
         """Test setup"""
