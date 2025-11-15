@@ -495,6 +495,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "alibabacloud-cdn20180510" },
+    { name = "alibabacloud-credentials" },
     { name = "alibabacloud-slb20140515" },
     { name = "cryptography" },
     { name = "python-dotenv" },
@@ -517,6 +518,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "alibabacloud-cdn20180510", specifier = ">=3.1.2" },
+    { name = "alibabacloud-credentials", specifier = ">=0.3.6" },
     { name = "alibabacloud-slb20140515", specifier = ">=3.1.2" },
     { name = "cryptography", specifier = ">=41.0.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.0.0" },

@@ -7,6 +7,7 @@ import logging
 import sys
 from importlib import import_module
 
+from cloud_cert_renewer.auth.factory import CredentialProviderFactory
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
 from cloud_cert_renewer.utils.ssl_cert_parser import (
     get_cert_fingerprint_sha256,
@@ -42,6 +43,12 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
         if not self.config.cdn_config:
             return None
 
+        # Create credential provider and get credential client
+        provider = CredentialProviderFactory.create(
+            auth_method=self.config.auth_method, credentials=self.config.credentials
+        )
+        credential_client = provider.get_credential_client()
+
         # Lazy import to avoid circular dependencies
         # Dynamically import clients module
         if "cloud_cert_renewer.clients.alibaba" not in sys.modules:
@@ -53,8 +60,7 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
 
         current_cert = cdn_cert_renewer.get_current_cert(
             domain_name=self.config.cdn_config.domain_name,
-            access_key_id=self.config.credentials.access_key_id,
-            access_key_secret=self.config.credentials.access_key_secret,
+            credential_client=credential_client,
         )
         if current_cert:
             return get_cert_fingerprint_sha256(current_cert)
@@ -64,6 +70,12 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
         """Execute CDN certificate renewal"""
         if not self.config.cdn_config:
             raise ValueError("CDN configuration does not exist")
+
+        # Create credential provider and get credential client
+        provider = CredentialProviderFactory.create(
+            auth_method=self.config.auth_method, credentials=self.config.credentials
+        )
+        credential_client = provider.get_credential_client()
 
         # Lazy import to avoid circular dependencies
         # Dynamically import clients module
@@ -79,7 +91,6 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
             cert=cert,
             cert_private_key=cert_private_key,
             region=self.config.cdn_config.region,
-            access_key_id=self.config.credentials.access_key_id,
-            access_key_secret=self.config.credentials.access_key_secret,
+            credential_client=credential_client,
             force=self.config.force_update,
         )

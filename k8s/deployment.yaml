@@ -20,6 +20,9 @@ spec:
       labels:
         app: cloud-cert-renewer
     spec:
+      # Service Account configuration (required for OIDC/RRSA)
+      # Uncomment and configure when using OIDC authentication:
+      # serviceAccountName: cloud-cert-renewer-sa
       # Init container: Execute certificate renewal
       initContainers:
         - name: cert-renewer
@@ -34,6 +37,8 @@ spec:
             - name: CLOUD_PROVIDER
               value: "alibaba"
             # Authentication method (default: access_key)
+            # Options: access_key, sts, iam_role, oidc, service_account, env
+            # For OIDC (RRSA), set to "oidc" and configure Service Account with RRSA annotations
             - name: AUTH_METHOD
               value: "access_key"
             # STS temporary security token (optional, required when AUTH_METHOD=sts)
@@ -44,6 +49,9 @@ spec:
             #       name: cloud-credentials
             #       key: security-token
             # Cloud service access credentials (new name, preferred)
+            # Note: Not required when AUTH_METHOD=oidc (credentials are fetched via OIDC)
+            # For OIDC authentication, comment out these environment variables and configure
+            # Service Account with RRSA annotations instead
             - name: CLOUD_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -65,6 +73,12 @@ spec:
                 secretKeyRef:
                   name: cloud-credentials
                   key: access-key-secret
+            # OIDC authentication (RRSA)
+            # When AUTH_METHOD=oidc, OIDC parameters are automatically injected by Kubernetes:
+            # - ALIBABA_CLOUD_ROLE_ARN: Set from Service Account annotation
+            # - ALIBABA_CLOUD_OIDC_PROVIDER_ARN: Set by RRSA
+            # - ALIBABA_CLOUD_OIDC_TOKEN_FILE: Set by RRSA (default: /var/run/secrets/tokens/oidc-token)
+            # To use OIDC, uncomment and configure the Service Account section below
             # CDN configuration
             - name: CDN_DOMAIN_NAME
               value: "schema.amugua.com"

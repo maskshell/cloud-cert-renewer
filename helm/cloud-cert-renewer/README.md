@@ -46,7 +46,7 @@ The following table lists the configurable parameters and their default values:
 | -------------------------------------- | ------------------------------------- | ---------------------------- |
 | `serviceType`                          | Service type: `cdn` or `lb` (backward compatible: `slb`) | `cdn`                        |
 | `cloudProvider`                         | Cloud provider: `alibaba`, `aws`, `azure`, etc. (currently supports Alibaba Cloud) | `alibaba`                    |
-| `authMethod`                           | Authentication method: `access_key`, `sts`, `iam_role`, `service_account`, `env` | `access_key`                 |
+| `authMethod`                           | Authentication method: `access_key`, `sts`, `iam_role`, `oidc`, `service_account`, `env` | `access_key`                 |
 | `image.repository`                     | Image repository                      | `cloud-cert-renewer`         |
 | `image.tag`                            | Image tag                             | `latest`                     |
 | `image.pullPolicy`                     | Image pull policy                     | `IfNotPresent`               |
@@ -118,6 +118,49 @@ To use STS (Security Token Service) temporary credentials:
    ```
 
 3. Configure `secrets.cloudCredentials.securityTokenKey: "security-token"` in values
+
+### OIDC Authentication (RRSA)
+
+To use OIDC (OpenID Connect) authentication with RRSA (RAM Role for Service Account) in Kubernetes:
+
+1. **Configure Service Account with RRSA annotations:**
+
+   ```yaml
+   apiVersion: v1
+   kind: ServiceAccount
+   metadata:
+     name: cloud-cert-renewer-sa
+     namespace: your-namespace
+     annotations:
+       pod-identity.alibabacloud.com/role-name: your-ram-role-name
+   ```
+
+2. **Set `authMethod: oidc` in your values file:**
+
+   ```yaml
+   authMethod: oidc
+   ```
+
+3. **Configure the Deployment to use the Service Account:**
+
+   ```yaml
+   serviceAccount:
+     create: true
+     name: cloud-cert-renewer-sa
+     annotations:
+       pod-identity.alibabacloud.com/role-name: your-ram-role-name
+   ```
+
+4. **OIDC parameters are automatically injected by Kubernetes:**
+   - `ALIBABA_CLOUD_ROLE_ARN`: Automatically set from Service Account annotation
+   - `ALIBABA_CLOUD_OIDC_PROVIDER_ARN`: Automatically set by RRSA
+   - `ALIBABA_CLOUD_OIDC_TOKEN_FILE`: Automatically set by RRSA (default path)
+
+**Note:** When using OIDC authentication, you do NOT need to create a credentials secret. The OIDC token and role information are automatically provided by the Kubernetes Service Account and RRSA.
+
+**Reference:**
+- [Alibaba Cloud RRSA Documentation](https://help.aliyun.com/zh/ack/serverless-kubernetes/user-guide/use-rrsa-to-authorize-pods-to-access-different-cloud-services)
+- [Alibaba Cloud SDK Credentials Documentation](https://www.alibabacloud.com/help/en/sdk/developer-reference/v2-manage-python-access-credentials)
 
 ### Force Update
 

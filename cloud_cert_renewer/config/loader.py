@@ -91,27 +91,39 @@ def load_config() -> AppConfig:
     auth_method = (_get_env_with_fallback("AUTH_METHOD") or "access_key").lower()
 
     # Get access credentials (supports old and new names)
-    access_key_id = _get_env_required(
-        "CLOUD_ACCESS_KEY_ID",
-        "ALIBABA_CLOUD_ACCESS_KEY_ID",
-        "Missing required environment variable: "
-        "CLOUD_ACCESS_KEY_ID or ALIBABA_CLOUD_ACCESS_KEY_ID",
-    )
-    access_key_secret = _get_env_required(
-        "CLOUD_ACCESS_KEY_SECRET",
-        "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-        "Missing required environment variable: "
-        "CLOUD_ACCESS_KEY_SECRET or ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-    )
+    # For OIDC, access_key_id and access_key_secret are not required
+    # (credentials are fetched dynamically from OIDC)
+    if auth_method == "oidc":
+        # For OIDC, credentials are fetched dynamically, so use placeholder values
+        # The actual credentials will be obtained via OidcCredentialProvider
+        credentials = Credentials(
+            access_key_id="",  # Placeholder, not used for OIDC
+            access_key_secret="",  # Placeholder, not used for OIDC
+            security_token=None,
+        )
+    else:
+        # For other auth methods, require access_key_id and access_key_secret
+        access_key_id = _get_env_required(
+            "CLOUD_ACCESS_KEY_ID",
+            "ALIBABA_CLOUD_ACCESS_KEY_ID",
+            "Missing required environment variable: "
+            "CLOUD_ACCESS_KEY_ID or ALIBABA_CLOUD_ACCESS_KEY_ID",
+        )
+        access_key_secret = _get_env_required(
+            "CLOUD_ACCESS_KEY_SECRET",
+            "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
+            "Missing required environment variable: "
+            "CLOUD_ACCESS_KEY_SECRET or ALIBABA_CLOUD_ACCESS_KEY_SECRET",
+        )
 
-    # STS temporary credentials (optional)
-    security_token = _get_env_with_fallback("CLOUD_SECURITY_TOKEN")
+        # STS temporary credentials (optional)
+        security_token = _get_env_with_fallback("CLOUD_SECURITY_TOKEN")
 
-    credentials = Credentials(
-        access_key_id=access_key_id,
-        access_key_secret=access_key_secret,
-        security_token=security_token,
-    )
+        credentials = Credentials(
+            access_key_id=access_key_id,
+            access_key_secret=access_key_secret,
+            security_token=security_token,
+        )
 
     # Get force update flag
     force_update = _parse_bool_env("FORCE_UPDATE", False)

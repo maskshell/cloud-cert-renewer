@@ -64,3 +64,14 @@ reloader.stakater.com/search: "{{ .Values.reloader.search }}"
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Service Account name
+*/}}
+{{- define "cloud-cert-renewer.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "cloud-cert-renewer.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}

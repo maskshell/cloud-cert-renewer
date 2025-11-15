@@ -39,6 +39,7 @@ classifiers = [
 ]
 dependencies = [
     "alibabacloud-cdn20180510>=3.1.2",
+    "alibabacloud-credentials>=0.3.6",
     "alibabacloud-slb20140515>=3.1.2",
     "cryptography>=41.0.0",
     "python-dotenv>=1.0.0",

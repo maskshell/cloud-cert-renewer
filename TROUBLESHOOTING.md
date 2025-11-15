@@ -25,24 +25,51 @@ This document provides solutions to common issues and debugging tips for the Clo
 
 **Symptoms:** Log shows "Configuration error: missing required environment variables"
 
+**Possible Causes:**
+
+- Missing required environment variables
+- Incorrect environment variable names
+- Secret not created or missing keys (when not using OIDC)
+- Incorrect Secret key names
+- OIDC authentication misconfigured (missing Service Account or RRSA annotations)
+
 **Solutions:**
 
 - Check if all required environment variables are set
 - Verify environment variable names are spelled correctly
-- Check if Secret exists and contains correct keys
+- Check if Secret exists and contains correct keys (only required for non-OIDC authentication)
 - Refer to `.env.example` for the correct variable names
+- For OIDC authentication:
+  - Verify Service Account is created and configured with RRSA annotations
+  - Check that `AUTH_METHOD=oidc` is set
+  - Verify OIDC parameters are automatically injected by Kubernetes (ALIBABA_CLOUD_ROLE_ARN, ALIBABA_CLOUD_OIDC_PROVIDER_ARN, ALIBABA_CLOUD_OIDC_TOKEN_FILE)
 
 ### 3. API Call Failed
 
 **Symptoms:** Log shows "CDN certificate renewal failed" or "Load Balancer certificate renewal failed"
 
+**Possible Causes:**
+
+- Invalid AccessKey ID or Secret (for access_key authentication)
+- AccessKey expired or revoked
+- Incorrect permissions for AccessKey or RAM Role
+- STS token expired (if using STS authentication)
+- OIDC token expired or invalid (if using OIDC authentication)
+- Service Account not properly configured with RRSA annotations (for OIDC)
+- Missing or incorrect RAM Role ARN in Service Account annotation (for OIDC)
+
 **Solutions:**
 
-- Check if AccessKey is correct and has appropriate permissions
+- For access_key authentication: Verify AccessKey ID and Secret are correct
+- For STS authentication: Verify the security token is valid and not expired
+- For OIDC authentication:
+  - Verify Service Account has correct RRSA annotations (`pod-identity.alibabacloud.com/role-name`)
+  - Check that OIDC provider is properly configured in Alibaba Cloud
+  - Verify RAM Role has correct permissions
+  - Check OIDC token file exists at `/var/run/secrets/tokens/oidc-token` (default path)
 - Verify region configuration is correct
 - Check network connectivity
 - View diagnostic URL in error message
-- For STS authentication, verify the security token is valid and not expired
 
 ### 4. Kubernetes Deployment Issues
 
@@ -158,11 +185,13 @@ uv run python -c "from cloud_cert_renewer.config import load_config; print(load_
 
 ### Security
 
-- In production environments, use more secure authentication methods (such as STS) instead of directly using AccessKey
+- In production environments, use more secure authentication methods (such as STS or OIDC/RRSA) instead of directly using AccessKey
+- For Kubernetes deployments, prefer OIDC (RRSA) authentication over AccessKey for better security
 - Do not hardcode sensitive information in code
-- Use Kubernetes Secrets to manage sensitive data
+- Use Kubernetes Secrets to manage sensitive data (when not using OIDC)
 - Rotate credentials regularly
 - Use least privilege principle for IAM permissions
+- When using OIDC authentication, ensure Service Account has proper RRSA annotations configured
 
 ### Certificate Format
 

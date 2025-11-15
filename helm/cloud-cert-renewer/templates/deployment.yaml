@@ -41,7 +41,7 @@ spec:
             - name: AUTH_METHOD
               value: {{ .Values.authMethod | default "access_key" | quote }}
             # STS temporary security token (optional, required when AUTH_METHOD=sts)
-            {{- if .Values.secrets.cloudCredentials.securityTokenKey }}
+            {{- if and (ne .Values.authMethod "oidc") .Values.secrets.cloudCredentials.securityTokenKey }}
             - name: CLOUD_SECURITY_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -49,6 +49,8 @@ spec:
                   key: {{ .Values.secrets.cloudCredentials.securityTokenKey }}
             {{- end }}
             # Cloud service access credentials (new name, preferred)
+            # Note: Not required when authMethod=oidc (credentials are fetched via OIDC)
+            {{- if ne .Values.authMethod "oidc" }}
             - name: CLOUD_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -70,6 +72,12 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.cloudCredentials.name | default .Values.secrets.alibabaCloudCredentials.name }}
                   key: {{ .Values.secrets.cloudCredentials.accessKeySecretKey | default .Values.secrets.alibabaCloudCredentials.accessKeySecretKey }}
+            {{- end }}
+            # OIDC authentication (RRSA)
+            # When authMethod=oidc, OIDC parameters are automatically injected by Kubernetes:
+            # - ALIBABA_CLOUD_ROLE_ARN: Set from Service Account annotation
+            # - ALIBABA_CLOUD_OIDC_PROVIDER_ARN: Set by RRSA
+            # - ALIBABA_CLOUD_OIDC_TOKEN_FILE: Set by RRSA (default: /var/run/secrets/tokens/oidc-token)
             {{- if eq .Values.serviceType "cdn" }}
             # CDN configuration
             - name: CDN_DOMAIN_NAME
@@ -159,4 +167,9 @@ spec:
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "cloud-cert-renewer.serviceAccountName" . }}
+      {{- else if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}

@@ -7,6 +7,7 @@ from cloud_cert_renewer.auth.access_key import AccessKeyCredentialProvider
 from cloud_cert_renewer.auth.base import CredentialProvider
 from cloud_cert_renewer.auth.env import EnvCredentialProvider
 from cloud_cert_renewer.auth.iam_role import IAMRoleCredentialProvider
+from cloud_cert_renewer.auth.oidc import OidcCredentialProvider
 from cloud_cert_renewer.auth.service_account import ServiceAccountCredentialProvider
 from cloud_cert_renewer.auth.sts import STSCredentialProvider
 from cloud_cert_renewer.config import Credentials
@@ -24,7 +25,7 @@ class CredentialProviderFactory:
         """
         Create credential provider
         :param auth_method: Authentication method
-            (access_key, sts, iam_role, service_account, env)
+            (access_key, sts, iam_role, oidc, service_account, env)
         :param credentials: Existing credentials object (optional)
         :param kwargs: Other parameters
         :return: CredentialProvider instance
@@ -90,11 +91,27 @@ class CredentialProviderFactory:
                 service_account_path=service_account_path
             )
 
+        elif auth_method == "oidc":
+            # OIDC parameters are read from environment variables
+            # (injected by Kubernetes)
+            # Optional kwargs for override
+            role_arn = kwargs.get("role_arn")
+            oidc_provider_arn = kwargs.get("oidc_provider_arn")
+            oidc_token_file_path = kwargs.get("oidc_token_file_path")
+            role_session_name = kwargs.get("role_session_name")
+            return OidcCredentialProvider(
+                role_arn=role_arn,
+                oidc_provider_arn=oidc_provider_arn,
+                oidc_token_file_path=oidc_token_file_path,
+                role_session_name=role_session_name,
+            )
+
         elif auth_method == "env":
             return EnvCredentialProvider()
 
         else:
             raise ValueError(
                 f"Unsupported authentication method: {auth_method}, "
-                f"supported methods: access_key, sts, iam_role, service_account, env"
+                f"supported methods: access_key, sts, iam_role, oidc, "
+                f"service_account, env"
             )

@@ -7,6 +7,7 @@ import logging
 
 from alibabacloud_cdn20180510 import models as cdn_20180510_models
 from alibabacloud_cdn20180510.client import Client as Cdn20180510Client
+from alibabacloud_credentials.client import Client as CredClient
 from alibabacloud_slb20140515 import models as slb_20140515_models
 from alibabacloud_slb20140515.client import Client as Slb20140515Client
 from alibabacloud_tea_openapi import models as open_api_models
@@ -26,39 +27,31 @@ class CdnCertRenewer:
     """CDN certificate renewer (renamed from CdnCertsRenewer)"""
 
     @staticmethod
-    def create_client(
-        access_key_id: str,
-        access_key_secret: str,
-    ) -> Cdn20180510Client:
+    def create_client(credential_client: CredClient) -> Cdn20180510Client:
         """
-        Initialize account Client using AccessKey ID and Secret
-        :param access_key_id: Cloud service AccessKey ID
-        :param access_key_secret: Cloud service AccessKey Secret
+        Initialize account Client using credential client
+        :param credential_client: Alibaba Cloud Credentials client
+            (supports access_key, sts, ram_role_arn, oidc_role_arn, etc.)
         :return: CDN Client instance
         """
-        config = open_api_models.Config(
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-        )
+        config = open_api_models.Config(credential=credential_client)
         config.endpoint = "cdn.aliyuncs.com"
         return Cdn20180510Client(config)
 
     @staticmethod
     def get_current_cert(
         domain_name: str,
-        access_key_id: str,
-        access_key_secret: str,
+        credential_client: CredClient,
     ) -> str | None:
         """
         Query the current certificate content configured for CDN domain
         :param domain_name: CDN domain name
-        :param access_key_id: Cloud service AccessKey ID
-        :param access_key_secret: Cloud service AccessKey Secret
+        :param credential_client: Alibaba Cloud Credentials client
         :return: Certificate content (PEM format), or None if query fails or
             no certificate exists
         """
         try:
-            client = CdnCertRenewer.create_client(access_key_id, access_key_secret)
+            client = CdnCertRenewer.create_client(credential_client)
             request = cdn_20180510_models.DescribeDomainCertificateInfoRequest(
                 domain_name=domain_name
             )
@@ -91,8 +84,7 @@ class CdnCertRenewer:
         cert: str,
         cert_private_key: str,
         region: str,
-        access_key_id: str,
-        access_key_secret: str,
+        credential_client: CredClient,
         force: bool = False,
     ) -> bool:
         """
@@ -101,8 +93,7 @@ class CdnCertRenewer:
         :param cert: SSL certificate content
         :param cert_private_key: SSL certificate private key
         :param region: Region
-        :param access_key_id: Cloud service AccessKey ID
-        :param access_key_secret: Cloud service AccessKey Secret
+        :param credential_client: Alibaba Cloud Credentials client
         :param force: Whether to force update (update even if certificate is
             the same, for testing)
         :return: Whether successful
@@ -117,7 +108,7 @@ class CdnCertRenewer:
 
             # Query current certificate and compare
             current_cert = CdnCertRenewer.get_current_cert(
-                domain_name, access_key_id, access_key_secret
+                domain_name, credential_client
             )
             if current_cert and not force:
                 new_fingerprint = get_cert_fingerprint_sha256(cert)
@@ -138,7 +129,7 @@ class CdnCertRenewer:
                 )
 
             # Create client
-            client = CdnCertRenewer.create_client(access_key_id, access_key_secret)
+            client = CdnCertRenewer.create_client(credential_client)
 
             # Build request
             request = cdn_20180510_models.SetCdnDomainSSLCertificateRequest(
@@ -182,20 +173,14 @@ class LoadBalancerCertRenewer:
     """Load Balancer certificate renewer (renamed from SlbCertsRenewer)"""
 
     @staticmethod
-    def create_client(
-        access_key_id: str,
-        access_key_secret: str,
-    ) -> Slb20140515Client:
+    def create_client(credential_client: CredClient) -> Slb20140515Client:
         """
-        Initialize account Client using AccessKey ID and Secret
-        :param access_key_id: Cloud service AccessKey ID
-        :param access_key_secret: Cloud service AccessKey Secret
+        Initialize account Client using credential client
+        :param credential_client: Alibaba Cloud Credentials client
+            (supports access_key, sts, ram_role_arn, oidc_role_arn, etc.)
         :return: SLB Client instance
         """
-        config = open_api_models.Config(
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-        )
+        config = open_api_models.Config(credential=credential_client)
         config.endpoint = "slb.aliyuncs.com"
         return Slb20140515Client(config)
 
@@ -204,22 +189,18 @@ class LoadBalancerCertRenewer:
         instance_id: str,
         listener_port: int,
         region: str,
-        access_key_id: str,
-        access_key_secret: str,
+        credential_client: CredClient,
     ) -> str | None:
         """
         Query the certificate ID currently used by SLB HTTPS listener
         :param instance_id: SLB instance ID
         :param listener_port: HTTPS listener port
         :param region: Region
-        :param access_key_id: Cloud service AccessKey ID
-        :param access_key_secret: Cloud service AccessKey Secret
+        :param credential_client: Alibaba Cloud Credentials client
         :return: Certificate ID, or None if query fails or listener does not exist
         """
         try:
-            client = LoadBalancerCertRenewer.create_client(
-                access_key_id, access_key_secret
-            )
+            client = LoadBalancerCertRenewer.create_client(credential_client)
             request = (
                 slb_20140515_models.DescribeLoadBalancerHTTPSListenerAttributeRequest(
                     load_balancer_id=instance_id,
@@ -252,30 +233,26 @@ class LoadBalancerCertRenewer:
         instance_id: str,
         listener_port: int,
         region: str,
-        access_key_id: str,
-        access_key_secret: str,
+        credential_client: CredClient,
     ) -> str | None:
         """
         Query the certificate fingerprint currently used by SLB instance
         :param instance_id: SLB instance ID
         :param listener_port: HTTPS listener port
         :param region: Region
-        :param access_key_id: Cloud service AccessKey ID
-        :param access_key_secret: Cloud service AccessKey Secret
+        :param credential_client: Alibaba Cloud Credentials client
         :return: Certificate fingerprint (SHA1 format), or None if query fails
         """
         try:
             # First query the certificate ID used by the listener
             cert_id = LoadBalancerCertRenewer.get_listener_cert_id(
-                instance_id, listener_port, region, access_key_id, access_key_secret
+                instance_id, listener_port, region, credential_client
             )
             if not cert_id:
                 return None
 
             # Query certificate details to get fingerprint
-            client = LoadBalancerCertRenewer.create_client(
-                access_key_id, access_key_secret
-            )
+            client = LoadBalancerCertRenewer.create_client(credential_client)
             request = slb_20140515_models.DescribeServerCertificatesRequest(
                 region_id=region,
                 server_certificate_id=cert_id,
@@ -309,8 +286,7 @@ class LoadBalancerCertRenewer:
         cert: str,
         cert_private_key: str,
         region: str,
-        access_key_id: str,
-        access_key_secret: str,
+        credential_client: CredClient,
         force: bool = False,
     ) -> bool:
         """
@@ -320,8 +296,7 @@ class LoadBalancerCertRenewer:
         :param cert: SSL certificate content
         :param cert_private_key: SSL certificate private key
         :param region: Region
-        :param access_key_id: Cloud service AccessKey ID
-        :param access_key_secret: Cloud service AccessKey Secret
+        :param credential_client: Alibaba Cloud Credentials client
         :param force: Whether to force update (update even if certificate is
             the same, for testing)
         :return: Whether successful
@@ -329,7 +304,7 @@ class LoadBalancerCertRenewer:
         try:
             # Query current certificate fingerprint and compare
             current_fingerprint = LoadBalancerCertRenewer.get_current_cert_fingerprint(
-                instance_id, listener_port, region, access_key_id, access_key_secret
+                instance_id, listener_port, region, credential_client
             )
             if current_fingerprint and not force:
                 new_fingerprint = get_cert_fingerprint_sha1(cert)
@@ -351,9 +326,7 @@ class LoadBalancerCertRenewer:
                 )
 
             # Create client
-            client = LoadBalancerCertRenewer.create_client(
-                access_key_id, access_key_secret
-            )
+            client = LoadBalancerCertRenewer.create_client(credential_client)
 
             # Build request - Upload certificate
             upload_request = slb_20140515_models.UploadServerCertificateRequest(

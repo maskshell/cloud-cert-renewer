@@ -10,6 +10,7 @@ from importlib import import_module
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 
+from cloud_cert_renewer.auth.factory import CredentialProviderFactory
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
 from cloud_cert_renewer.utils.ssl_cert_parser import get_cert_fingerprint_sha1
 
@@ -52,6 +53,12 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
         if not self.config.lb_config:
             return None
 
+        # Create credential provider and get credential client
+        provider = CredentialProviderFactory.create(
+            auth_method=self.config.auth_method, credentials=self.config.credentials
+        )
+        credential_client = provider.get_credential_client()
+
         # Lazy import to avoid circular dependencies
         # Dynamically import clients module
         if "cloud_cert_renewer.clients.alibaba" not in sys.modules:
@@ -65,14 +72,19 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
             instance_id=self.config.lb_config.instance_id,
             listener_port=self.config.lb_config.listener_port,
             region=self.config.lb_config.region,
-            access_key_id=self.config.credentials.access_key_id,
-            access_key_secret=self.config.credentials.access_key_secret,
+            credential_client=credential_client,
         )
 
     def _do_renew(self, cert: str, cert_private_key: str) -> bool:
         """Execute Load Balancer certificate renewal"""
         if not self.config.lb_config:
             raise ValueError("Load Balancer configuration does not exist")
+
+        # Create credential provider and get credential client
+        provider = CredentialProviderFactory.create(
+            auth_method=self.config.auth_method, credentials=self.config.credentials
+        )
+        credential_client = provider.get_credential_client()
 
         # Lazy import to avoid circular dependencies
         # Dynamically import clients module
@@ -89,7 +101,6 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
             cert=cert,
             cert_private_key=cert_private_key,
             region=self.config.lb_config.region,
-            access_key_id=self.config.credentials.access_key_id,
-            access_key_secret=self.config.credentials.access_key_secret,
+            credential_client=credential_client,
             force=self.config.force_update,
         )

@@ -8,7 +8,7 @@ serviceType: cdn # cdn or lb (backward compatible: slb)
 cloudProvider: alibaba # alibaba, aws, azure, etc. (currently supports Alibaba Cloud)
 
 # Authentication method
-authMethod: access_key # access_key, sts, iam_role, service_account, env
+authMethod: access_key # access_key, sts, iam_role, oidc, service_account, env
 
 # Force update flag (optional, default: false)
 # When enabled, certificate will be updated even if it's the same
@@ -80,6 +80,18 @@ secrets:
     name: cert-secret
     certKey: tls.crt
     privateKeyKey: tls.key
+
+# Service Account configuration (required for OIDC/RRSA)
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account (e.g., for RRSA)
+  annotations: {}
+    # Example for RRSA:
+    # pod-identity.alibabacloud.com/role-name: your-ram-role-name
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
 
 # Reloader configuration
 reloader:

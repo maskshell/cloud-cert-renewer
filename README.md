@@ -15,6 +15,13 @@ Automated HTTPS certificate renewal tool for cloud services, supporting CDN and 
 - Automatic certificate renewal for cloud Load Balancer services (currently supports Alibaba Cloud SLB)
 - Certificate validation (domain matching, expiration checking)
 - Support for wildcard domain certificates
+- Multiple authentication methods:
+  - Access Key authentication
+  - STS (Security Token Service) temporary credentials
+  - IAM Role authentication
+  - OIDC (RRSA) authentication for Kubernetes
+  - Service Account authentication
+  - Environment variable authentication
 - Configuration via environment variables or Kubernetes Secrets
 - Comprehensive error handling and logging
 - Helm Chart deployment support

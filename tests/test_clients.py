@@ -22,6 +22,11 @@ from cloud_cert_renewer.clients.alibaba import (  # noqa: E402
 )
 
 
+def create_mock_credential_client() -> MagicMock:
+    """Create a mock credential client for testing"""
+    return MagicMock()
+
+
 class TestCdnCertRenewer(unittest.TestCase):
     """CDN certificate renewer tests"""
 
@@ -30,6 +35,7 @@ class TestCdnCertRenewer(unittest.TestCase):
         self.access_key_id = "test_access_key_id"
         self.access_key_secret = "test_access_key_secret"
         self.domain_name = "test.example.com"
+        self.credential_client = create_mock_credential_client()
         # Note: These are placeholder certificates (not real certificates).
         # They are safe to use because is_cert_valid() is mocked in all tests
         # that would parse them.
@@ -43,9 +49,7 @@ MIIEpQIBAAKCAQEA...
 
     def test_create_client(self):
         """Test creating CDN client"""
-        client = CdnCertRenewer.create_client(
-            self.access_key_id, self.access_key_secret
-        )
+        client = CdnCertRenewer.create_client(self.credential_client)
         self.assertIsNotNone(client)
         # Verify client type
         self.assertIsInstance(client, Cdn20180510Client)
@@ -76,15 +80,14 @@ MIIEpQIBAAKCAQEA...
             cert=self.cert,
             cert_private_key=self.cert_private_key,
             region=self.region,
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
+            credential_client=self.credential_client,
         )
 
         # Verify results
         self.assertTrue(result)
         mock_is_cert_valid.assert_called_once_with(self.cert, self.domain_name)
         mock_get_current_cert.assert_called_once_with(
-            self.domain_name, self.access_key_id, self.access_key_secret
+            self.domain_name, self.credential_client
         )
         mock_client.set_cdn_domain_sslcertificate_with_options.assert_called_once()
 
@@ -106,14 +109,13 @@ MIIEpQIBAAKCAQEA...
             cert=self.cert,
             cert_private_key=self.cert_private_key,
             region=self.region,
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
+            credential_client=self.credential_client,
         )
 
         # Verify results
         self.assertTrue(result)
         mock_get_current_cert.assert_called_once_with(
-            self.domain_name, self.access_key_id, self.access_key_secret
+            self.domain_name, self.credential_client
         )
         # Verify fingerprint comparison was called (twice: new cert and current cert)
         self.assertEqual(mock_get_fingerprint.call_count, 2)
@@ -142,8 +144,7 @@ MIIEpQIBAAKCAQEA...
             cert=self.cert,
             cert_private_key=self.cert_private_key,
             region=self.region,
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
+            credential_client=self.credential_client,
             force=True,
         )
 
@@ -165,8 +166,7 @@ MIIEpQIBAAKCAQEA...
                 cert=self.cert,
                 cert_private_key=self.cert_private_key,
                 region=self.region,
-                access_key_id=self.access_key_id,
-                access_key_secret=self.access_key_secret,
+                credential_client=self.credential_client,
             )
 
 
@@ -180,6 +180,7 @@ class TestLoadBalancerCertRenewer(unittest.TestCase):
         self.instance_id = "test-instance-id"
         self.listener_port = 443
         self.region = "cn-hangzhou"
+        self.credential_client = create_mock_credential_client()
         # Note: These are placeholder certificates (not real certificates).
         # They are safe to use because certificate validation is mocked in tests.
         self.cert = """-----BEGIN CERTIFICATE-----
@@ -191,9 +192,7 @@ MIIEpQIBAAKCAQEA...
 
     def test_create_client(self):
         """Test creating SLB client"""
-        client = LoadBalancerCertRenewer.create_client(
-            self.access_key_id, self.access_key_secret
-        )
+        client = LoadBalancerCertRenewer.create_client(self.credential_client)
         self.assertIsNotNone(client)
         # Verify client type
         self.assertIsInstance(client, Slb20140515Client)
@@ -231,8 +230,7 @@ MIIEpQIBAAKCAQEA...
             cert=self.cert,
             cert_private_key=self.cert_private_key,
             region=self.region,
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
+            credential_client=self.credential_client,
         )
 
         # Verify results
@@ -241,8 +239,7 @@ MIIEpQIBAAKCAQEA...
             self.instance_id,
             self.listener_port,
             self.region,
-            self.access_key_id,
-            self.access_key_secret,
+            self.credential_client,
         )
         mock_client.upload_server_certificate_with_options.assert_called_once()
         mock_client.set_load_balancer_https_listener_attribute_with_options.assert_called_once()
@@ -266,8 +263,7 @@ MIIEpQIBAAKCAQEA...
             cert=self.cert,
             cert_private_key=self.cert_private_key,
             region=self.region,
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
+            credential_client=self.credential_client,
         )
 
         # Verify results
@@ -276,8 +272,7 @@ MIIEpQIBAAKCAQEA...
             self.instance_id,
             self.listener_port,
             self.region,
-            self.access_key_id,
-            self.access_key_secret,
+            self.credential_client,
         )
         # Verify fingerprint comparison was called (once: new cert)
         mock_get_fingerprint.assert_called_once_with(self.cert)
@@ -313,8 +308,7 @@ MIIEpQIBAAKCAQEA...
             cert=self.cert,
             cert_private_key=self.cert_private_key,
             region=self.region,
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
+            credential_client=self.credential_client,
             force=True,
         )
 
@@ -333,6 +327,7 @@ class TestCdnCertRenewerErrorHandling(unittest.TestCase):
         self.access_key_id = "test_access_key_id"
         self.access_key_secret = "test_access_key_secret"
         self.domain_name = "test.example.com"
+        self.credential_client = create_mock_credential_client()
         # Note: These are placeholder certificates (not real certificates).
         # They are safe to use because is_cert_valid() is mocked in all tests
         # that would parse them.
@@ -355,8 +350,7 @@ MIIEpQIBAAKCAQEA...
 
         result = CdnCertRenewer.get_current_cert(
             domain_name=self.domain_name,
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
+            credential_client=self.credential_client,
         )
 
         self.assertIsNone(result)
@@ -383,8 +377,7 @@ MIIEpQIBAAKCAQEA...
                 cert=self.cert,
                 cert_private_key=self.cert_private_key,
                 region=self.region,
-                access_key_id=self.access_key_id,
-                access_key_secret=self.access_key_secret,
+                credential_client=self.credential_client,
             )
 
 
@@ -398,6 +391,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         self.instance_id = "test-instance-id"
         self.listener_port = 443
         self.region = "cn-hangzhou"
+        self.credential_client = create_mock_credential_client()
 
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
     def test_get_listener_cert_id_exception_handling(self, mock_create_client):
@@ -412,8 +406,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
             instance_id=self.instance_id,
             listener_port=self.listener_port,
             region=self.region,
-            access_key_id=self.access_key_id,
-            access_key_secret=self.access_key_secret,
+            credential_client=self.credential_client,
         )
 
         self.assertIsNone(result)
@@ -436,8 +429,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
                 instance_id=self.instance_id,
                 listener_port=self.listener_port,
                 region=self.region,
-                access_key_id=self.access_key_id,
-                access_key_secret=self.access_key_secret,
+                credential_client=self.credential_client,
             )
 
             self.assertIsNone(result)
@@ -465,8 +457,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
                 cert="test_cert",
                 cert_private_key="test_key",
                 region=self.region,
-                access_key_id=self.access_key_id,
-                access_key_secret=self.access_key_secret,
+                credential_client=self.credential_client,
             )
 
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.create_client")
@@ -487,8 +478,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
 
         result = CdnCertRenewer.get_current_cert(
             domain_name="test.example.com",
-            access_key_id="test_key_id",
-            access_key_secret="test_key_secret",
+            credential_client=create_mock_credential_client(),
         )
 
         self.assertEqual(result, "test_cert_content")
@@ -507,8 +497,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
 
         result = CdnCertRenewer.get_current_cert(
             domain_name="test.example.com",
-            access_key_id="test_key_id",
-            access_key_secret="test_key_secret",
+            credential_client=create_mock_credential_client(),
         )
 
         self.assertIsNone(result)
@@ -529,8 +518,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
             instance_id="test-instance-id",
             listener_port=443,
             region="cn-hangzhou",
-            access_key_id="test_key_id",
-            access_key_secret="test_key_secret",
+            credential_client=create_mock_credential_client(),
         )
 
         self.assertEqual(result, "test-cert-id")
@@ -551,8 +539,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
             instance_id="test-instance-id",
             listener_port=443,
             region="cn-hangzhou",
-            access_key_id="test_key_id",
-            access_key_secret="test_key_secret",
+            credential_client=create_mock_credential_client(),
         )
 
         self.assertIsNone(result)
@@ -571,8 +558,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
             instance_id="test-instance-id",
             listener_port=443,
             region="cn-hangzhou",
-            access_key_id="test_key_id",
-            access_key_secret="test_key_secret",
+            credential_client=create_mock_credential_client(),
         )
 
         self.assertIsNone(result)
@@ -602,8 +588,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
             instance_id="test-instance-id",
             listener_port=443,
             region="cn-hangzhou",
-            access_key_id="test_key_id",
-            access_key_secret="test_key_secret",
+            credential_client=create_mock_credential_client(),
         )
 
         self.assertEqual(result, "test:fingerprint:value")
@@ -630,8 +615,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
             instance_id="test-instance-id",
             listener_port=443,
             region="cn-hangzhou",
-            access_key_id="test_key_id",
-            access_key_secret="test_key_secret",
+            credential_client=create_mock_credential_client(),
         )
 
         self.assertIsNone(result)

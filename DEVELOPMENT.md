@@ -57,15 +57,32 @@ The project supports configuration via environment variables or `.env` files. Re
 
 ### Required Environment Variables
 
-- `CLOUD_ACCESS_KEY_ID`: Cloud service AccessKey ID (new name, preferred)
-- `CLOUD_ACCESS_KEY_SECRET`: Cloud service AccessKey Secret (new name, preferred)
+**Note:** When using OIDC authentication (`AUTH_METHOD=oidc`), `CLOUD_ACCESS_KEY_ID` and `CLOUD_ACCESS_KEY_SECRET` are NOT required.
+
+- `CLOUD_ACCESS_KEY_ID`: Cloud service AccessKey ID (new name, preferred, not required for OIDC)
+- `CLOUD_ACCESS_KEY_SECRET`: Cloud service AccessKey Secret (new name, preferred, not required for OIDC)
 - `SERVICE_TYPE`: Service type, options: `cdn` or `lb` (backward compatible: `slb`)
 
 ### Optional Environment Variables
 
 - `CLOUD_PROVIDER`: Cloud provider, options: `alibaba`, `aws`, `azure`, etc. (default: `alibaba`)
-- `AUTH_METHOD`: Authentication method, options: `access_key`, `sts`, `iam_role`, `service_account`, `env` (default: `access_key`)
+- `AUTH_METHOD`: Authentication method, options: `access_key`, `sts`, `iam_role`, `oidc`, `service_account`, `env` (default: `access_key`)
 - `CLOUD_SECURITY_TOKEN`: STS temporary security token (optional, required when `AUTH_METHOD=sts`)
+
+### OIDC Authentication (RRSA)
+
+When using OIDC authentication (`AUTH_METHOD=oidc`), the following environment variables are automatically injected by Kubernetes Service Account and RRSA:
+
+- `ALIBABA_CLOUD_ROLE_ARN` or `CLOUD_ROLE_ARN`: RAM Role ARN (automatically set from Service Account annotation)
+- `ALIBABA_CLOUD_OIDC_PROVIDER_ARN` or `CLOUD_OIDC_PROVIDER_ARN`: OIDC Provider ARN (automatically set by RRSA)
+- `ALIBABA_CLOUD_OIDC_TOKEN_FILE` or `CLOUD_OIDC_TOKEN_FILE`: Path to OIDC token file (automatically set by RRSA)
+
+**Note:** When using OIDC authentication, `CLOUD_ACCESS_KEY_ID` and `CLOUD_ACCESS_KEY_SECRET` are NOT required. Credentials are fetched dynamically from OIDC.
+
+**Reference:**
+
+- [Alibaba Cloud RRSA Documentation](https://help.aliyun.com/zh/ack/serverless-kubernetes/user-guide/use-rrsa-to-authorize-pods-to-access-different-cloud-services)
+- [Alibaba Cloud SDK Credentials Documentation](https://www.alibabacloud.com/help/en/sdk/developer-reference/v2-manage-python-access-credentials)
 - `FORCE_UPDATE`: Force update certificate even if it's the same (default: `false`)
 
 ### CDN Configuration (when SERVICE_TYPE=cdn)
@@ -539,6 +556,7 @@ cloud-cert-renewer/
 │   │   ├── access_key.py      # Access Key/Security Key authentication provider
 │   │   ├── sts.py             # STS temporary credentials authentication provider
 │   │   ├── iam_role.py        # IAM Role authentication provider
+│   │   ├── oidc.py            # OIDC (RRSA) authentication provider for Kubernetes
 │   │   ├── service_account.py # ServiceAccount authentication provider
 │   │   ├── env.py             # Environment variable authentication provider
 │   │   └── factory.py         # Authentication provider factory
