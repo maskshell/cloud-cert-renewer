@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 0.1.0). Leave empty to use version from pyproject.toml'
+        description: "Version to release (e.g., 0.1.0). Leave empty to use version from pyproject.toml"
         required: false
         type: string
       release_type:
-        description: 'Release type'
+        description: "Release type"
         required: true
         type: choice
         options:
@@ -17,23 +17,23 @@ on:
           - test
         default: release
       publish_docker:
-        description: 'Publish Docker image'
+        description: "Publish Docker image"
         required: false
         type: boolean
         default: true
       publish_helm:
-        description: 'Publish Helm Chart'
+        description: "Publish Helm Chart"
         required: false
         type: boolean
         default: true
       publish_pypi:
-        description: 'Publish PyPI package'
+        description: "Publish PyPI package"
         required: false
         type: boolean
         default: true
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   prepare:
@@ -244,7 +244,7 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
-          version: 'latest'
+          version: "latest"
 
       - name: Update Chart.yaml version
         run: |

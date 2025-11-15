@@ -15,8 +15,8 @@ from alibabacloud_slb20140515.client import Client as Slb20140515Client
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.cert_renewer.base import CertValidationError
-from cloud_cert_renewer.clients.alibaba import (
+from cloud_cert_renewer.cert_renewer.base import CertValidationError  # noqa: E402
+from cloud_cert_renewer.clients.alibaba import (  # noqa: E402
     CdnCertRenewer,
     LoadBalancerCertRenewer,
 )

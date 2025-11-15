@@ -10,7 +10,7 @@ import unittest
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.container import (
+from cloud_cert_renewer.container import (  # noqa: E402
     DIContainer,
     get_container,
     get_service,

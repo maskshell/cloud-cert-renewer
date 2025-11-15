@@ -7,7 +7,7 @@ from unittest.mock import patch
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.utils.ssl_cert_parser import (  # noqa: I001
+from cloud_cert_renewer.utils.ssl_cert_parser import (  # noqa: E402, I001
     get_cert_fingerprint_sha1,
     get_cert_fingerprint_sha256,
     is_cert_valid,

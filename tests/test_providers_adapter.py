@@ -11,9 +11,12 @@ from unittest.mock import patch
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.config.models import Credentials
-from cloud_cert_renewer.providers.alibaba import AlibabaCloudAdapter
-from cloud_cert_renewer.providers.base import CloudAdapter, CloudAdapterFactory
+from cloud_cert_renewer.config.models import Credentials  # noqa: E402
+from cloud_cert_renewer.providers.alibaba import AlibabaCloudAdapter  # noqa: E402
+from cloud_cert_renewer.providers.base import (  # noqa: E402
+    CloudAdapter,
+    CloudAdapterFactory,
+)
 
 
 class TestAlibabaCloudAdapter(unittest.TestCase):

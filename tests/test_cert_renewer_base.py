@@ -11,8 +11,11 @@ from unittest.mock import MagicMock
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer, CertValidationError
-from cloud_cert_renewer.config.models import (
+from cloud_cert_renewer.cert_renewer.base import (  # noqa: E402
+    BaseCertRenewer,
+    CertValidationError,
+)
+from cloud_cert_renewer.config.models import (  # noqa: E402
     AppConfig,
     CdnConfig,
     Credentials,

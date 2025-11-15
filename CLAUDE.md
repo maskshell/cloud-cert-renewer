@@ -81,6 +81,7 @@ alwaysApply: true
    - [ ] Integration tests cover new workflows
 
 **Key Principles:**
+
 - Organize tests by design patterns, not implementation details
 - Test the design pattern layer, not underlying implementations
 - Update tests with every code change following the same design patterns
@@ -114,11 +115,13 @@ alwaysApply: true
    - `uv run yamllint . --config-file .yamllint || true` - Check YAML files (matches CI: `.github/workflows/ci.yml` line 41; `|| true` allows non-critical warnings)
 
 **Requirements:**
+
 - These checks MUST match the exact commands used in `.github/workflows/ci.yml` lint-and-format job
 - If any check fails after auto-fix attempts, manually fix the issues before committing
 - Exception: When user explicitly requests to skip checks (e.g., "commit without checks"), follow user's instruction
 
 **This ensures that:**
+
 - Code quality standards are maintained
 - CI pipeline will pass without formatting/linting errors
 - Consistent code style across the project

@@ -10,8 +10,8 @@ import unittest
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.config import ConfigError, load_config
-from cloud_cert_renewer.config.models import (
+from cloud_cert_renewer.config import ConfigError, load_config  # noqa: E402
+from cloud_cert_renewer.config.models import (  # noqa: E402
     AppConfig,
 )
 
