@@ -215,4 +215,3 @@ If you encounter issues not covered in this guide:
    - Configuration (with sensitive data redacted)
    - Steps to reproduce
    - Environment details (Kubernetes version, Python version, etc.)
-

@@ -71,4 +71,3 @@ else
     echo "  Expected: $VERSION"
     exit 1
 fi
-

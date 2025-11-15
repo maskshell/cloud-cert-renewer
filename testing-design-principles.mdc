@@ -140,7 +140,7 @@ class TestCertRenewerFactory(unittest.TestCase):
     def test_factory_create_cdn_renewer(self):
         """Test factory creates CDN renewer strategy"""
         pass
-    
+
     def test_factory_invalid_service_type(self):
         """Test factory raises error for invalid service type"""
         pass
@@ -262,7 +262,7 @@ class TestCertRenewerFactory(unittest.TestCase):
         """Test factory creates CDN renewer strategy"""
         config = AppConfig(service_type="cdn", ...)
         renewer = CertRenewerFactory.create(config)
-        
+
         self.assertIsInstance(renewer, BaseCertRenewer)
         self.assertIsInstance(renewer, CdnCertRenewerStrategy)
         self.assertEqual(renewer.config, config)

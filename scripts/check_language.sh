@@ -26,17 +26,17 @@ for file in $FILES; do
     if [[ "$file" =~ ^(helm/|\.pytest_cache/|__pycache__/) ]]; then
         continue
     fi
-    
+
     # Check for Chinese characters (Unicode range: \u4e00-\u9fff)
     if grep -P "[\u4e00-\u9fff]" "$file" > /dev/null 2>&1; then
         # Check if it's in an exception context
         # 1. Check if it's in a string marked as non-English content
         # 2. Check if it's in a comment explaining it's an exception
         # 3. Check if it's test data
-        
+
         # For now, we'll flag it and let the developer decide
         # In a real implementation, you might want more sophisticated detection
-        
+
         # Check if file contains exception markers
         if grep -iE "(translation|i18n|multilingual|test data|example|例外|exception)" "$file" > /dev/null 2>&1; then
             echo -e "${YELLOW}Warning:${NC} $file contains Chinese characters, but may be in an exception context"
@@ -68,4 +68,3 @@ fi
 
 echo -e "${GREEN}Language policy check passed!${NC}"
 exit 0
-

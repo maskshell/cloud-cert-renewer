@@ -311,6 +311,7 @@ The project includes a unified release workflow (`.github/workflows/release.yml`
 5. Click **Run workflow**
 
 The workflow will:
+
 - Synchronize versions across all files (`pyproject.toml`, `__init__.py`, `Chart.yaml`)
 - Run tests and code quality checks
 - Build distribution packages
@@ -330,6 +331,7 @@ git push origin v0.1.0
 ```
 
 When a tag matching `v*` is pushed, the workflow will automatically:
+
 - Extract version from tag (e.g., `v0.1.0` → `0.1.0`)
 - Synchronize versions across all files (`pyproject.toml`, `__init__.py`, `Chart.yaml`)
 - Run tests and code quality checks
@@ -345,20 +347,20 @@ When a tag matching `v*` is pushed, the workflow will automatically:
 
 The workflow supports three release types:
 
-- **Release** (`release`): 
+- **Release** (`release`):
   - Full release with all artifacts
   - Publishes to PyPI (production)
   - Creates Git tag
   - Creates GitHub Release with release notes from `CHANGELOG.md`
   - Docker images tagged with version and `latest`
-  
-- **Pre-release** (`pre-release`): 
+
+- **Pre-release** (`pre-release`):
   - Release candidate (e.g., `0.1.0-rc.1`)
   - Publishes to all repositories (PyPI, Docker, Helm)
   - Does not create Git tag or GitHub Release
   - Useful for testing release candidates
-  
-- **Test** (`test`): 
+
+- **Test** (`test`):
   - Test build (e.g., `0.1.0-test`)
   - Publishes to TestPyPI (not production PyPI)
   - Publishes Docker images with test tags
@@ -379,11 +381,13 @@ After a successful release:
 ### Version Management
 
 The release workflow automatically synchronizes versions across all files:
+
 - `pyproject.toml` - Python package version
 - `cloud_cert_renewer/__init__.py` - `__version__`
 - `helm/cloud-cert-renewer/Chart.yaml` - `version` and `appVersion`
 
 **Automatic Version Synchronization:**
+
 - When using manual workflow dispatch with a version specified, the workflow updates all files
 - When pushing a Git tag, the workflow extracts the version and updates all files
 - Version consistency is verified before proceeding with the release
@@ -396,6 +400,7 @@ You can use the helper script to update versions locally before committing:
 ```
 
 This script:
+
 - Updates versions in all three files
 - Validates version consistency
 - Supports semantic versioning (e.g., `0.1.0`, `0.1.0-rc.1`, `0.1.0-test`)
@@ -430,6 +435,7 @@ python -m build
 ```
 
 This creates:
+
 - `dist/cloud-cert-renewer-<version>.tar.gz` (source distribution)
 - `dist/cloud_cert_renewer-<version>-py3-none-any.whl` (wheel)
 
@@ -453,6 +459,7 @@ twine upload dist/*
 ```
 
 You will be prompted for:
+
 - Username: `__token__`
 - Password: Your PyPI API token
 
@@ -465,6 +472,7 @@ You will be prompted for:
 ### Version Management
 
 Follow [Semantic Versioning](https://semver.org/):
+
 - **MAJOR**: Breaking changes
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes (backward compatible)
@@ -478,6 +486,7 @@ Follow [Semantic Versioning](https://semver.org/):
 **Manual update:**
 
 Update version in:
+
 1. `pyproject.toml` - `version = "x.y.z"`
 2. `cloud_cert_renewer/__init__.py` - `__version__ = "x.y.z"`
 3. `helm/cloud-cert-renewer/Chart.yaml` - `version: x.y.z` and `appVersion: "x.y.z"`
@@ -497,11 +506,13 @@ Before creating a release:
 - [ ] Create release via GitHub Actions (manual) or push Git tag (automatic)
 
 **For Manual Release:**
+
 - Go to Actions → Release → Run workflow
 - Select release type and configure options
 - Monitor workflow execution
 
 **For Automatic Release:**
+
 - Create and push Git tag: `git tag v0.1.0 && git push origin v0.1.0`
 - Workflow will automatically handle the rest
 

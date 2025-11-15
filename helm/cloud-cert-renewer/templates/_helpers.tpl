@@ -64,4 +64,3 @@ reloader.stakater.com/search: "{{ .Values.reloader.search }}"
 {{- end }}
 {{- end }}
 {{- end }}
-
