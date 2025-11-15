@@ -140,14 +140,16 @@ The project is configured with `yamllint` and `pre-commit` for YAML file checkin
 
 ```bash
 # Check all YAML files
-uv run yamllint .
+uv run yamllint . --config-file .yamllint
 
 # Check specific file
-uv run yamllint k8s/deployment.yaml
+uv run yamllint k8s/deployment.yaml --config-file .yamllint
 
-# Check and auto-fix (some issues)
-uv run yamllint --format parsable k8s/deployment.yaml
+# Check GitHub workflows (excludes Helm charts)
+uv run yamllint .github/workflows/ --config-file .yamllint
 ```
+
+**Note:** The `.yamllint` configuration sets `line-length` to `warning` level. While warnings won't fail pre-commit hooks, they should still be fixed before committing to maintain code quality. Run `yamllint` manually to check for warnings.
 
 ### Using pre-commit (recommended)
 
