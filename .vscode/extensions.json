@@ -1,0 +1,17 @@
+{
+  "recommendations": [
+    "charliermarsh.ruff",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "redhat.vscode-yaml",
+    "eamodio.gitlens",
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+    "editorconfig.editorconfig"
+  ],
+  "unwantedRecommendations": [
+    "ms-python.black-formatter",
+    "ms-python.autopep8",
+    "ms-python.isort"
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  // Python Language Server
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.diagnosticMode": "workspace",
+
+  // Ruff - Formatting and Linting
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  // Ruff Extension Settings
+  "ruff.enable": true,
+  "ruff.organizeImports": true,
+  "ruff.fixAll": true,
+
+  // YAML Formatting and Linting
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+
+  // YAML Lint Settings
+  "yaml.schemas": {},
+  "yaml.customTags": [],
+  "yaml.format.enable": true,
+  "yaml.format.singleQuote": false,
+  "yaml.format.bracketSpacing": true,
+  "yaml.format.proseWrap": "preserve",
+  "yaml.format.printWidth": 120,
+
+  // Markdown Formatting and Linting
+  "[markdown]": {
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.markdownlint": "explicit"
+    }
+  },
+
+  // Markdownlint Settings
+  "markdownlint.config": {
+    "default": true,
+    "MD013": {
+      "line_length": 120
+    },
+    "MD033": false
+  },
+
+  // File Associations
+  "files.associations": {
+    "*.yaml": "yaml",
+    "*.yml": "yaml",
+    "*.tpl": "yaml"
+  },
+
+  // Editor Settings
+  "editor.rulers": [88, 120],
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // Exclude patterns for file watcher
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.venv/**": true,
+    "**/__pycache__/**": true,
+    "**/.pytest_cache/**": true,
+    "**/.ruff_cache/**": true,
+    "**/dist/**": true,
+    "**/build/**": true
+  },
+
+  // Search Exclude
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.venv": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.git": true
+  }
+}

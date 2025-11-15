@@ -119,8 +119,10 @@ class CloudAdapterFactory:
         cloud_provider = cloud_provider.lower()
         adapter_class = cls._adapters.get(cloud_provider)
         if not adapter_class:
+            supported = ", ".join(cls._adapters.keys())
             raise ValueError(
-                f"Unsupported cloud service provider: {cloud_provider}, supported: {', '.join(cls._adapters.keys())}"
+                f"Unsupported cloud service provider: {cloud_provider}, "
+                f"supported: {supported}"
             )
         return adapter_class()
 

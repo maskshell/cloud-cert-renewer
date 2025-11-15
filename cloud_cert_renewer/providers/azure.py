@@ -1,6 +1,7 @@
 """Azure adapter
 
-Implements adapter for Azure CDN and Load Balancer certificate renewal (placeholder implementation).
+Implements adapter for Azure CDN and Load Balancer certificate renewal
+(placeholder implementation).
 """
 
 from cloud_cert_renewer.config import Credentials

@@ -1,6 +1,7 @@
 """Dependency injection container module
 
-Provides simple dependency injection container implementation, supporting service registration and resolution.
+Provides simple dependency injection container implementation,
+supporting service registration and resolution.
 """
 
 import logging
@@ -72,9 +73,12 @@ class DIContainer:
 
             # If singleton, cache instance
             if service_name in self._factories:
-                # Check if should be singleton (by checking if already registered in singletons)
-                # Here simplified: if factory exists and not in singletons, create and cache
-                # Actually should judge by singleton parameter during register, here simplified implementation
+                # Check if should be singleton (by checking if already
+                # registered in singletons)
+                # Here simplified: if factory exists and not in singletons,
+                # create and cache
+                # Actually should judge by singleton parameter during register,
+                # here simplified implementation
                 self._singletons[service_name] = instance
 
             return instance

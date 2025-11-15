@@ -1,6 +1,7 @@
 """Cloud service provider adapter module
 
-Provides multi-cloud adapter interfaces and implementations, supporting certificate renewal for different cloud service providers.
+Provides multi-cloud adapter interfaces and implementations,
+supporting certificate renewal for different cloud service providers.
 """
 
 from cloud_cert_renewer.providers.alibaba import AlibabaCloudAdapter

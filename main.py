@@ -41,7 +41,8 @@ def main() -> None:
         )
 
         logger.info(
-            "Starting certificate renewal: service_type=%s, cloud_provider=%s, auth_method=%s, region=%s, force_update=%s",
+            "Starting certificate renewal: service_type=%s, "
+            "cloud_provider=%s, auth_method=%s, region=%s, force_update=%s",
             config.service_type,
             config.cloud_provider,
             config.auth_method,

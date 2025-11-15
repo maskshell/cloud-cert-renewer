@@ -1,6 +1,7 @@
 """AWS adapter
 
-Implements adapter for AWS CloudFront and ELB/ALB certificate renewal (placeholder implementation).
+Implements adapter for AWS CloudFront and ELB/ALB certificate renewal
+(placeholder implementation).
 """
 
 from cloud_cert_renewer.config import Credentials

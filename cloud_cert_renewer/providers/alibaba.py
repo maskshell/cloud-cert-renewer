@@ -73,7 +73,10 @@ class AlibabaCloudAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
     ) -> str | None:
-        """Get Alibaba Cloud Load Balancer current certificate fingerprint (via Alibaba Cloud adapter)"""
+        """
+        Get Alibaba Cloud Load Balancer current certificate fingerprint
+        (via Alibaba Cloud adapter)
+        """
         from cloud_cert_renewer.clients.alibaba import LoadBalancerCertRenewer
 
         return LoadBalancerCertRenewer.get_current_cert_fingerprint(

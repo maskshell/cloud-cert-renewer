@@ -13,8 +13,10 @@ def parse_cert_info(cert_content: str) -> (list[str], str):
     :param cert_content: cert content (may contain certificate chain)
     :return: domain name list and expire date
     """
-    # For certificate chains, only parse the first certificate (server certificate)
-    # load_pem_x509_certificate will automatically handle this, only loading the first certificate
+    # For certificate chains, only parse the first certificate
+    # (server certificate)
+    # load_pem_x509_certificate will automatically handle this,
+    # only loading the first certificate
     cert = x509.load_pem_x509_certificate(cert_content.encode(), default_backend())
     cert_expire_date = cert.not_valid_after.strftime("%Y-%m-%d %H:%M:%S")
 

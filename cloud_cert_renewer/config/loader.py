@@ -1,6 +1,7 @@
 """Configuration loader
 
-Loads configuration from environment variables, supports fallback for old and new environment variable names.
+Loads configuration from environment variables, supports fallback for old and
+new environment variable names.
 """
 
 import logging
@@ -93,12 +94,14 @@ def load_config() -> AppConfig:
     access_key_id = _get_env_required(
         "CLOUD_ACCESS_KEY_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_ID",
-        "Missing required environment variable: CLOUD_ACCESS_KEY_ID or ALIBABA_CLOUD_ACCESS_KEY_ID",
+        "Missing required environment variable: "
+        "CLOUD_ACCESS_KEY_ID or ALIBABA_CLOUD_ACCESS_KEY_ID",
     )
     access_key_secret = _get_env_required(
         "CLOUD_ACCESS_KEY_SECRET",
         "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-        "Missing required environment variable: CLOUD_ACCESS_KEY_SECRET or ALIBABA_CLOUD_ACCESS_KEY_SECRET",
+        "Missing required environment variable: "
+        "CLOUD_ACCESS_KEY_SECRET or ALIBABA_CLOUD_ACCESS_KEY_SECRET",
     )
 
     # STS temporary credentials (optional)
@@ -153,7 +156,8 @@ def load_config() -> AppConfig:
         listener_port_str = _get_env_required(
             "LB_LISTENER_PORT",
             "SLB_LISTENER_PORT",
-            "Missing required environment variable: LB_LISTENER_PORT or SLB_LISTENER_PORT",
+            "Missing required environment variable: "
+            "LB_LISTENER_PORT or SLB_LISTENER_PORT",
         )
         cert = _get_env_required(
             "LB_CERT",
@@ -163,7 +167,8 @@ def load_config() -> AppConfig:
         cert_private_key = _get_env_required(
             "LB_CERT_PRIVATE_KEY",
             "SLB_CERT_PRIVATE_KEY",
-            "Missing required environment variable: LB_CERT_PRIVATE_KEY or SLB_CERT_PRIVATE_KEY",
+            "Missing required environment variable: "
+            "LB_CERT_PRIVATE_KEY or SLB_CERT_PRIVATE_KEY",
         )
         region = _get_env_with_fallback("LB_REGION", "SLB_REGION") or "cn-hangzhou"
 

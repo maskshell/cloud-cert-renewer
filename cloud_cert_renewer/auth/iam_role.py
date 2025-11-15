@@ -22,9 +22,11 @@ class IAMRoleCredentialProvider:
         """
         Get IAM Role credentials
         Note: This implementation needs to call the cloud provider's AssumeRole API
-        Currently only returns a placeholder, actual implementation needs to be adapted based on cloud provider
+        Currently only returns a placeholder, actual implementation needs to be
+        adapted based on cloud provider
         """
         # TODO: Implement AssumeRole logic
         raise NotImplementedError(
-            "IAM Role credential provider is not yet implemented, needs to implement AssumeRole logic based on cloud provider"
+            "IAM Role credential provider is not yet implemented, "
+            "needs to implement AssumeRole logic based on cloud provider"
         )

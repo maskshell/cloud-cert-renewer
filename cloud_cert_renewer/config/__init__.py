@@ -1,6 +1,7 @@
 """Configuration management module
 
-Provides definition and loading logic for configuration objects, supporting multi-cloud and multiple authentication methods.
+Provides definition and loading logic for configuration objects,
+supporting multi-cloud and multiple authentication methods.
 """
 
 from cloud_cert_renewer.config import loader, models

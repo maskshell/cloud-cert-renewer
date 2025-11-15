@@ -54,7 +54,8 @@ class CdnCertRenewer:
         :param domain_name: CDN domain name
         :param access_key_id: Cloud service AccessKey ID
         :param access_key_secret: Cloud service AccessKey Secret
-        :return: Certificate content (PEM format), or None if query fails or no certificate exists
+        :return: Certificate content (PEM format), or None if query fails or
+            no certificate exists
         """
         try:
             client = CdnCertRenewer.create_client(access_key_id, access_key_secret)
@@ -78,7 +79,8 @@ class CdnCertRenewer:
             return None
         except Exception as e:
             logger.warning(
-                "Failed to query CDN current certificate: %s, will skip certificate comparison",
+                "Failed to query CDN current certificate: %s, "
+                "will skip certificate comparison",
                 str(e),
             )
             return None
@@ -101,14 +103,16 @@ class CdnCertRenewer:
         :param region: Region
         :param access_key_id: Cloud service AccessKey ID
         :param access_key_secret: Cloud service AccessKey Secret
-        :param force: Whether to force update (update even if certificate is the same, for testing)
+        :param force: Whether to force update (update even if certificate is
+            the same, for testing)
         :return: Whether successful
         """
         try:
             # Validate certificate
             if not is_cert_valid(cert, domain_name):
                 raise CertValidationError(
-                    f"Certificate validation failed: domain {domain_name} is not in the certificate or certificate has expired"
+                    f"Certificate validation failed: domain {domain_name} "
+                    f"is not in the certificate or certificate has expired"
                 )
 
             # Query current certificate and compare
@@ -120,14 +124,16 @@ class CdnCertRenewer:
                 current_fingerprint = get_cert_fingerprint_sha256(current_cert)
                 if new_fingerprint == current_fingerprint:
                     logger.info(
-                        "CDN certificate unchanged, skipping update: domain=%s, fingerprint=%s",
+                        "CDN certificate unchanged, skipping update: domain=%s, "
+                        "fingerprint=%s",
                         domain_name,
                         new_fingerprint[:20] + "...",
                     )
                     return True
             elif force:
                 logger.info(
-                    "Force update mode enabled, will update even if certificate is the same: domain=%s",
+                    "Force update mode enabled, will update even if certificate "
+                    "is the same: domain=%s",
                     domain_name,
                 )
 
@@ -233,7 +239,8 @@ class LoadBalancerCertRenewer:
             return None
         except Exception as e:
             logger.warning(
-                "Failed to query SLB listener configuration: instance_id=%s, port=%s, error=%s",
+                "Failed to query SLB listener configuration: instance_id=%s, "
+                "port=%s, error=%s",
                 instance_id,
                 listener_port,
                 str(e),
@@ -289,7 +296,8 @@ class LoadBalancerCertRenewer:
             return None
         except Exception as e:
             logger.warning(
-                "Failed to query SLB current certificate fingerprint: %s, will skip certificate comparison",
+                "Failed to query SLB current certificate fingerprint: %s, "
+                "will skip certificate comparison",
                 str(e),
             )
             return None
@@ -314,7 +322,8 @@ class LoadBalancerCertRenewer:
         :param region: Region
         :param access_key_id: Cloud service AccessKey ID
         :param access_key_secret: Cloud service AccessKey Secret
-        :param force: Whether to force update (update even if certificate is the same, for testing)
+        :param force: Whether to force update (update even if certificate is
+            the same, for testing)
         :return: Whether successful
         """
         try:
@@ -326,7 +335,8 @@ class LoadBalancerCertRenewer:
                 new_fingerprint = get_cert_fingerprint_sha1(cert)
                 if new_fingerprint == current_fingerprint:
                     logger.info(
-                        "SLB certificate unchanged, skipping update: instance_id=%s, port=%s, fingerprint=%s",
+                        "SLB certificate unchanged, skipping update: "
+                        "instance_id=%s, port=%s, fingerprint=%s",
                         instance_id,
                         listener_port,
                         new_fingerprint[:20] + "...",
@@ -334,7 +344,8 @@ class LoadBalancerCertRenewer:
                     return True
             elif force:
                 logger.info(
-                    "Force update mode enabled, will update even if certificate is the same: instance_id=%s, port=%s",
+                    "Force update mode enabled, will update even if certificate "
+                    "is the same: instance_id=%s, port=%s",
                     instance_id,
                     listener_port,
                 )
@@ -360,8 +371,10 @@ class LoadBalancerCertRenewer:
             logger.info("SLB certificate uploaded successfully: cert_id=%s", cert_id)
 
             # Build request - Bind certificate to listener
-            # Note: SetLoadBalancerHTTPSListenerAttribute only needs to pass parameters that need to be updated
-            # Other parameters will keep their original values if not passed, so only server_certificate_id needs to be passed
+            # Note: SetLoadBalancerHTTPSListenerAttribute only needs to pass
+            # parameters that need to be updated
+            # Other parameters will keep their original values if not passed,
+            # so only server_certificate_id needs to be passed
             bind_request = (
                 slb_20140515_models.SetLoadBalancerHTTPSListenerAttributeRequest(
                     load_balancer_id=instance_id,
@@ -378,7 +391,8 @@ class LoadBalancerCertRenewer:
             )
 
             logger.info(
-                "SLB certificate bound successfully: instance_id=%s, port=%s, cert_id=%s, status_code=%s",
+                "SLB certificate bound successfully: instance_id=%s, "
+                "port=%s, cert_id=%s, status_code=%s",
                 instance_id,
                 listener_port,
                 cert_id,
@@ -386,7 +400,8 @@ class LoadBalancerCertRenewer:
             )
 
             logger.info(
-                "SLB certificate updated successfully: instance_id=%s, port=%s, cert_id=%s",
+                "SLB certificate updated successfully: instance_id=%s, "
+                "port=%s, cert_id=%s",
                 instance_id,
                 listener_port,
                 cert_id,

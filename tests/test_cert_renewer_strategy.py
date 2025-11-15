@@ -326,9 +326,10 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
 
     def test_get_current_cert_fingerprint_missing_config(self):
         """Test get_current_cert_fingerprint returns None when lb_config is missing"""
-        # Create a strategy and manually set config.lb_config to None to test the early return
-        # We can't create AppConfig with None lb_config due to validation, so we test differently
-        # by creating a mock config object
+        # Create a strategy and manually set config.lb_config to None to test
+        # the early return
+        # We can't create AppConfig with None lb_config due to validation,
+        # so we test differently by creating a mock config object
         from unittest.mock import MagicMock
 
         mock_config = MagicMock()

@@ -42,7 +42,8 @@ class BaseCertRenewer(ABC):
         # Step 1: Validate certificate
         if not self._validate_cert(cert, domain_or_instance):
             raise CertValidationError(
-                f"Certificate validation failed: domain {domain_or_instance} is not in the certificate or certificate has expired"
+                f"Certificate validation failed: domain {domain_or_instance} "
+                f"is not in the certificate or certificate has expired"
             )
 
         # Step 2: Compare certificate fingerprints (if force update is not required)
@@ -59,7 +60,8 @@ class BaseCertRenewer(ABC):
                     return True
         else:
             logger.info(
-                "Force update mode enabled, will update even if certificate is the same: %s",
+                "Force update mode enabled, will update even if certificate "
+                "is the same: %s",
                 domain_or_instance,
             )
 

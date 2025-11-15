@@ -22,10 +22,14 @@ class ServiceAccountCredentialProvider:
     def get_credentials(self) -> Credentials:
         """
         Get ServiceAccount credentials
-        Note: This implementation needs to read token from Kubernetes ServiceAccount and call cloud provider API
-        Currently only returns a placeholder, actual implementation needs to be adapted based on cloud provider
+        Note: This implementation needs to read token from Kubernetes ServiceAccount
+        and call cloud provider API
+        Currently only returns a placeholder, actual implementation needs to be
+        adapted based on cloud provider
         """
         # TODO: Implement ServiceAccount token reading and cloud provider API call logic
         raise NotImplementedError(
-            "ServiceAccount credential provider is not yet implemented, needs to implement token reading and API call logic based on cloud provider"
+            "ServiceAccount credential provider is not yet implemented, "
+            "needs to implement token reading and API call logic based on "
+            "cloud provider"
         )

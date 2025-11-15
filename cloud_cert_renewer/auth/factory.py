@@ -23,7 +23,8 @@ class CredentialProviderFactory:
     ) -> CredentialProvider:
         """
         Create credential provider
-        :param auth_method: Authentication method (access_key, sts, iam_role, service_account, env)
+        :param auth_method: Authentication method
+            (access_key, sts, iam_role, service_account, env)
         :param credentials: Existing credentials object (optional)
         :param kwargs: Other parameters
         :return: CredentialProvider instance
@@ -42,7 +43,8 @@ class CredentialProviderFactory:
             access_key_secret = kwargs.get("access_key_secret")
             if not access_key_id or not access_key_secret:
                 raise ValueError(
-                    "access_key authentication method requires access_key_id and access_key_secret"
+                    "access_key authentication method requires "
+                    "access_key_id and access_key_secret"
                 )
             return AccessKeyCredentialProvider(
                 access_key_id=access_key_id, access_key_secret=access_key_secret
@@ -61,7 +63,8 @@ class CredentialProviderFactory:
             security_token = kwargs.get("security_token")
             if not access_key_id or not access_key_secret or not security_token:
                 raise ValueError(
-                    "sts authentication method requires access_key_id, access_key_secret and security_token"
+                    "sts authentication method requires access_key_id, "
+                    "access_key_secret and security_token"
                 )
             return STSCredentialProvider(
                 access_key_id=access_key_id,

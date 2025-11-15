@@ -1,6 +1,7 @@
 """Tests for cloud service clients module
 
-Tests the Alibaba Cloud client implementations (CdnCertRenewer, LoadBalancerCertRenewer).
+Tests the Alibaba Cloud client implementations
+(CdnCertRenewer, LoadBalancerCertRenewer).
 """
 
 import os
@@ -218,7 +219,9 @@ MIIEpQIBAAKCAQEA...
         )
         mock_bind_response = MagicMock()
         mock_bind_response.status_code = 200
-        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = mock_bind_response
+        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+            mock_bind_response
+        )
         mock_create_client.return_value = mock_client
 
         # Execute test
@@ -298,7 +301,9 @@ MIIEpQIBAAKCAQEA...
         )
         mock_bind_response = MagicMock()
         mock_bind_response.status_code = 200
-        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = mock_bind_response
+        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+            mock_bind_response
+        )
         mock_create_client.return_value = mock_client
 
         # Execute test (force=True)
@@ -398,8 +403,8 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
     def test_get_listener_cert_id_exception_handling(self, mock_create_client):
         """Test get_listener_cert_id handles exceptions gracefully"""
         mock_client = MagicMock()
-        mock_client.describe_load_balancer_https_listener_attribute_with_options.side_effect = Exception(
-            "API Error"
+        mock_client.describe_load_balancer_https_listener_attribute_with_options.side_effect = (  # noqa: E501
+            Exception("API Error")
         )
         mock_create_client.return_value = mock_client
 
@@ -515,7 +520,9 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = MagicMock()
         mock_response.body.server_certificate_id = "test-cert-id"
-        mock_client.describe_load_balancer_https_listener_attribute_with_options.return_value = mock_response
+        mock_client.describe_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+            mock_response
+        )
         mock_create_client.return_value = mock_client
 
         result = LoadBalancerCertRenewer.get_listener_cert_id(
@@ -535,7 +542,9 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = MagicMock()
         mock_response.body.server_certificate_id = None
-        mock_client.describe_load_balancer_https_listener_attribute_with_options.return_value = mock_response
+        mock_client.describe_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+            mock_response
+        )
         mock_create_client.return_value = mock_client
 
         result = LoadBalancerCertRenewer.get_listener_cert_id(

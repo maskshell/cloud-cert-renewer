@@ -88,7 +88,10 @@ class TestLoadConfig(unittest.TestCase):
         self.assertEqual(result.force_update, False)  # force defaults to False
 
     def test_load_config_slb_backward_compat(self):
-        """Test backward compatibility: SLB service type automatically converted to lb"""
+        """
+        Test backward compatibility: SLB service type automatically
+        converted to lb
+        """
         os.environ.update(
             {
                 "SERVICE_TYPE": "slb",

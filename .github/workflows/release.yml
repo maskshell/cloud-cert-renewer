@@ -65,7 +65,7 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/v}"
             RELEASE_TYPE="release"
           fi
-          
+
           # Determine if this is a release or test build
           if [ "$RELEASE_TYPE" = "test" ] || [[ "$VERSION" =~ -(test|dev|rc) ]]; then
             IS_TEST="true"
@@ -78,9 +78,9 @@ jobs:
               IS_RELEASE="false"
             fi
           fi
-          
+
           TAG="v${VERSION}"
-          
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "is_release=$IS_RELEASE" >> $GITHUB_OUTPUT
@@ -91,17 +91,17 @@ jobs:
         if: github.event.inputs.version != '' || github.event_name == 'push'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          
+
           # Update pyproject.toml
           sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
-          
+
           # Update __init__.py
           sed -i "s/^__version__ = \".*\"/__version__ = \"$VERSION\"/" cloud_cert_renewer/__init__.py
-          
+
           # Update Chart.yaml
           sed -i "s/^version: .*/version: $VERSION/" helm/cloud-cert-renewer/Chart.yaml
           sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" helm/cloud-cert-renewer/Chart.yaml
-          
+
           echo "Updated versions to $VERSION in all files"
 
       - name: Verify version consistency
@@ -110,7 +110,7 @@ jobs:
           INIT_VERSION=$(grep '^__version__ =' cloud_cert_renewer/__init__.py | sed 's/__version__ = "\(.*\)"/\1/')
           CHART_VERSION=$(grep '^version:' helm/cloud-cert-renewer/Chart.yaml | sed 's/version: //')
           CHART_APP_VERSION=$(grep '^appVersion:' helm/cloud-cert-renewer/Chart.yaml | sed 's/appVersion: "\(.*\)"/\1/')
-          
+
           if [ "$PYPROJECT_VERSION" != "$INIT_VERSION" ] || [ "$PYPROJECT_VERSION" != "$CHART_VERSION" ] || [ "$PYPROJECT_VERSION" != "$CHART_APP_VERSION" ]; then
             echo "Error: Version mismatch!"
             echo "pyproject.toml: $PYPROJECT_VERSION"
@@ -119,7 +119,7 @@ jobs:
             echo "Chart.yaml appVersion: $CHART_APP_VERSION"
             exit 1
           fi
-          
+
           echo "Version consistency check passed: $PYPROJECT_VERSION"
 
   build-and-test:
@@ -367,7 +367,7 @@ jobs:
         run: |
           VERSION="${{ needs.prepare.outputs.version }}"
           TAG="${{ needs.prepare.outputs.tag }}"
-          
+
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists, skipping tag creation"
           else
@@ -396,20 +396,20 @@ jobs:
           name: Release ${{ needs.prepare.outputs.tag }}
           body: |
             ${{ steps.release_notes.outputs.notes }}
-            
+
             ## Artifacts
-            
+
             ### Docker Image
             - `ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer:${{ needs.prepare.outputs.version }}`
             - `ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer:${{ needs.prepare.outputs.tag }}`
             - `ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer:latest`
             - **Multi-architecture**: Supports amd64 and arm64 platforms
-            
+
             ### Helm Chart
             - Chart version: `${{ needs.prepare.outputs.version }}`
             - Repository: `https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts`
             - Install: `helm repo add cloud-cert-renewer https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts && helm install cloud-cert-renewer cloud-cert-renewer/cloud-cert-renewer`
-            
+
             ### PyPI Package
             - Package: `cloud-cert-renewer==${{ needs.prepare.outputs.version }}`
             - Install: `pip install cloud-cert-renewer==${{ needs.prepare.outputs.version }}`
@@ -419,4 +419,3 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

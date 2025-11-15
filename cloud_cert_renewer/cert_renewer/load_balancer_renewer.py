@@ -30,8 +30,12 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
         )
 
     def _validate_cert(self, cert: str, instance_id: str) -> bool:
-        """Validate Load Balancer certificate (LB does not require domain validation, only certificate format validation)"""
-        # LB certificates do not require domain validation, only certificate format validation
+        """
+        Validate Load Balancer certificate
+        (LB does not require domain validation, only certificate format validation)
+        """
+        # LB certificates do not require domain validation,
+        # only certificate format validation
         try:
             x509.load_pem_x509_certificate(cert.encode(), default_backend())
             return True
