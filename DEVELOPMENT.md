@@ -118,11 +118,8 @@ When using Alibaba Cloud, ensure your AccessKey has the appropriate RAM permissi
 # Format code with ruff
 uv run ruff format .
 
-# Format code with black
-uv run black .
-
 # Check code format (without modification)
-uv run black . --check
+uv run ruff format --check .
 ```
 
 ## Code Linting
