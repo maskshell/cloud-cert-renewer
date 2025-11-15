@@ -78,7 +78,8 @@ jobs:
             fi
 
             if grep -P "[\u4e00-\u9fff]" "$file" > /dev/null 2>&1; then
-              if ! grep -iE "(translation|i18n|multilingual|test data|example|例外|exception)" "$file" > /dev/null 2>&1; then
+              if ! grep -iE "(translation|i18n|multilingual|test data|example|例外|exception)" \
+                   "$file" > /dev/null 2>&1; then
                 echo "Error: $file contains Chinese characters (non-English content detected)"
                 echo "Please ensure all content follows the English language policy."
                 echo "See CONTRIBUTING.md for details."
@@ -160,7 +161,8 @@ jobs:
           # Install bc for floating point comparison
           sudo apt-get update && sudo apt-get install -y bc || true
 
-          COVERAGE=$(uv run pytest --cov=cloud_cert_renewer --cov-report=term-missing -q 2>&1 | grep "TOTAL" | awk '{print $NF}' | sed 's/%//')
+          COVERAGE=$(uv run pytest --cov=cloud_cert_renewer --cov-report=term-missing -q 2>&1 | \
+            grep "TOTAL" | awk '{print $NF}' | sed 's/%//')
           echo "Current coverage: ${COVERAGE}%"
 
           # Check if coverage meets minimum requirements
