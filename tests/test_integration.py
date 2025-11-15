@@ -183,14 +183,16 @@ class TestIntegration(unittest.TestCase):
             load_config()
 
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.is_cert_valid")
-    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
+    @patch(
+        "cloud_cert_renewer.cert_renewer.cdn_renewer.CdnCertRenewerStrategy.get_current_cert_fingerprint"
+    )
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.get_cert_fingerprint_sha256")
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.renew_cert")
     def test_integration_with_dependency_injection(
         self,
         mock_renew_cert,
         mock_get_fingerprint,
-        mock_get_current_cert,
+        mock_get_current_fingerprint,
         mock_is_cert_valid,
     ):
         """Test integration with dependency injection container"""
@@ -209,9 +211,11 @@ class TestIntegration(unittest.TestCase):
 
         # Setup mocks
         mock_is_cert_valid.return_value = True
-        mock_get_current_cert.return_value = "current_cert"
+        mock_get_current_fingerprint.return_value = (
+            "current:fingerprint"  # Current certificate fingerprint
+        )
         mock_get_fingerprint.return_value = (
-            "different:fingerprint"  # Different, so will renew
+            "different:fingerprint"  # New certificate fingerprint (different)
         )
         mock_renew_cert.return_value = True
 
