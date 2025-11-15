@@ -1,13 +1,12 @@
 import re
 from datetime import datetime
-from typing import List
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 
 
-def parse_cert_info(cert_content: str) -> (List[str], str):
+def parse_cert_info(cert_content: str) -> (list[str], str):
     """
     Parse cert info from cert content, return domain name list and expire date and time.
     For certificate chains, only the first certificate (server certificate) is parsed.
@@ -43,7 +42,7 @@ def parse_cert_info(cert_content: str) -> (List[str], str):
     return cert_domain_name_list, cert_expire_date
 
 
-def is_domain_name_match(domain_name: str, domain_name_list: List[str]) -> bool:
+def is_domain_name_match(domain_name: str, domain_name_list: list[str]) -> bool:
     """
     Check a specified domain name whether in a domain name list.
     The domain name list may contain a wildcard domain name.

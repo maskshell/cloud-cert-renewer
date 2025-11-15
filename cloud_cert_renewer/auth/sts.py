@@ -4,7 +4,6 @@ Provides credential retrieval based on STS temporary credentials.
 """
 
 from cloud_cert_renewer.config import Credentials
-from cloud_cert_renewer.auth.base import CredentialProvider
 
 
 class STSCredentialProvider:

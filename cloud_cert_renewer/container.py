@@ -4,7 +4,8 @@ Provides simple dependency injection container implementation, supporting servic
 """
 
 import logging
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 

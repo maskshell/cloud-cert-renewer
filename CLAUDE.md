@@ -98,6 +98,32 @@ alwaysApply: true
 - Refer to [DEVELOPMENT.md](DEVELOPMENT.md) for specific formatting commands
 - Only use AI formatting when local tools are unavailable or insufficient
 
+### Pre-Commit Code Quality Checks
+
+**Before committing code changes, MUST run the following checks to ensure code quality (matching CI workflow in `.github/workflows/ci.yml`):**
+
+1. **Check code formatting:**
+   - `uv run ruff format --check .` - Check code formatting (matches CI: `.github/workflows/ci.yml` line 35)
+   - If check fails, run `uv run ruff format .` to auto-fix, then verify with `--check` again
+
+2. **Run linter:**
+   - `uv run ruff check .` - Run linter (matches CI: `.github/workflows/ci.yml` line 38)
+   - If check fails, run `uv run ruff check . --fix` to auto-fix issues, then verify again
+
+3. **Check YAML files (if YAML files were modified):**
+   - `uv run yamllint . --config-file .yamllint || true` - Check YAML files (matches CI: `.github/workflows/ci.yml` line 41; `|| true` allows non-critical warnings)
+
+**Requirements:**
+- These checks MUST match the exact commands used in `.github/workflows/ci.yml` lint-and-format job
+- If any check fails after auto-fix attempts, manually fix the issues before committing
+- Exception: When user explicitly requests to skip checks (e.g., "commit without checks"), follow user's instruction
+
+**This ensures that:**
+- Code quality standards are maintained
+- CI pipeline will pass without formatting/linting errors
+- Consistent code style across the project
+- Pre-commit checks exactly match CI workflow requirements
+
 ## Rule Management
 
 1. **Rule Scale Management**

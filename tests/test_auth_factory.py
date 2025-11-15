@@ -10,12 +10,12 @@ import unittest
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.auth.factory import CredentialProviderFactory
 from cloud_cert_renewer.auth.access_key import AccessKeyCredentialProvider
-from cloud_cert_renewer.auth.sts import STSCredentialProvider
 from cloud_cert_renewer.auth.env import EnvCredentialProvider
+from cloud_cert_renewer.auth.factory import CredentialProviderFactory
 from cloud_cert_renewer.auth.iam_role import IAMRoleCredentialProvider
 from cloud_cert_renewer.auth.service_account import ServiceAccountCredentialProvider
+from cloud_cert_renewer.auth.sts import STSCredentialProvider
 from cloud_cert_renewer.config.models import Credentials
 
 

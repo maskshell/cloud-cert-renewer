@@ -3,12 +3,12 @@
 Provides certificate renewer creation logic.
 """
 
-from cloud_cert_renewer.config import AppConfig
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
 from cloud_cert_renewer.cert_renewer.cdn_renewer import CdnCertRenewerStrategy
 from cloud_cert_renewer.cert_renewer.load_balancer_renewer import (
     LoadBalancerCertRenewerStrategy,
 )
+from cloud_cert_renewer.config import AppConfig
 
 
 class CertRenewerFactory:

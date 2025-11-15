@@ -13,9 +13,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from cloud_cert_renewer.config import ConfigError, load_config
 from cloud_cert_renewer.config.models import (
     AppConfig,
-    CdnConfig,
-    Credentials,
-    LoadBalancerConfig,
 )
 
 

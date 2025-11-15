@@ -7,9 +7,9 @@ has been moved to the cloud_cert_renewer.cert_renewer submodule.
 # Backward compatibility: Import everything from the new module
 from cloud_cert_renewer.cert_renewer import (  # noqa: F401
     BaseCertRenewer,
+    CdnCertRenewerStrategy,
     CertRenewerFactory,
     CertValidationError,
-    CdnCertRenewerStrategy,
     LoadBalancerCertRenewerStrategy,
 )
 

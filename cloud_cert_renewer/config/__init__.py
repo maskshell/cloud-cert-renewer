@@ -3,8 +3,7 @@
 Provides definition and loading logic for configuration objects, supporting multi-cloud and multiple authentication methods.
 """
 
-from cloud_cert_renewer.config import loader
-from cloud_cert_renewer.config import models
+from cloud_cert_renewer.config import loader, models
 
 # Import from submodules
 ConfigError = loader.ConfigError

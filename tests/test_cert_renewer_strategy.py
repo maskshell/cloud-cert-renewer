@@ -316,7 +316,6 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
     )
     def test_validate_cert_invalid_format(self, mock_load_cert):
         """Test certificate validation with invalid format"""
-        from cryptography import x509
 
         # Mock to raise exception for invalid certificate
         mock_load_cert.side_effect = ValueError("Invalid certificate format")

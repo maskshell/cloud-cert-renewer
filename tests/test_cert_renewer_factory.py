@@ -10,9 +10,9 @@ import unittest
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.cert_renewer.factory import CertRenewerFactory
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
 from cloud_cert_renewer.cert_renewer.cdn_renewer import CdnCertRenewerStrategy
+from cloud_cert_renewer.cert_renewer.factory import CertRenewerFactory
 from cloud_cert_renewer.cert_renewer.load_balancer_renewer import (
     LoadBalancerCertRenewerStrategy,
 )
