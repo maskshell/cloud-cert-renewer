@@ -151,16 +151,29 @@ uv run yamllint --format parsable k8s/deployment.yaml
 
 ### Using pre-commit (recommended)
 
+**Pre-commit hooks execution context:**
+
+- **Local development**: Hooks run automatically before `git commit` and can **modify files** (auto-fix formatting, linting issues)
+- **CI/CD (GitHub Workflows)**: Hooks run in **check-only mode** and **never modify files** to ensure CI consistency
+
 ```bash
 # Install pre-commit hooks (automatically run on git commit)
 uv run pre-commit install
 
-# Manually run all checks
+# Manually run all checks (local: can modify files)
 uv run pre-commit run --all-files
 
 # Only check YAML files
 uv run pre-commit run yamllint --all-files
 ```
+
+**Note for CI/CD:**
+
+In GitHub Workflows, the `pre-commit` job uses `SKIP` environment variable to skip hooks that modify files (`trailing-whitespace`, `end-of-file-fixer`, `ruff`, `ruff-format`, `prettier`). These checks are already performed by the `lint-and-format` job using read-only commands (`ruff format --check`, `ruff check`). This ensures:
+
+- CI never modifies source code
+- Build results are predictable and consistent
+- Code quality is verified without side effects
 
 ### Recommended YAML formatting tools
 

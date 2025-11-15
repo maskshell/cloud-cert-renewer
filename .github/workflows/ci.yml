@@ -207,7 +207,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
-      - name: Run pre-commit hooks
+      - name: Run pre-commit hooks (check only, no file modifications)
+        env:
+          # Skip hooks that modify files in CI
+          # These hooks are already checked in lint-and-format job
+          SKIP: trailing-whitespace,end-of-file-fixer,ruff,ruff-format,prettier
         run: uv run pre-commit run --all-files
 
   test-design-patterns:
