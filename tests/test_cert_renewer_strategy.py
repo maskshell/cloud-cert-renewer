@@ -114,20 +114,22 @@ class TestCdnCertRenewerStrategy(unittest.TestCase):
         mock_renew_cert.assert_called_once()
 
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.is_cert_valid")
-    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
+    @patch(
+        "cloud_cert_renewer.cert_renewer.cdn_renewer.CdnCertRenewerStrategy.get_current_cert_fingerprint"
+    )
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.get_cert_fingerprint_sha256")
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.renew_cert")
     def test_strategy_renew_success(
         self,
         mock_renew_cert,
         mock_get_fingerprint,
-        mock_get_current_cert,
+        mock_get_current_fingerprint,
         mock_is_cert_valid,
     ):
         """Test successful certificate renewal through strategy"""
         # Setup mocks
         mock_is_cert_valid.return_value = True
-        mock_get_current_cert.return_value = None  # No current certificate
+        mock_get_current_fingerprint.return_value = None  # No current certificate
         mock_get_fingerprint.return_value = "new:fingerprint"
         mock_renew_cert.return_value = True
 
@@ -247,7 +249,7 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
         "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate"
     )
     @patch(
-        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
+        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.LoadBalancerCertRenewerStrategy.get_current_cert_fingerprint"
     )
     @patch(
         "cloud_cert_renewer.cert_renewer.load_balancer_renewer.get_cert_fingerprint_sha1"
