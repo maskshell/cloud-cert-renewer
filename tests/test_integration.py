@@ -64,7 +64,9 @@ class TestIntegration(unittest.TestCase):
         # Register to container
         container = get_container()
         register_service("config", instance=config, singleton=True)
-        register_service("cert_renewer_factory", instance=CertRenewerFactory, singleton=True)
+        register_service(
+            "cert_renewer_factory", instance=CertRenewerFactory, singleton=True
+        )
 
         # Get factory and create renewer
         factory = container.get("cert_renewer_factory")
@@ -78,8 +80,12 @@ class TestIntegration(unittest.TestCase):
         mock_is_cert_valid.assert_called_once()
         mock_renew_cert.assert_called_once()
 
-    @patch("cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate")
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint")
+    @patch(
+        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate"
+    )
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
+    )
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.renew_cert")
     def test_main_lb_renewal_flow(
         self, mock_renew_cert, mock_get_fingerprint, mock_load_cert
@@ -110,7 +116,9 @@ class TestIntegration(unittest.TestCase):
         # Register to container
         container = get_container()
         register_service("config", instance=config, singleton=True)
-        register_service("cert_renewer_factory", instance=CertRenewerFactory, singleton=True)
+        register_service(
+            "cert_renewer_factory", instance=CertRenewerFactory, singleton=True
+        )
 
         # Get factory and create renewer
         factory = container.get("cert_renewer_factory")
@@ -148,7 +156,9 @@ class TestIntegration(unittest.TestCase):
         # Register to container
         container = get_container()
         register_service("config", instance=config, singleton=True)
-        register_service("cert_renewer_factory", instance=CertRenewerFactory, singleton=True)
+        register_service(
+            "cert_renewer_factory", instance=CertRenewerFactory, singleton=True
+        )
 
         # Get factory and create renewer
         factory = container.get("cert_renewer_factory")
@@ -200,7 +210,9 @@ class TestIntegration(unittest.TestCase):
         # Setup mocks
         mock_is_cert_valid.return_value = True
         mock_get_current_cert.return_value = "current_cert"
-        mock_get_fingerprint.return_value = "different:fingerprint"  # Different, so will renew
+        mock_get_fingerprint.return_value = (
+            "different:fingerprint"  # Different, so will renew
+        )
         mock_renew_cert.return_value = True
 
         # Load configuration
@@ -209,7 +221,9 @@ class TestIntegration(unittest.TestCase):
         # Register services to container
         container = get_container()
         register_service("config", instance=config, singleton=True)
-        register_service("cert_renewer_factory", instance=CertRenewerFactory, singleton=True)
+        register_service(
+            "cert_renewer_factory", instance=CertRenewerFactory, singleton=True
+        )
 
         # Get services from container
         factory = container.get("cert_renewer_factory")
@@ -225,4 +239,3 @@ class TestIntegration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

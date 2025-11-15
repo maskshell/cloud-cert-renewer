@@ -95,7 +95,9 @@ class TestAlibabaCloudAdapter(unittest.TestCase):
             access_key_secret="test_key_secret",
         )
 
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
+    )
     def test_get_current_lb_certificate_fingerprint(self, mock_get_fingerprint):
         """Test getting current LB certificate fingerprint through adapter"""
         mock_get_fingerprint.return_value = "test:fingerprint"
@@ -149,4 +151,3 @@ class TestCloudAdapterFactory(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

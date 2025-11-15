@@ -96,7 +96,9 @@ class TestCredentialProviderFactory(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             CredentialProviderFactory.create(auth_method="access_key")
 
-        self.assertIn("requires access_key_id and access_key_secret", str(context.exception))
+        self.assertIn(
+            "requires access_key_id and access_key_secret", str(context.exception)
+        )
 
     def test_factory_sts_missing_params(self):
         """Test factory raises error when sts method missing parameters"""
@@ -108,7 +110,10 @@ class TestCredentialProviderFactory(unittest.TestCase):
                 # Missing security_token
             )
 
-        self.assertIn("requires access_key_id, access_key_secret and security_token", str(context.exception))
+        self.assertIn(
+            "requires access_key_id, access_key_secret and security_token",
+            str(context.exception),
+        )
 
     def test_factory_case_insensitive(self):
         """Test factory is case insensitive for auth method"""
@@ -141,7 +146,9 @@ class TestCredentialProviderFactory(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             CredentialProviderFactory.create(auth_method="iam_role")
 
-        self.assertIn("iam_role authentication method requires role_arn", str(context.exception))
+        self.assertIn(
+            "iam_role authentication method requires role_arn", str(context.exception)
+        )
 
     def test_factory_create_iam_role_without_session_name(self):
         """Test factory creates IAM Role provider without session name"""
@@ -170,4 +177,3 @@ class TestCredentialProviderFactory(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

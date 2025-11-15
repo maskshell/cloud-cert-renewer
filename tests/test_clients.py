@@ -58,7 +58,9 @@ MIIEpQIBAAKCAQEA...
         """Test successful certificate renewal"""
         # Setup mocks
         mock_is_cert_valid.return_value = True
-        mock_get_current_cert.return_value = None  # No current certificate, need to update
+        mock_get_current_cert.return_value = (
+            None  # No current certificate, need to update
+        )
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -195,14 +197,18 @@ MIIEpQIBAAKCAQEA...
         # Verify client type
         self.assertIsInstance(client, Slb20140515Client)
 
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
+    )
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
     def test_renew_cert_success(
         self, mock_create_client, mock_get_current_cert_fingerprint
     ):
         """Test successful certificate renewal"""
         # Setup mocks
-        mock_get_current_cert_fingerprint.return_value = None  # No current certificate, need to update
+        mock_get_current_cert_fingerprint.return_value = (
+            None  # No current certificate, need to update
+        )
         mock_client = MagicMock()
         mock_upload_response = MagicMock()
         mock_upload_response.body = MagicMock()
@@ -212,9 +218,7 @@ MIIEpQIBAAKCAQEA...
         )
         mock_bind_response = MagicMock()
         mock_bind_response.status_code = 200
-        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (
-            mock_bind_response
-        )
+        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = mock_bind_response
         mock_create_client.return_value = mock_client
 
         # Execute test
@@ -240,7 +244,9 @@ MIIEpQIBAAKCAQEA...
         mock_client.upload_server_certificate_with_options.assert_called_once()
         mock_client.set_load_balancer_https_listener_attribute_with_options.assert_called_once()
 
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
+    )
     @patch("cloud_cert_renewer.clients.alibaba.get_cert_fingerprint_sha1")
     def test_renew_cert_skip_when_same(
         self, mock_get_fingerprint, mock_get_current_cert_fingerprint
@@ -273,7 +279,9 @@ MIIEpQIBAAKCAQEA...
         # Verify fingerprint comparison was called (once: new cert)
         mock_get_fingerprint.assert_called_once_with(self.cert)
 
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
+    )
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
     def test_renew_cert_force_update(
         self, mock_create_client, mock_get_current_cert_fingerprint
@@ -290,9 +298,7 @@ MIIEpQIBAAKCAQEA...
         )
         mock_bind_response = MagicMock()
         mock_bind_response.status_code = 200
-        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (
-            mock_bind_response
-        )
+        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = mock_bind_response
         mock_create_client.return_value = mock_client
 
         # Execute test (force=True)
@@ -337,8 +343,8 @@ MIIEpQIBAAKCAQEA...
     def test_get_current_cert_exception_handling(self, mock_create_client):
         """Test get_current_cert handles exceptions gracefully"""
         mock_client = MagicMock()
-        mock_client.describe_domain_certificate_info_with_options.side_effect = Exception(
-            "API Error"
+        mock_client.describe_domain_certificate_info_with_options.side_effect = (
+            Exception("API Error")
         )
         mock_create_client.return_value = mock_client
 
@@ -353,7 +359,9 @@ MIIEpQIBAAKCAQEA...
     @patch("cloud_cert_renewer.clients.alibaba.is_cert_valid")
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.create_client")
-    def test_renew_cert_exception_handling(self, mock_create_client, mock_get_current_cert, mock_is_cert_valid):
+    def test_renew_cert_exception_handling(
+        self, mock_create_client, mock_get_current_cert, mock_is_cert_valid
+    ):
         """Test renew_cert handles exceptions and logs diagnostic URL"""
         mock_is_cert_valid.return_value = True
         mock_get_current_cert.return_value = None
@@ -414,7 +422,9 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         )
         mock_create_client.return_value = mock_client
 
-        with patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_listener_cert_id") as mock_get_cert_id:
+        with patch(
+            "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_listener_cert_id"
+        ) as mock_get_cert_id:
             mock_get_cert_id.return_value = "test-cert-id"
 
             result = LoadBalancerCertRenewer.get_current_cert_fingerprint(
@@ -427,9 +437,13 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
 
             self.assertIsNone(result)
 
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
+    )
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
-    def test_renew_cert_exception_handling(self, mock_create_client, mock_get_current_cert_fingerprint):
+    def test_renew_cert_exception_handling(
+        self, mock_create_client, mock_get_current_cert_fingerprint
+    ):
         """Test renew_cert handles exceptions and logs diagnostic URL"""
         mock_get_current_cert_fingerprint.return_value = None
         mock_client = MagicMock()
@@ -458,8 +472,12 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         mock_response.body = MagicMock()
         mock_response.body.cert_infos = MagicMock()
         mock_response.body.cert_infos.cert_info = [MagicMock()]
-        mock_response.body.cert_infos.cert_info[0].server_certificate = "test_cert_content"
-        mock_client.describe_domain_certificate_info_with_options.return_value = mock_response
+        mock_response.body.cert_infos.cert_info[
+            0
+        ].server_certificate = "test_cert_content"
+        mock_client.describe_domain_certificate_info_with_options.return_value = (
+            mock_response
+        )
         mock_create_client.return_value = mock_client
 
         result = CdnCertRenewer.get_current_cert(
@@ -477,7 +495,9 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = MagicMock()
         mock_response.body.cert_infos = None
-        mock_client.describe_domain_certificate_info_with_options.return_value = mock_response
+        mock_client.describe_domain_certificate_info_with_options.return_value = (
+            mock_response
+        )
         mock_create_client.return_value = mock_client
 
         result = CdnCertRenewer.get_current_cert(
@@ -528,9 +548,13 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
 
         self.assertIsNone(result)
 
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_listener_cert_id")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_listener_cert_id"
+    )
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
-    def test_get_current_cert_fingerprint_no_cert_id(self, mock_create_client, mock_get_cert_id):
+    def test_get_current_cert_fingerprint_no_cert_id(
+        self, mock_create_client, mock_get_cert_id
+    ):
         """Test get_current_cert_fingerprint when cert_id is None"""
         mock_get_cert_id.return_value = None
 
@@ -544,9 +568,13 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
 
         self.assertIsNone(result)
 
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_listener_cert_id")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_listener_cert_id"
+    )
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
-    def test_get_current_cert_fingerprint_with_response(self, mock_create_client, mock_get_cert_id):
+    def test_get_current_cert_fingerprint_with_response(
+        self, mock_create_client, mock_get_cert_id
+    ):
         """Test get_current_cert_fingerprint with valid response"""
         mock_get_cert_id.return_value = "test-cert-id"
         mock_client = MagicMock()
@@ -556,7 +584,9 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         mock_cert = MagicMock()
         mock_cert.fingerprint = "test:fingerprint:value"
         mock_response.body.server_certificates.server_certificate = [mock_cert]
-        mock_client.describe_server_certificates_with_options.return_value = mock_response
+        mock_client.describe_server_certificates_with_options.return_value = (
+            mock_response
+        )
         mock_create_client.return_value = mock_client
 
         result = LoadBalancerCertRenewer.get_current_cert_fingerprint(
@@ -569,16 +599,22 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
 
         self.assertEqual(result, "test:fingerprint:value")
 
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_listener_cert_id")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_listener_cert_id"
+    )
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
-    def test_get_current_cert_fingerprint_no_certs(self, mock_create_client, mock_get_cert_id):
+    def test_get_current_cert_fingerprint_no_certs(
+        self, mock_create_client, mock_get_cert_id
+    ):
         """Test get_current_cert_fingerprint when response has no certificates"""
         mock_get_cert_id.return_value = "test-cert-id"
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.body = MagicMock()
         mock_response.body.server_certificates = None
-        mock_client.describe_server_certificates_with_options.return_value = mock_response
+        mock_client.describe_server_certificates_with_options.return_value = (
+            mock_response
+        )
         mock_create_client.return_value = mock_client
 
         result = LoadBalancerCertRenewer.get_current_cert_fingerprint(
@@ -594,4 +630,3 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

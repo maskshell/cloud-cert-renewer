@@ -41,6 +41,7 @@ class TestDIContainer(unittest.TestCase):
 
     def test_register_factory(self):
         """Test registering service factory"""
+
         def factory():
             return {"created": "by_factory"}
 
@@ -168,4 +169,3 @@ class TestGlobalContainerFunctions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

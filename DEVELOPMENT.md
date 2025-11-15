@@ -20,7 +20,7 @@ This document provides detailed information for developers working on the Cloud 
 
 ### Requirements
 
-- Python 3.8+
+- Python 3.10+
 - uv (Python package manager)
 
 ### Quick Start

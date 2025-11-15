@@ -15,6 +15,7 @@ from cloud_cert_renewer.utils.ssl_cert_parser import (  # noqa: I001
     parse_cert_info,
 )
 
+
 class TestSslCertParser(unittest.TestCase):
     """Utility functions tests (SSL certificate parser)"""
 
@@ -56,39 +57,39 @@ class TestSslCertParser(unittest.TestCase):
 
         # Create a simple self-signed certificate
         private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-            backend=default_backend()
+            public_exponent=65537, key_size=2048, backend=default_backend()
         )
-        subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Test"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Org"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
-        ])
-        cert = x509.CertificateBuilder().subject_name(
-            subject
-        ).issuer_name(
-            issuer
-        ).public_key(
-            private_key.public_key()
-        ).serial_number(
-            x509.random_serial_number()
-        ).not_valid_before(
-            datetime.utcnow()
-        ).not_valid_after(
-            datetime.utcnow() + timedelta(days=365)
-        ).add_extension(
-            x509.SubjectAlternativeName([
-                x509.DNSName("test.example.com"),
-                x509.DNSName("*.example.com"),
-            ]),
-            critical=False,
-        ).sign(private_key, hashes.SHA256(), default_backend())
+        subject = issuer = x509.Name(
+            [
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+                x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Test"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Org"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
+            ]
+        )
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(private_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.utcnow())
+            .not_valid_after(datetime.utcnow() + timedelta(days=365))
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [
+                        x509.DNSName("test.example.com"),
+                        x509.DNSName("*.example.com"),
+                    ]
+                ),
+                critical=False,
+            )
+            .sign(private_key, hashes.SHA256(), default_backend())
+        )
 
-        cert_pem = cert.public_bytes(
-            encoding=serialization.Encoding.PEM
-        ).decode('utf-8')
+        cert_pem = cert.public_bytes(encoding=serialization.Encoding.PEM).decode(
+            "utf-8"
+        )
 
         domain_list, expire_date = parse_cert_info(cert_pem)
 
@@ -111,31 +112,28 @@ class TestSslCertParser(unittest.TestCase):
         from cryptography.x509.oid import NameOID
 
         private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-            backend=default_backend()
+            public_exponent=65537, key_size=2048, backend=default_backend()
         )
-        subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
-        ])
-        cert = x509.CertificateBuilder().subject_name(
-            subject
-        ).issuer_name(
-            issuer
-        ).public_key(
-            private_key.public_key()
-        ).serial_number(
-            x509.random_serial_number()
-        ).not_valid_before(
-            datetime.utcnow()
-        ).not_valid_after(
-            datetime.utcnow() + timedelta(days=365)
-        ).sign(private_key, hashes.SHA256(), default_backend())
+        subject = issuer = x509.Name(
+            [
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
+            ]
+        )
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(private_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.utcnow())
+            .not_valid_after(datetime.utcnow() + timedelta(days=365))
+            .sign(private_key, hashes.SHA256(), default_backend())
+        )
 
-        cert_pem = cert.public_bytes(
-            encoding=serialization.Encoding.PEM
-        ).decode('utf-8')
+        cert_pem = cert.public_bytes(encoding=serialization.Encoding.PEM).decode(
+            "utf-8"
+        )
 
         domain_list, _ = parse_cert_info(cert_pem)
 
@@ -147,9 +145,9 @@ class TestSslCertParser(unittest.TestCase):
     def test_is_cert_valid_with_valid_cert(self, mock_match, mock_parse):
         """Test valid certificate validation"""
         # Mock parse_cert_info to return valid cert info
-        future_date = (
-            datetime.now() + timedelta(days=30)
-        ).strftime("%Y-%m-%d %H:%M:%S")
+        future_date = (datetime.now() + timedelta(days=30)).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         mock_parse.return_value = (["test.example.com"], future_date)
         mock_match.return_value = True
 
@@ -163,9 +161,9 @@ class TestSslCertParser(unittest.TestCase):
     @patch("cloud_cert_renewer.utils.ssl_cert_parser.is_domain_name_match")
     def test_is_cert_valid_with_invalid_domain(self, mock_match, mock_parse):
         """Test certificate validation with mismatched domain"""
-        future_date = (
-            datetime.now() + timedelta(days=30)
-        ).strftime("%Y-%m-%d %H:%M:%S")
+        future_date = (datetime.now() + timedelta(days=30)).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         mock_parse.return_value = (["other.example.com"], future_date)
         mock_match.return_value = False
 
@@ -195,39 +193,37 @@ class TestSslCertParser(unittest.TestCase):
 
         # Create a simple self-signed certificate
         private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-            backend=default_backend()
+            public_exponent=65537, key_size=2048, backend=default_backend()
         )
-        subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Test"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Org"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
-        ])
-        cert = x509.CertificateBuilder().subject_name(
-            subject
-        ).issuer_name(
-            issuer
-        ).public_key(
-            private_key.public_key()
-        ).serial_number(
-            x509.random_serial_number()
-        ).not_valid_before(
-            datetime.utcnow()
-        ).not_valid_after(
-            datetime.utcnow() + timedelta(days=365)
-        ).add_extension(
-            x509.SubjectAlternativeName([
-                x509.DNSName("test.example.com"),
-                x509.DNSName("*.example.com"),
-            ]),
-            critical=False,
-        ).sign(private_key, hashes.SHA256(), default_backend())
+        subject = issuer = x509.Name(
+            [
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+                x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Test"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Org"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
+            ]
+        )
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(private_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.utcnow())
+            .not_valid_after(datetime.utcnow() + timedelta(days=365))
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [
+                        x509.DNSName("test.example.com"),
+                        x509.DNSName("*.example.com"),
+                    ]
+                ),
+                critical=False,
+            )
+            .sign(private_key, hashes.SHA256(), default_backend())
+        )
 
-        return cert.public_bytes(
-            encoding=serialization.Encoding.PEM
-        ).decode('utf-8')
+        return cert.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8")
 
     def test_get_cert_fingerprint_sha256(self):
         """Test SHA256 fingerprint calculation"""

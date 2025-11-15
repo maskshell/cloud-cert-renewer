@@ -43,7 +43,9 @@ class AppConfig:
 
     service_type: Literal["cdn", "lb"]
     cloud_provider: str  # Cloud service provider: alibaba, aws, azure, etc.
-    auth_method: str  # Authentication method: access_key, sts, iam_role, service_account, env
+    auth_method: (
+        str  # Authentication method: access_key, sts, iam_role, service_account, env
+    )
     credentials: Credentials
     force_update: bool = False
     # Service-specific configuration

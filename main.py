@@ -48,7 +48,9 @@ def main() -> None:
             (
                 config.cdn_config.region
                 if config.cdn_config
-                else config.lb_config.region if config.lb_config else "unknown"
+                else config.lb_config.region
+                if config.lb_config
+                else "unknown"
             ),
             config.force_update,
         )
