@@ -19,6 +19,7 @@ Automated HTTPS certificate renewal tool for cloud services, supporting CDN and 
 - Comprehensive error handling and logging
 - Helm Chart deployment support
 - Integration with cert-manager and Reloader
+- Automated release workflow with multi-architecture Docker images, Helm Charts, and PyPI packages
 
 ## Kubernetes Deployment
 

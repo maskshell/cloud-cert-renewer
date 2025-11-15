@@ -83,6 +83,8 @@ The following table lists the configurable parameters and their default values:
 | `affinity`                             | Affinity rules for pod scheduling       | `{}`                         |
 | `namespace`                            | Kubernetes namespace                  | `default`                    |
 
+**Note:** The Docker images are built with multi-architecture support (amd64 and arm64). Kubernetes will automatically select the correct architecture based on your node platform.
+
 ## Secrets
 
 ### Cloud Service Credentials Secret

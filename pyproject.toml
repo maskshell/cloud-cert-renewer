@@ -5,12 +5,50 @@ description = "Automated HTTPS certificate renewal tool for cloud services, supp
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
+authors = [
+    {name = "analyser", email = "analyser@gmail.com"}
+]
+keywords = [
+    "cloud",
+    "certificate",
+    "ssl",
+    "tls",
+    "cdn",
+    "load-balancer",
+    "multi-cloud",
+    "alibaba-cloud",
+    "certificate-renewal",
+    "automation"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Security",
+    "Topic :: System :: Networking",
+    "Topic :: Utilities",
+]
 dependencies = [
     "alibabacloud-cdn20180510>=3.1.2",
     "alibabacloud-slb20140515>=3.1.2",
     "cryptography>=41.0.0",
     "python-dotenv>=1.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/maskshell/cloud-cert-renewer"
+Documentation = "https://github.com/maskshell/cloud-cert-renewer#readme"
+Repository = "https://github.com/maskshell/cloud-cert-renewer"
+Issues = "https://github.com/maskshell/cloud-cert-renewer/issues"
 
 [project.optional-dependencies]
 dev = [

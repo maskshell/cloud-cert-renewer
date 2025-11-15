@@ -225,8 +225,10 @@ For more information about testing, see [testing-design-principles.mdc](testing-
 
 ## Building Docker Image
 
+### Local Build (Single Architecture)
+
 ```bash
-# Build image
+# Build image for current platform
 docker build -t cloud-cert-renewer:latest .
 
 # Build with specific tag
@@ -244,6 +246,264 @@ docker run --rm \
   -e CDN_CERT_PRIVATE_KEY="$(cat key.pem)" \
   cloud-cert-renewer:latest
 ```
+
+### Multi-Architecture Build
+
+The project supports building Docker images for multiple architectures (amd64 and arm64). For local multi-architecture builds, use Docker Buildx:
+
+```bash
+# Create and use a buildx builder instance
+docker buildx create --name multiarch --use
+
+# Build for multiple platforms
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t cloud-cert-renewer:latest \
+  --push .
+
+# Or build without pushing (load to local)
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t cloud-cert-renewer:latest \
+  --load .
+```
+
+**Note:** The GitHub Actions release workflow automatically builds and publishes multi-architecture images (amd64 and arm64) to GitHub Container Registry. No manual multi-architecture build is required for releases.
+
+## Release Workflow
+
+The project includes a comprehensive release workflow that publishes all artifacts (Docker images, Helm Charts, and PyPI packages) with unified version management.
+
+### Prerequisites
+
+1. **PyPI Account**: Register at [PyPI](https://pypi.org/) and [TestPyPI](https://test.pypi.org/)
+2. **API Token**: Create an API token in your PyPI account settings:
+   - Go to [PyPI Account Settings](https://pypi.org/manage/account/) → API tokens
+   - Create a new API token with scope: **Entire account** (for publishing)
+   - Copy the token (it starts with `pypi-`)
+3. **GitHub Secrets**: Add the following secrets to your GitHub repository:
+   - Go to **Settings** → **Secrets and variables** → **Actions**
+   - Add secret `PYPI_API_TOKEN` with your PyPI API token
+   - Add secret `TEST_PYPI_API_TOKEN` with your TestPyPI API token (optional, for testing)
+4. **GitHub Pages**: Enable GitHub Pages for Helm Chart repository:
+   - Go to **Settings** → **Pages**
+   - Source: **Deploy from a branch**
+   - Branch: `gh-pages` / `/(root)`
+
+### Publishing via GitHub Actions (Recommended)
+
+The project includes a unified release workflow (`.github/workflows/release.yml`) that publishes all artifacts with automated version synchronization, testing, and quality checks.
+
+#### Manual Release
+
+1. Go to **Actions** tab in your GitHub repository
+2. Select **Release** workflow
+3. Click **Run workflow**
+4. Configure the workflow inputs:
+   - **Version**: Optional. Leave empty to use version from `pyproject.toml` or extract from Git tag
+   - **Release type**: Choose `release`, `pre-release`, or `test`
+     - `release`: Full release with all artifacts, creates Git tag and GitHub Release
+     - `pre-release`: Release candidate (e.g., `0.1.0-rc.1`), publishes to all repositories
+     - `test`: Test build (e.g., `0.1.0-test`), publishes to TestPyPI and test Docker tags
+   - **Publish Docker**: Check to publish Docker image to ghcr.io (default: true)
+   - **Publish Helm**: Check to publish Helm Chart to GitHub Pages (default: true)
+   - **Publish PyPI**: Check to publish PyPI package (default: true)
+5. Click **Run workflow**
+
+The workflow will:
+- Synchronize versions across all files (`pyproject.toml`, `__init__.py`, `Chart.yaml`)
+- Run tests and code quality checks
+- Build distribution packages
+- Build and publish multi-architecture Docker images (amd64 and arm64)
+- Package and publish Helm Chart to GitHub Pages
+- Publish PyPI package to PyPI or TestPyPI (based on release type)
+- Create Git tag (for release type)
+- Create GitHub Release with all artifacts (for release type)
+
+### Automatic Release on Tag Push
+
+You can also trigger a release by pushing a Git tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+When a tag matching `v*` is pushed, the workflow will automatically:
+- Extract version from tag (e.g., `v0.1.0` → `0.1.0`)
+- Synchronize versions across all files (`pyproject.toml`, `__init__.py`, `Chart.yaml`)
+- Run tests and code quality checks
+- Build distribution packages
+- Build and publish multi-architecture Docker images (amd64 and arm64) to ghcr.io
+- Package and publish Helm Chart to GitHub Pages (gh-pages branch)
+- Publish PyPI package to PyPI
+- Create GitHub Release with release notes from `CHANGELOG.md` and all artifacts
+
+**Note:** Tag-based releases always publish all artifacts (Docker, Helm, PyPI) and create a full release.
+
+### Release Types
+
+The workflow supports three release types:
+
+- **Release** (`release`): 
+  - Full release with all artifacts
+  - Publishes to PyPI (production)
+  - Creates Git tag
+  - Creates GitHub Release with release notes from `CHANGELOG.md`
+  - Docker images tagged with version and `latest`
+  
+- **Pre-release** (`pre-release`): 
+  - Release candidate (e.g., `0.1.0-rc.1`)
+  - Publishes to all repositories (PyPI, Docker, Helm)
+  - Does not create Git tag or GitHub Release
+  - Useful for testing release candidates
+  
+- **Test** (`test`): 
+  - Test build (e.g., `0.1.0-test`)
+  - Publishes to TestPyPI (not production PyPI)
+  - Publishes Docker images with test tags
+  - Publishes Helm Chart
+  - Does not create Git tag or GitHub Release
+  - Useful for testing the release process
+
+### Artifact Locations
+
+After a successful release:
+
+- **Docker Image**: `ghcr.io/maskshell/cloud-cert-renewer:{version}`
+  - Multi-architecture support: amd64 and arm64
+  - The image manifest automatically selects the correct architecture for your platform
+- **Helm Chart**: `https://maskshell.github.io/cloud-cert-renewer/charts`
+- **PyPI Package**: `https://pypi.org/project/cloud-cert-renewer/`
+
+### Version Management
+
+The release workflow automatically synchronizes versions across all files:
+- `pyproject.toml` - Python package version
+- `cloud_cert_renewer/__init__.py` - `__version__`
+- `helm/cloud-cert-renewer/Chart.yaml` - `version` and `appVersion`
+
+**Automatic Version Synchronization:**
+- When using manual workflow dispatch with a version specified, the workflow updates all files
+- When pushing a Git tag, the workflow extracts the version and updates all files
+- Version consistency is verified before proceeding with the release
+
+**Manual Version Update:**
+You can use the helper script to update versions locally before committing:
+
+```bash
+./scripts/update_version.sh 0.1.0
+```
+
+This script:
+- Updates versions in all three files
+- Validates version consistency
+- Supports semantic versioning (e.g., `0.1.0`, `0.1.0-rc.1`, `0.1.0-test`)
+
+### Manual Publishing
+
+If you prefer to publish manually:
+
+1. **Build Tools**: Install build and twine:
+
+   ```bash
+   uv pip install build twine
+   ```
+
+### Pre-Release Checklist
+
+- [ ] Update version in `pyproject.toml` and `cloud_cert_renewer/__init__.py`
+- [ ] Update `CHANGELOG.md` with release notes
+- [ ] Update `[project.urls]` in `pyproject.toml` with actual repository URLs
+- [ ] Run all tests: `uv run pytest`
+- [ ] Check code quality: `uv run ruff check .`
+- [ ] Verify README.md renders correctly on PyPI
+
+### Building Distribution Packages
+
+```bash
+# Clean previous builds
+rm -rf dist/ build/ *.egg-info
+
+# Build source distribution and wheel
+python -m build
+```
+
+This creates:
+- `dist/cloud-cert-renewer-<version>.tar.gz` (source distribution)
+- `dist/cloud_cert_renewer-<version>-py3-none-any.whl` (wheel)
+
+### Testing on TestPyPI
+
+Before publishing to PyPI, test on TestPyPI:
+
+```bash
+# Upload to TestPyPI
+twine upload --repository testpypi dist/*
+
+# Test installation from TestPyPI
+pip install --index-url https://test.pypi.org/simple/ cloud-cert-renewer
+```
+
+### Publishing to PyPI
+
+```bash
+# Upload to PyPI
+twine upload dist/*
+```
+
+You will be prompted for:
+- Username: `__token__`
+- Password: Your PyPI API token
+
+### Post-Release
+
+- [ ] Verify package on PyPI: `https://pypi.org/project/cloud-cert-renewer/`
+- [ ] Create a Git tag: `git tag v0.1.0 && git push origin v0.1.0`
+- [ ] Create a GitHub release with release notes from CHANGELOG.md
+
+### Version Management
+
+Follow [Semantic Versioning](https://semver.org/):
+- **MAJOR**: Breaking changes
+- **MINOR**: New features (backward compatible)
+- **PATCH**: Bug fixes (backward compatible)
+
+**Using the helper script (recommended):**
+
+```bash
+./scripts/update_version.sh 0.1.0
+```
+
+**Manual update:**
+
+Update version in:
+1. `pyproject.toml` - `version = "x.y.z"`
+2. `cloud_cert_renewer/__init__.py` - `__version__ = "x.y.z"`
+3. `helm/cloud-cert-renewer/Chart.yaml` - `version: x.y.z` and `appVersion: "x.y.z"`
+4. `CHANGELOG.md` - Add new version entry
+
+### Release Checklist
+
+Before creating a release:
+
+- [ ] Update version in all files (or use `scripts/update_version.sh`)
+- [ ] Update `CHANGELOG.md` with release notes (format: `## [version]`)
+- [ ] Run all tests: `uv run pytest`
+- [ ] Check code quality: `uv run ruff check .`
+- [ ] Verify README.md renders correctly
+- [ ] Commit version changes and CHANGELOG updates
+- [ ] Push commits to main branch
+- [ ] Create release via GitHub Actions (manual) or push Git tag (automatic)
+
+**For Manual Release:**
+- Go to Actions → Release → Run workflow
+- Select release type and configure options
+- Monitor workflow execution
+
+**For Automatic Release:**
+- Create and push Git tag: `git tag v0.1.0 && git push origin v0.1.0`
+- Workflow will automatically handle the rest
 
 ## Code Structure
 
