@@ -87,8 +87,14 @@ class CredentialProviderFactory:
                 "service_account_path",
                 "/var/run/secrets/kubernetes.io/serviceaccount",
             )
+            role_arn = kwargs.get("role_arn")
+            oidc_provider_arn = kwargs.get("oidc_provider_arn")
+            role_session_name = kwargs.get("role_session_name")
             return ServiceAccountCredentialProvider(
-                service_account_path=service_account_path
+                service_account_path=service_account_path,
+                role_arn=role_arn,
+                oidc_provider_arn=oidc_provider_arn,
+                role_session_name=role_session_name,
             )
 
         elif auth_method == "oidc":
