@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from cloud_cert_renewer.auth.access_key import AccessKeyCredentialProvider  # noqa: E402
 from cloud_cert_renewer.auth.env import EnvCredentialProvider  # noqa: E402
+from cloud_cert_renewer.auth.iam_role import IAMRoleCredentialProvider  # noqa: E402
 from cloud_cert_renewer.auth.service_account import (  # noqa: E402
     ServiceAccountCredentialProvider,
 )
@@ -354,6 +355,251 @@ class TestServiceAccountCredentialProvider(unittest.TestCase):
         self.assertEqual(credentials.security_token, "test_security_token")
         mock_cred_client.get_credential.assert_called_once()
         mock_exists.assert_called_once()
+
+
+class TestIAMRoleCredentialProvider(unittest.TestCase):
+    """IAM Role credential provider tests"""
+
+    def setUp(self):
+        """Test setup"""
+        self.role_arn = "acs:ram::123456789012:role/test-role"
+        self.original_env = os.environ.copy()
+
+    def tearDown(self):
+        """Test cleanup"""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+
+    def test_init_with_parameters(self):
+        """Test IAMRoleCredentialProvider initialization with parameters"""
+        provider = IAMRoleCredentialProvider(
+            role_arn=self.role_arn,
+            role_session_name="custom-session",
+            access_key_id="key_id",
+            access_key_secret="key_secret",
+        )
+
+        self.assertEqual(provider.role_arn, self.role_arn)
+        self.assertEqual(provider.role_session_name, "custom-session")
+        self.assertEqual(provider.access_key_id, "key_id")
+        self.assertEqual(provider.access_key_secret, "key_secret")
+
+    def test_init_with_defaults(self):
+        """Test IAMRoleCredentialProvider initialization with defaults"""
+        provider = IAMRoleCredentialProvider(role_arn=self.role_arn)
+
+        self.assertEqual(provider.role_session_name, "cert-renewer-session")
+        self.assertIsNone(provider.access_key_id)
+        self.assertIsNone(provider.access_key_secret)
+
+    @patch.dict(
+        os.environ,
+        {
+            "ALIBABA_CLOUD_ACCESS_KEY_ID": "env_key_id",
+            "ALIBABA_CLOUD_ACCESS_KEY_SECRET": "env_key_secret",
+        },
+        clear=True,
+    )
+    def test_get_access_key_id_from_env(self):
+        """Test getting access_key_id from environment variable"""
+        provider = IAMRoleCredentialProvider(role_arn=self.role_arn)
+
+        access_key_id = provider._get_access_key_id()
+
+        self.assertEqual(access_key_id, "env_key_id")
+
+    @patch.dict(
+        os.environ,
+        {
+            "CLOUD_ACCESS_KEY_ID": "cloud_key_id",
+            "CLOUD_ACCESS_KEY_SECRET": "cloud_key_secret",
+        },
+        clear=True,
+    )
+    def test_get_access_key_id_from_alt_env(self):
+        """Test getting access_key_id from alternative environment variable"""
+        provider = IAMRoleCredentialProvider(role_arn=self.role_arn)
+
+        access_key_id = provider._get_access_key_id()
+
+        self.assertEqual(access_key_id, "cloud_key_id")
+
+    def test_get_access_key_id_from_parameter(self):
+        """Test getting access_key_id from parameter takes priority"""
+        provider = IAMRoleCredentialProvider(
+            role_arn=self.role_arn, access_key_id="param_key_id"
+        )
+
+        access_key_id = provider._get_access_key_id()
+
+        self.assertEqual(access_key_id, "param_key_id")
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_get_access_key_id_missing(self):
+        """Test error when access_key_id is missing"""
+        provider = IAMRoleCredentialProvider(role_arn=self.role_arn)
+
+        with self.assertRaises(ValueError) as context:
+            provider._get_access_key_id()
+
+        self.assertIn("access_key_id", str(context.exception))
+
+    @patch.dict(
+        os.environ,
+        {
+            "ALIBABA_CLOUD_ACCESS_KEY_ID": "env_key_id",
+            "ALIBABA_CLOUD_ACCESS_KEY_SECRET": "env_key_secret",
+        },
+        clear=True,
+    )
+    def test_get_access_key_secret_from_env(self):
+        """Test getting access_key_secret from environment variable"""
+        provider = IAMRoleCredentialProvider(role_arn=self.role_arn)
+
+        access_key_secret = provider._get_access_key_secret()
+
+        self.assertEqual(access_key_secret, "env_key_secret")
+
+    def test_get_access_key_secret_from_parameter(self):
+        """Test getting access_key_secret from parameter takes priority"""
+        provider = IAMRoleCredentialProvider(
+            role_arn=self.role_arn, access_key_secret="param_key_secret"
+        )
+
+        access_key_secret = provider._get_access_key_secret()
+
+        self.assertEqual(access_key_secret, "param_key_secret")
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_get_access_key_secret_missing(self):
+        """Test error when access_key_secret is missing"""
+        provider = IAMRoleCredentialProvider(role_arn=self.role_arn)
+
+        with self.assertRaises(ValueError) as context:
+            provider._get_access_key_secret()
+
+        self.assertIn("access_key_secret", str(context.exception))
+
+    @patch("cloud_cert_renewer.auth.iam_role.CredClient")
+    def test_get_credential_client(self, mock_cred_client_class):
+        """Test getting credential client"""
+        mock_cred_client = MagicMock()
+        mock_cred_client_class.return_value = mock_cred_client
+
+        provider = IAMRoleCredentialProvider(
+            role_arn=self.role_arn,
+            access_key_id="key_id",
+            access_key_secret="key_secret",
+        )
+        client = provider.get_credential_client()
+
+        mock_cred_client_class.assert_called_once()
+        self.assertIsNotNone(client)
+
+    @patch("cloud_cert_renewer.auth.iam_role.CredClient")
+    def test_get_credentials(self, mock_cred_client_class):
+        """Test getting credentials from IAM Role"""
+        mock_credential = MagicMock()
+        mock_credential.access_key_id = "temp_key_id"
+        mock_credential.access_key_secret = "temp_key_secret"
+        mock_credential.security_token = "temp_token"
+
+        mock_cred_client = MagicMock()
+        mock_cred_client.get_credential.return_value = mock_credential
+        mock_cred_client_class.return_value = mock_cred_client
+
+        provider = IAMRoleCredentialProvider(
+            role_arn=self.role_arn,
+            access_key_id="key_id",
+            access_key_secret="key_secret",
+        )
+        credentials = provider.get_credentials()
+
+        self.assertEqual(credentials.access_key_id, "temp_key_id")
+        self.assertEqual(credentials.access_key_secret, "temp_key_secret")
+        self.assertEqual(credentials.security_token, "temp_token")
+
+
+class TestEnvCredentialProviderExtended(unittest.TestCase):
+    """Extended tests for Environment variable credential provider"""
+
+    def setUp(self):
+        """Test setup"""
+        self.provider = EnvCredentialProvider()
+        self.original_env = os.environ.copy()
+
+    def tearDown(self):
+        """Test cleanup"""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+
+    @patch("cloud_cert_renewer.auth.env.CredClient")
+    @patch.dict(
+        os.environ,
+        {
+            "CLOUD_ACCESS_KEY_ID": "env_key_id",
+            "CLOUD_ACCESS_KEY_SECRET": "env_key_secret",
+        },
+        clear=True,
+    )
+    def test_get_credential_client_access_key(self, mock_cred_client_class):
+        """Test get_credential_client returns AccessKey type client"""
+        mock_cred_client = MagicMock()
+        mock_cred_client_class.return_value = mock_cred_client
+
+        client = self.provider.get_credential_client()
+
+        mock_cred_client_class.assert_called_once()
+        self.assertIsNotNone(client)
+
+    @patch("cloud_cert_renewer.auth.env.CredClient")
+    @patch.dict(
+        os.environ,
+        {
+            "CLOUD_ACCESS_KEY_ID": "env_key_id",
+            "CLOUD_ACCESS_KEY_SECRET": "env_key_secret",
+            "CLOUD_SECURITY_TOKEN": "env_token",
+        },
+        clear=True,
+    )
+    def test_get_credential_client_sts(self, mock_cred_client_class):
+        """Test get_credential_client returns STS type client when token present"""
+        mock_cred_client = MagicMock()
+        mock_cred_client_class.return_value = mock_cred_client
+
+        client = self.provider.get_credential_client()
+
+        mock_cred_client_class.assert_called_once()
+        self.assertIsNotNone(client)
+
+    @patch("cloud_cert_renewer.auth.env.CredClient")
+    @patch.dict(os.environ, {}, clear=True)
+    def test_get_credential_client_default_chain(self, mock_cred_client_class):
+        """Test get_credential_client falls back to default credential chain"""
+        mock_cred_client = MagicMock()
+        mock_cred_client_class.return_value = mock_cred_client
+
+        client = self.provider.get_credential_client()
+
+        mock_cred_client_class.assert_called_once_with()
+        self.assertIsNotNone(client)
+
+    @patch.dict(
+        os.environ,
+        {
+            "CLOUD_ACCESS_KEY_ID": "env_key_id",
+            "CLOUD_ACCESS_KEY_SECRET": "env_key_secret",
+            "CLOUD_SECURITY_TOKEN": "env_token",
+        },
+        clear=True,
+    )
+    def test_get_credentials_with_sts_token(self):
+        """Test getting credentials with STS token"""
+        credentials = self.provider.get_credentials()
+
+        self.assertEqual(credentials.access_key_id, "env_key_id")
+        self.assertEqual(credentials.access_key_secret, "env_key_secret")
+        self.assertEqual(credentials.security_token, "env_token")
 
 
 if __name__ == "__main__":

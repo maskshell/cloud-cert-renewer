@@ -69,14 +69,15 @@ class TestSslCertParser(unittest.TestCase):
                 x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
             ]
         )
+        now = datetime.now(timezone.utc)
         cert = (
             x509.CertificateBuilder()
             .subject_name(subject)
             .issuer_name(issuer)
             .public_key(private_key.public_key())
             .serial_number(x509.random_serial_number())
-            .not_valid_before(datetime.utcnow())
-            .not_valid_after(datetime.utcnow() + timedelta(days=365))
+            .not_valid_before(now)
+            .not_valid_after(now + timedelta(days=365))
             .add_extension(
                 x509.SubjectAlternativeName(
                     [
@@ -121,14 +122,15 @@ class TestSslCertParser(unittest.TestCase):
                 x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
             ]
         )
+        now = datetime.now(timezone.utc)
         cert = (
             x509.CertificateBuilder()
             .subject_name(subject)
             .issuer_name(issuer)
             .public_key(private_key.public_key())
             .serial_number(x509.random_serial_number())
-            .not_valid_before(datetime.utcnow())
-            .not_valid_after(datetime.utcnow() + timedelta(days=365))
+            .not_valid_before(now)
+            .not_valid_after(now + timedelta(days=365))
             .sign(private_key, hashes.SHA256(), default_backend())
         )
 
@@ -200,14 +202,15 @@ class TestSslCertParser(unittest.TestCase):
                 x509.NameAttribute(NameOID.COMMON_NAME, "test.example.com"),
             ]
         )
+        now = datetime.now(timezone.utc)
         cert = (
             x509.CertificateBuilder()
             .subject_name(subject)
             .issuer_name(issuer)
             .public_key(private_key.public_key())
             .serial_number(x509.random_serial_number())
-            .not_valid_before(datetime.utcnow())
-            .not_valid_after(datetime.utcnow() + timedelta(days=365))
+            .not_valid_before(now)
+            .not_valid_after(now + timedelta(days=365))
             .add_extension(
                 x509.SubjectAlternativeName(
                     [
