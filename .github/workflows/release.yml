@@ -168,7 +168,7 @@ jobs:
           python -m pip install dist/*.whl --dry-run
 
       - name: Upload PyPI artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pypi-packages
           path: dist/*
@@ -305,7 +305,7 @@ jobs:
           fi
 
       - name: Upload Helm chart artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: helm-chart
           path: charts/*.tgz
