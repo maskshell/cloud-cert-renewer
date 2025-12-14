@@ -55,17 +55,11 @@ MIIEpQIBAAKCAQEA...
         self.assertIsInstance(client, Cdn20180510Client)
 
     @patch("cloud_cert_renewer.clients.alibaba.is_cert_valid")
-    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.create_client")
-    def test_renew_cert_success(
-        self, mock_create_client, mock_get_current_cert, mock_is_cert_valid
-    ):
+    def test_renew_cert_success(self, mock_create_client, mock_is_cert_valid):
         """Test successful certificate renewal"""
         # Setup mocks
         mock_is_cert_valid.return_value = True
-        mock_get_current_cert.return_value = (
-            None  # No current certificate, need to update
-        )
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -86,24 +80,24 @@ MIIEpQIBAAKCAQEA...
         # Verify results
         self.assertTrue(result)
         mock_is_cert_valid.assert_called_once_with(self.cert, self.domain_name)
-        mock_get_current_cert.assert_called_once_with(
-            self.domain_name, self.credential_client
-        )
         mock_client.set_cdn_domain_sslcertificate_with_options.assert_called_once()
 
     @patch("cloud_cert_renewer.clients.alibaba.is_cert_valid")
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
-    @patch("cloud_cert_renewer.clients.alibaba.get_cert_fingerprint_sha256")
-    def test_renew_cert_skip_when_same(
-        self, mock_get_fingerprint, mock_get_current_cert, mock_is_cert_valid
+    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.create_client")
+    def test_renew_cert_does_not_query_current_cert(
+        self, mock_create_client, mock_get_current_cert, mock_is_cert_valid
     ):
-        """Test skipping renewal when certificate is the same"""
-        # Setup mocks
+        """Test client update does not query current cert for fingerprint comparison"""
         mock_is_cert_valid.return_value = True
-        mock_get_current_cert.return_value = "current_cert_content"
-        mock_get_fingerprint.return_value = "SAME:FINGERPRINT:VALUE"
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_client.set_cdn_domain_sslcertificate_with_options.return_value = (
+            mock_response
+        )
+        mock_create_client.return_value = mock_client
 
-        # Execute test (default force=False)
         result = CdnCertRenewer.renew_cert(
             domain_name=self.domain_name,
             cert=self.cert,
@@ -112,24 +106,16 @@ MIIEpQIBAAKCAQEA...
             credential_client=self.credential_client,
         )
 
-        # Verify results
         self.assertTrue(result)
-        mock_get_current_cert.assert_called_once_with(
-            self.domain_name, self.credential_client
-        )
-        # Verify fingerprint comparison was called (twice: new cert and current cert)
-        self.assertEqual(mock_get_fingerprint.call_count, 2)
+        mock_get_current_cert.assert_not_called()
+        mock_client.set_cdn_domain_sslcertificate_with_options.assert_called_once()
 
     @patch("cloud_cert_renewer.clients.alibaba.is_cert_valid")
-    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.create_client")
-    def test_renew_cert_force_update(
-        self, mock_create_client, mock_get_current_cert, mock_is_cert_valid
-    ):
-        """Test force update mode (update even if certificate is the same)"""
+    def test_renew_cert_force_update(self, mock_create_client, mock_is_cert_valid):
+        """Test force flag still performs the update"""
         # Setup mocks
         mock_is_cert_valid.return_value = True
-        mock_get_current_cert.return_value = "current_cert_content"
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -150,7 +136,6 @@ MIIEpQIBAAKCAQEA...
 
         # Verify results
         self.assertTrue(result)
-        # Verify update was executed even with current certificate
         mock_client.set_cdn_domain_sslcertificate_with_options.assert_called_once()
 
     @patch("cloud_cert_renewer.clients.alibaba.is_cert_valid")
@@ -197,18 +182,10 @@ MIIEpQIBAAKCAQEA...
         # Verify client type
         self.assertIsInstance(client, Slb20140515Client)
 
-    @patch(
-        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
-    )
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
-    def test_renew_cert_success(
-        self, mock_create_client, mock_get_current_cert_fingerprint
-    ):
+    def test_renew_cert_success(self, mock_create_client):
         """Test successful certificate renewal"""
         # Setup mocks
-        mock_get_current_cert_fingerprint.return_value = (
-            None  # No current certificate, need to update
-        )
         mock_client = MagicMock()
         mock_upload_response = MagicMock()
         mock_upload_response.body = MagicMock()
@@ -235,28 +212,31 @@ MIIEpQIBAAKCAQEA...
 
         # Verify results
         self.assertTrue(result)
-        mock_get_current_cert_fingerprint.assert_called_once_with(
-            self.instance_id,
-            self.listener_port,
-            self.region,
-            self.credential_client,
-        )
         mock_client.upload_server_certificate_with_options.assert_called_once()
         mock_client.set_load_balancer_https_listener_attribute_with_options.assert_called_once()
 
     @patch(
         "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
     )
-    @patch("cloud_cert_renewer.clients.alibaba.get_cert_fingerprint_sha1")
-    def test_renew_cert_skip_when_same(
-        self, mock_get_fingerprint, mock_get_current_cert_fingerprint
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_renew_cert_does_not_query_current_fingerprint(
+        self, mock_create_client, mock_get_current_cert_fingerprint
     ):
-        """Test skipping renewal when certificate is the same"""
-        # Setup mocks
-        mock_get_current_cert_fingerprint.return_value = "same:fingerprint:value"
-        mock_get_fingerprint.return_value = "same:fingerprint:value"
+        """Test client update does not query current fingerprint for comparison"""
+        mock_client = MagicMock()
+        mock_upload_response = MagicMock()
+        mock_upload_response.body = MagicMock()
+        mock_upload_response.body.server_certificate_id = "test-cert-id"
+        mock_client.upload_server_certificate_with_options.return_value = (
+            mock_upload_response
+        )
+        mock_bind_response = MagicMock()
+        mock_bind_response.status_code = 200
+        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+            mock_bind_response
+        )
+        mock_create_client.return_value = mock_client
 
-        # Execute test (default force=False)
         result = LoadBalancerCertRenewer.renew_cert(
             instance_id=self.instance_id,
             listener_port=self.listener_port,
@@ -266,27 +246,13 @@ MIIEpQIBAAKCAQEA...
             credential_client=self.credential_client,
         )
 
-        # Verify results
         self.assertTrue(result)
-        mock_get_current_cert_fingerprint.assert_called_once_with(
-            self.instance_id,
-            self.listener_port,
-            self.region,
-            self.credential_client,
-        )
-        # Verify fingerprint comparison was called (once: new cert)
-        mock_get_fingerprint.assert_called_once_with(self.cert)
+        mock_get_current_cert_fingerprint.assert_not_called()
 
-    @patch(
-        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
-    )
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
-    def test_renew_cert_force_update(
-        self, mock_create_client, mock_get_current_cert_fingerprint
-    ):
-        """Test force update mode (update even if certificate is the same)"""
+    def test_renew_cert_force_update(self, mock_create_client):
+        """Test force flag still performs the update"""
         # Setup mocks
-        mock_get_current_cert_fingerprint.return_value = "same:fingerprint:value"
         mock_client = MagicMock()
         mock_upload_response = MagicMock()
         mock_upload_response.body = MagicMock()
@@ -314,7 +280,6 @@ MIIEpQIBAAKCAQEA...
 
         # Verify results
         self.assertTrue(result)
-        # Verify update was executed even with same certificate fingerprint
         mock_client.upload_server_certificate_with_options.assert_called_once()
         mock_client.set_load_balancer_https_listener_attribute_with_options.assert_called_once()
 

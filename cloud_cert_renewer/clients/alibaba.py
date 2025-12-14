@@ -14,11 +14,7 @@ from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_tea_util import models as util_models
 
 from cloud_cert_renewer.cert_renewer.base import CertValidationError
-from cloud_cert_renewer.utils.ssl_cert_parser import (
-    get_cert_fingerprint_sha1,
-    get_cert_fingerprint_sha256,
-    is_cert_valid,
-)
+from cloud_cert_renewer.utils.ssl_cert_parser import is_cert_valid
 
 logger = logging.getLogger(__name__)
 
@@ -106,27 +102,8 @@ class CdnCertRenewer:
                     f"is not in the certificate or certificate has expired"
                 )
 
-            # Query current certificate and compare
-            current_cert = CdnCertRenewer.get_current_cert(
-                domain_name, credential_client
-            )
-            if current_cert and not force:
-                new_fingerprint = get_cert_fingerprint_sha256(cert)
-                current_fingerprint = get_cert_fingerprint_sha256(current_cert)
-                if new_fingerprint == current_fingerprint:
-                    logger.info(
-                        "CDN certificate unchanged, skipping update: domain=%s, "
-                        "fingerprint=%s",
-                        domain_name,
-                        new_fingerprint[:20] + "...",
-                    )
-                    return True
-            elif force:
-                logger.info(
-                    "Force update mode enabled, will update even if certificate "
-                    "is the same: domain=%s",
-                    domain_name,
-                )
+            # Fingerprint comparison is handled by higher-level renewer logic
+            # (e.g., BaseCertRenewer). This client only performs the update.
 
             # Create client
             client = CdnCertRenewer.create_client(credential_client)
@@ -302,28 +279,8 @@ class LoadBalancerCertRenewer:
         :return: Whether successful
         """
         try:
-            # Query current certificate fingerprint and compare
-            current_fingerprint = LoadBalancerCertRenewer.get_current_cert_fingerprint(
-                instance_id, listener_port, region, credential_client
-            )
-            if current_fingerprint and not force:
-                new_fingerprint = get_cert_fingerprint_sha1(cert)
-                if new_fingerprint == current_fingerprint:
-                    logger.info(
-                        "SLB certificate unchanged, skipping update: "
-                        "instance_id=%s, port=%s, fingerprint=%s",
-                        instance_id,
-                        listener_port,
-                        new_fingerprint[:20] + "...",
-                    )
-                    return True
-            elif force:
-                logger.info(
-                    "Force update mode enabled, will update even if certificate "
-                    "is the same: instance_id=%s, port=%s",
-                    instance_id,
-                    listener_port,
-                )
+            # Fingerprint comparison is handled by higher-level renewer logic
+            # (e.g., BaseCertRenewer). This client only performs the update.
 
             # Create client
             client = LoadBalancerCertRenewer.create_client(credential_client)
