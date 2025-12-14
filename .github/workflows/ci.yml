@@ -98,8 +98,8 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - python-version: "3.10"
@@ -108,7 +108,6 @@ jobs:
           - python-version: "3.13"
           - python-version: "3.14"
             allow-prereleases: true
-            experimental: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
