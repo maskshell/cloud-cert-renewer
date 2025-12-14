@@ -82,6 +82,52 @@ MIIEpQIBAAKCAQEA...
         mock_is_cert_valid.assert_called_once_with(self.cert, self.domain_name)
         mock_client.set_cdn_domain_sslcertificate_with_options.assert_called_once()
 
+    @patch.dict(
+        os.environ,
+        {
+            "CLOUD_API_CONNECT_TIMEOUT": "1000",
+            "CLOUD_API_READ_TIMEOUT": "2000",
+            "CLOUD_API_MAX_ATTEMPTS": "4",
+        },
+        clear=True,
+    )
+    @patch("cloud_cert_renewer.clients.alibaba.util_models.RuntimeOptions")
+    @patch("cloud_cert_renewer.clients.alibaba.is_cert_valid")
+    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.create_client")
+    def test_runtime_options_from_env(
+        self, mock_create_client, mock_is_cert_valid, mock_runtime_cls
+    ):
+        """RuntimeOptions should reflect timeout/retry env vars."""
+        mock_is_cert_valid.return_value = True
+
+        runtime = MagicMock()
+        mock_runtime_cls.return_value = runtime
+
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_client.set_cdn_domain_sslcertificate_with_options.return_value = (
+            mock_response
+        )
+        mock_create_client.return_value = mock_client
+
+        result = CdnCertRenewer.renew_cert(
+            domain_name=self.domain_name,
+            cert=self.cert,
+            cert_private_key=self.cert_private_key,
+            region=self.region,
+            credential_client=self.credential_client,
+        )
+
+        self.assertTrue(result)
+        self.assertEqual(runtime.connect_timeout, 1000)
+        self.assertEqual(runtime.read_timeout, 2000)
+        self.assertTrue(runtime.autoretry)
+        self.assertEqual(runtime.max_attempts, 4)
+
+        args, _ = mock_client.set_cdn_domain_sslcertificate_with_options.call_args
+        self.assertIs(args[1], runtime)
+
     @patch("cloud_cert_renewer.clients.alibaba.is_cert_valid")
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.create_client")
@@ -214,6 +260,51 @@ MIIEpQIBAAKCAQEA...
         self.assertTrue(result)
         mock_client.upload_server_certificate_with_options.assert_called_once()
         mock_client.set_load_balancer_https_listener_attribute_with_options.assert_called_once()
+
+    @patch.dict(
+        os.environ,
+        {
+            "CLOUD_API_CONNECT_TIMEOUT": "1500",
+            "CLOUD_API_READ_TIMEOUT": "2500",
+        },
+        clear=True,
+    )
+    @patch("cloud_cert_renewer.clients.alibaba.util_models.RuntimeOptions")
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_runtime_options_from_env(self, mock_create_client, mock_runtime_cls):
+        """LB client calls should pass RuntimeOptions with env-configured timeouts."""
+        runtime = MagicMock()
+        mock_runtime_cls.return_value = runtime
+
+        mock_client = MagicMock()
+        mock_upload_response = MagicMock()
+        mock_upload_response.body = MagicMock()
+        mock_upload_response.body.server_certificate_id = "test-cert-id"
+        mock_client.upload_server_certificate_with_options.return_value = (
+            mock_upload_response
+        )
+        mock_bind_response = MagicMock()
+        mock_bind_response.status_code = 200
+        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+            mock_bind_response
+        )
+        mock_create_client.return_value = mock_client
+
+        result = LoadBalancerCertRenewer.renew_cert(
+            instance_id=self.instance_id,
+            listener_port=self.listener_port,
+            cert=self.cert,
+            cert_private_key=self.cert_private_key,
+            region=self.region,
+            credential_client=self.credential_client,
+        )
+
+        self.assertTrue(result)
+        self.assertEqual(runtime.connect_timeout, 1500)
+        self.assertEqual(runtime.read_timeout, 2500)
+
+        upload_args, _ = mock_client.upload_server_certificate_with_options.call_args
+        self.assertIs(upload_args[1], runtime)
 
     @patch(
         "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"

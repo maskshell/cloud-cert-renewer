@@ -4,6 +4,7 @@ Provides client wrappers for Alibaba Cloud CDN and Load Balancer certificate ren
 """
 
 import logging
+import os
 
 from alibabacloud_cdn20180510 import models as cdn_20180510_models
 from alibabacloud_cdn20180510.client import Client as Cdn20180510Client
@@ -17,6 +18,35 @@ from cloud_cert_renewer.cert_renewer.base import CertValidationError
 from cloud_cert_renewer.utils.ssl_cert_parser import is_cert_valid
 
 logger = logging.getLogger(__name__)
+
+
+def _get_int_env(name: str) -> int | None:
+    value = os.environ.get(name)
+    if not value:
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        logger.warning("Invalid %s=%r (must be integer); ignoring", name, value)
+        return None
+
+
+def _build_runtime_options() -> util_models.RuntimeOptions:
+    runtime = util_models.RuntimeOptions()
+
+    connect_timeout = _get_int_env("CLOUD_API_CONNECT_TIMEOUT")
+    read_timeout = _get_int_env("CLOUD_API_READ_TIMEOUT")
+    max_attempts = _get_int_env("CLOUD_API_MAX_ATTEMPTS")
+
+    if connect_timeout is not None:
+        runtime.connect_timeout = connect_timeout
+    if read_timeout is not None:
+        runtime.read_timeout = read_timeout
+    if max_attempts is not None:
+        runtime.autoretry = True
+        runtime.max_attempts = max_attempts
+
+    return runtime
 
 
 class CdnCertRenewer:
@@ -51,7 +81,7 @@ class CdnCertRenewer:
             request = cdn_20180510_models.DescribeDomainCertificateInfoRequest(
                 domain_name=domain_name
             )
-            runtime = util_models.RuntimeOptions()
+            runtime = _build_runtime_options()
             response = client.describe_domain_certificate_info_with_options(
                 request, runtime
             )
@@ -119,7 +149,7 @@ class CdnCertRenewer:
             )
 
             # Execute request
-            runtime = util_models.RuntimeOptions()
+            runtime = _build_runtime_options()
             response = client.set_cdn_domain_sslcertificate_with_options(
                 request, runtime
             )
@@ -185,7 +215,7 @@ class LoadBalancerCertRenewer:
                     region_id=region,
                 )
             )
-            runtime = util_models.RuntimeOptions()
+            runtime = _build_runtime_options()
             response = (
                 client.describe_load_balancer_https_listener_attribute_with_options(
                     request, runtime
@@ -234,7 +264,7 @@ class LoadBalancerCertRenewer:
                 region_id=region,
                 server_certificate_id=cert_id,
             )
-            runtime = util_models.RuntimeOptions()
+            runtime = _build_runtime_options()
             response = client.describe_server_certificates_with_options(
                 request, runtime
             )
@@ -292,7 +322,7 @@ class LoadBalancerCertRenewer:
                 region_id=region,
             )
 
-            runtime = util_models.RuntimeOptions()
+            runtime = _build_runtime_options()
             upload_response = client.upload_server_certificate_with_options(
                 upload_request, runtime
             )
