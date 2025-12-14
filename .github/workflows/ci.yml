@@ -283,6 +283,31 @@ jobs:
           uv run python -m pip check
           uv run python -c "import cloud_cert_renewer; from cloud_cert_renewer.providers.base import CloudAdapterFactory; CloudAdapterFactory.create('alibaba'); print(cloud_cert_renewer.__version__)"
 
+      - name: Generate self-signed certificate for CLI smoke test
+        run: |
+          openssl req -x509 -newkey rsa:2048 -keyout /tmp/smoke-key.pem -out /tmp/smoke-cert.pem -days 1 -nodes -subj "/CN=example.com"
+
+          {
+            echo "LB_CERT<<EOF"
+            cat /tmp/smoke-cert.pem
+            echo "EOF"
+            echo "LB_CERT_PRIVATE_KEY<<EOF"
+            cat /tmp/smoke-key.pem
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+      - name: Run CLI smoke test (noop provider)
+        env:
+          SERVICE_TYPE: lb
+          CLOUD_PROVIDER: noop
+          AUTH_METHOD: access_key
+          CLOUD_ACCESS_KEY_ID: dummy_key_id
+          CLOUD_ACCESS_KEY_SECRET: dummy_key_secret
+          LB_INSTANCE_ID: smoke-instance
+          LB_LISTENER_PORT: "443"
+          LB_REGION: cn-hangzhou
+        run: uv run python -m cloud_cert_renewer
+
   test-design-patterns:
     name: Test Design Pattern Compliance
     runs-on: ubuntu-latest

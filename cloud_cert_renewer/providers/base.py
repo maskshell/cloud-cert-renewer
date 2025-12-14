@@ -110,11 +110,13 @@ class CloudAdapterFactory:
         from cloud_cert_renewer.providers.alibaba import AlibabaCloudAdapter
         from cloud_cert_renewer.providers.aws import AWSAdapter
         from cloud_cert_renewer.providers.azure import AzureAdapter
+        from cloud_cert_renewer.providers.noop import NoopAdapter
 
         defaults: dict[str, type[CloudAdapter]] = {
             "alibaba": AlibabaCloudAdapter,
             "aws": AWSAdapter,
             "azure": AzureAdapter,
+            "noop": NoopAdapter,
         }
 
         # Merge defaults without overwriting any adapters already registered.
