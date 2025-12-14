@@ -230,11 +230,11 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
     )
     def test_get_current_cert_fingerprint(self, mock_get_fingerprint):
         """Test getting current certificate fingerprint"""
-        mock_get_fingerprint.return_value = "current:fingerprint"
+        mock_get_fingerprint.return_value = "AA:BB:CC"
 
         result = self.strategy.get_current_cert_fingerprint()
 
-        self.assertEqual(result, "current:fingerprint")
+        self.assertEqual(result, "aa:bb:cc")
         mock_get_fingerprint.assert_called_once()
 
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.renew_cert")
@@ -285,19 +285,27 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
     @patch(
         "cloud_cert_renewer.cert_renewer.load_balancer_renewer.get_cert_fingerprint_sha1"
     )
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.renew_cert")
     def test_strategy_renew_skip_when_same(
-        self, mock_get_fingerprint, mock_get_current_fingerprint, mock_load_cert
+        self,
+        mock_renew_cert,
+        mock_get_fingerprint,
+        mock_get_current_fingerprint,
+        mock_load_cert,
     ):
         """Test strategy skips renewal when certificate is the same"""
         # Setup mocks
         mock_load_cert.return_value = MagicMock()
-        mock_get_current_fingerprint.return_value = "same:fingerprint"
-        mock_get_fingerprint.return_value = "same:fingerprint"  # Same fingerprint
+        mock_get_current_fingerprint.return_value = "AA:BB:CC"
+        mock_get_fingerprint.return_value = (
+            "aa:bb:cc"  # Same fingerprint after normalization
+        )
 
         result = self.strategy.renew()
 
         self.assertTrue(result)
         # Verify renewal was skipped
+        mock_renew_cert.assert_not_called()
 
     def test_get_cert_info_missing_config(self):
         """Test get_cert_info raises error when lb_config is missing"""

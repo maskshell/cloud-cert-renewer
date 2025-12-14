@@ -12,7 +12,10 @@ from cryptography.hazmat.backends import default_backend
 
 from cloud_cert_renewer.auth.factory import CredentialProviderFactory
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
-from cloud_cert_renewer.utils.ssl_cert_parser import get_cert_fingerprint_sha1
+from cloud_cert_renewer.utils.ssl_cert_parser import (
+    get_cert_fingerprint_sha1,
+    normalize_hex_fingerprint,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -68,12 +71,15 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
 
         load_balancer_cert_renewer = getattr(clients_module, "LoadBalancerCertRenewer")
 
-        return load_balancer_cert_renewer.get_current_cert_fingerprint(
+        fingerprint = load_balancer_cert_renewer.get_current_cert_fingerprint(
             instance_id=self.config.lb_config.instance_id,
             listener_port=self.config.lb_config.listener_port,
             region=self.config.lb_config.region,
             credential_client=credential_client,
         )
+        if fingerprint:
+            return normalize_hex_fingerprint(fingerprint)
+        return None
 
     def _do_renew(self, cert: str, cert_private_key: str) -> bool:
         """Execute Load Balancer certificate renewal"""

@@ -116,3 +116,17 @@ def get_cert_fingerprint_sha1(cert_content: str) -> str:
         fingerprint.hex()[i : i + 2].lower()
         for i in range(0, len(fingerprint.hex()), 2)
     )
+
+
+def normalize_hex_fingerprint(fingerprint: str) -> str:
+    """Normalize a hex fingerprint string to colon-separated lowercase bytes.
+
+    This is useful when comparing API-returned fingerprints that may differ in
+    casing or separators (e.g., "AA:BB" vs "aa-bb" vs "AABB").
+    """
+
+    raw = "".join(ch for ch in fingerprint.strip() if ch.lower() in "0123456789abcdef")
+    if not raw or len(raw) % 2 != 0:
+        return fingerprint.strip().lower()
+    raw = raw.lower()
+    return ":".join(raw[i : i + 2] for i in range(0, len(raw), 2))

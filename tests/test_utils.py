@@ -12,6 +12,7 @@ from cloud_cert_renewer.utils.ssl_cert_parser import (  # noqa: E402, I001
     get_cert_fingerprint_sha256,
     is_cert_valid,
     is_domain_name_match,
+    normalize_hex_fingerprint,
     parse_cert_info,
 )
 
@@ -260,6 +261,27 @@ class TestSslCertParser(unittest.TestCase):
         for part in parts:
             self.assertEqual(len(part), 2)
             self.assertTrue(all(c in "0123456789abcdef" for c in part))
+
+    def test_normalize_hex_fingerprint_colon_uppercase(self):
+        """Test normalization of colon-separated uppercase fingerprint"""
+        self.assertEqual(
+            normalize_hex_fingerprint("AA:BB:CC"),
+            "aa:bb:cc",
+        )
+
+    def test_normalize_hex_fingerprint_no_separators(self):
+        """Test normalization of fingerprint without separators"""
+        self.assertEqual(
+            normalize_hex_fingerprint("AABBCC"),
+            "aa:bb:cc",
+        )
+
+    def test_normalize_hex_fingerprint_with_dashes_and_spaces(self):
+        """Test normalization of fingerprint with mixed separators"""
+        self.assertEqual(
+            normalize_hex_fingerprint("AA-BB CC"),
+            "aa:bb:cc",
+        )
 
 
 if __name__ == "__main__":
