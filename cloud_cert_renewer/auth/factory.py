@@ -3,6 +3,8 @@
 Provides creation logic for credential providers.
 """
 
+import os
+
 from cloud_cert_renewer.auth.access_key import AccessKeyCredentialProvider
 from cloud_cert_renewer.auth.base import CredentialProvider
 from cloud_cert_renewer.auth.env import EnvCredentialProvider
@@ -74,12 +76,36 @@ class CredentialProviderFactory:
             )
 
         elif auth_method == "iam_role":
-            role_arn = kwargs.get("role_arn")
+            role_arn = (
+                kwargs.get("role_arn")
+                or os.environ.get("ALIBABA_CLOUD_ROLE_ARN")
+                or os.environ.get("CLOUD_ROLE_ARN")
+            )
             if not role_arn:
-                raise ValueError("iam_role authentication method requires role_arn")
+                raise ValueError(
+                    "iam_role authentication method requires role_arn. "
+                    "Set ALIBABA_CLOUD_ROLE_ARN or CLOUD_ROLE_ARN environment "
+                    "variable, or pass role_arn parameter."
+                )
+
             role_session_name = kwargs.get("role_session_name")
+
+            # Allow base credentials to be provided via the Credentials object.
+            access_key_id = None
+            access_key_secret = None
+            if (
+                credentials
+                and credentials.access_key_id
+                and credentials.access_key_secret
+            ):
+                access_key_id = credentials.access_key_id
+                access_key_secret = credentials.access_key_secret
+
             return IAMRoleCredentialProvider(
-                role_arn=role_arn, role_session_name=role_session_name
+                role_arn=role_arn,
+                role_session_name=role_session_name,
+                access_key_id=access_key_id,
+                access_key_secret=access_key_secret,
             )
 
         elif auth_method == "service_account":

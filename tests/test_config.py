@@ -6,6 +6,7 @@ Tests the configuration loading and validation logic.
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -309,6 +310,52 @@ class TestLoadConfig(unittest.TestCase):
             load_config()
 
         self.assertIn("CLOUD_SECURITY_TOKEN", str(context.exception))
+
+    def test_load_config_auth_method_iam_role_does_not_require_access_key(self):
+        """Test iam_role auth method does not require explicit AccessKey values"""
+        with (
+            patch("cloud_cert_renewer.config.loader.load_dotenv"),
+            patch.dict(
+                os.environ,
+                {
+                    "SERVICE_TYPE": "cdn",
+                    "AUTH_METHOD": "iam_role",
+                    "CDN_DOMAIN_NAME": "test.example.com",
+                    "CDN_CERT": "test_cert",
+                    "CDN_CERT_PRIVATE_KEY": "test_key",
+                },
+                clear=True,
+            ),
+        ):
+            result = load_config()
+
+        self.assertEqual(result.auth_method, "iam_role")
+        self.assertEqual(result.credentials.access_key_id, "")
+        self.assertEqual(result.credentials.access_key_secret, "")
+
+    def test_load_config_auth_method_iam_role_uses_access_key_when_present(self):
+        """Test iam_role auth method keeps AccessKey values when provided"""
+        with (
+            patch("cloud_cert_renewer.config.loader.load_dotenv"),
+            patch.dict(
+                os.environ,
+                {
+                    "SERVICE_TYPE": "cdn",
+                    "AUTH_METHOD": "iam_role",
+                    "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                    "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                    "CDN_DOMAIN_NAME": "test.example.com",
+                    "CDN_CERT": "test_cert",
+                    "CDN_CERT_PRIVATE_KEY": "test_key",
+                },
+                clear=True,
+            ),
+        ):
+            result = load_config()
+
+        self.assertEqual(result.auth_method, "iam_role")
+        self.assertEqual(result.credentials.access_key_id, "test_key_id")
+        self.assertEqual(result.credentials.access_key_secret, "test_key_secret")
 
 
 if __name__ == "__main__":

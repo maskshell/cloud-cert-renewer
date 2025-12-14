@@ -119,6 +119,20 @@ def load_config() -> AppConfig:
             access_key_secret=access_key_secret,
             security_token=security_token,
         )
+    elif auth_method == "iam_role":
+        # IAM role auth can read base credentials from environment at runtime.
+        # If AccessKey values are provided, keep them to avoid additional env reads.
+        access_key_id = _get_env_with_fallback(
+            "CLOUD_ACCESS_KEY_ID", "ALIBABA_CLOUD_ACCESS_KEY_ID"
+        )
+        access_key_secret = _get_env_with_fallback(
+            "CLOUD_ACCESS_KEY_SECRET", "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
+        )
+        credentials = Credentials(
+            access_key_id=access_key_id or "",
+            access_key_secret=access_key_secret or "",
+            security_token=None,
+        )
     else:
         # Placeholder credentials; actual credentials may be resolved at runtime
         # by the selected CredentialProvider (e.g., OIDC/RRSA, env chain, etc.).

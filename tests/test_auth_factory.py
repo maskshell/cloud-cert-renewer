@@ -6,6 +6,7 @@ Tests the CredentialProviderFactory implementation of the Factory Pattern.
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -142,6 +143,29 @@ class TestCredentialProviderFactory(unittest.TestCase):
         )
 
         self.assertIsInstance(provider, IAMRoleCredentialProvider)
+
+    @patch.dict(
+        os.environ,
+        {
+            "CLOUD_ROLE_ARN": "acs:ram::123456789012:role/test-role",
+        },
+        clear=True,
+    )
+    def test_factory_create_iam_role_from_env(self):
+        """Test factory can create IAM role provider using env role arn"""
+        provider = CredentialProviderFactory.create(auth_method="iam_role")
+
+        self.assertIsInstance(provider, IAMRoleCredentialProvider)
+        self.assertEqual(provider.role_arn, "acs:ram::123456789012:role/test-role")
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_factory_create_iam_role_missing_role_arn_mentions_env_vars(self):
+        """Test iam_role error message suggests env variables when missing role arn"""
+        with self.assertRaises(ValueError) as context:
+            CredentialProviderFactory.create(auth_method="iam_role")
+
+        self.assertIn("ALIBABA_CLOUD_ROLE_ARN", str(context.exception))
+        self.assertIn("CLOUD_ROLE_ARN", str(context.exception))
 
     def test_factory_create_iam_role_missing_role_arn(self):
         """Test factory raises error when iam_role method missing role_arn"""
