@@ -224,6 +224,65 @@ jobs:
           SKIP: trailing-whitespace,end-of-file-fixer,ruff,ruff-format,prettier
         run: uv run pre-commit run --all-files
 
+  pre-commit-py314:
+    name: Pre-commit Hooks (Python 3.14)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          allow-prereleases: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run pre-commit hooks (check only, no file modifications)
+        env:
+          SKIP: trailing-whitespace,end-of-file-fixer,ruff,ruff-format,prettier
+        run: uv run pre-commit run --all-files
+
+  package-smoke-py314:
+    name: Package Build & Install Smoke Test (Python 3.14)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          allow-prereleases: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Build wheel
+        run: |
+          uv run python -m pip install build
+          rm -rf dist/ build/ *.egg-info
+          uv run python -m build
+
+      - name: Install wheel and import smoke test
+        run: |
+          uv run python -m pip install dist/*.whl
+          uv run python -m pip check
+          uv run python -c "import cloud_cert_renewer; from cloud_cert_renewer.providers.base import CloudAdapterFactory; CloudAdapterFactory.create('alibaba'); print(cloud_cert_renewer.__version__)"
+
   test-design-patterns:
     name: Test Design Pattern Compliance
     runs-on: ubuntu-latest
