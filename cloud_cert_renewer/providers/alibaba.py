@@ -15,9 +15,7 @@ class AlibabaCloudAdapter(CloudAdapter):
 
     def _get_credential_client(
         self, credentials: Credentials, auth_method: str | None = None
-    ) -> (
-        "alibabacloud_credentials.client.Client"  # noqa: F821
-    ):
+    ) -> "alibabacloud_credentials.client.Client":  # noqa: F821
         """
         Get credential client from credentials and auth_method
         :param credentials: Credentials object
