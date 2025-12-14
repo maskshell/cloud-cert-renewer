@@ -22,6 +22,7 @@ class CloudAdapter(ABC):
         cert_private_key: str,
         region: str,
         credentials: Credentials,
+        auth_method: str | None = None,
     ) -> bool:
         """
         Update CDN certificate
@@ -30,6 +31,7 @@ class CloudAdapter(ABC):
         :param cert_private_key: Certificate private key
         :param region: Region
         :param credentials: Credentials
+        :param auth_method: Authentication method (optional)
         :return: Whether successful
         """
         pass
@@ -43,6 +45,7 @@ class CloudAdapter(ABC):
         cert_private_key: str,
         region: str,
         credentials: Credentials,
+        auth_method: str | None = None,
     ) -> bool:
         """
         Update Load Balancer certificate
@@ -52,19 +55,25 @@ class CloudAdapter(ABC):
         :param cert_private_key: Certificate private key
         :param region: Region
         :param credentials: Credentials
+        :param auth_method: Authentication method (optional)
         :return: Whether successful
         """
         pass
 
     @abstractmethod
     def get_current_cdn_certificate(
-        self, domain_name: str, region: str, credentials: Credentials
+        self,
+        domain_name: str,
+        region: str,
+        credentials: Credentials,
+        auth_method: str | None = None,
     ) -> str | None:
         """
         Get current CDN certificate
         :param domain_name: Domain name
         :param region: Region
         :param credentials: Credentials
+        :param auth_method: Authentication method (optional)
         :return: Certificate content, or None if query fails
         """
         pass
@@ -76,6 +85,7 @@ class CloudAdapter(ABC):
         listener_port: int,
         region: str,
         credentials: Credentials,
+        auth_method: str | None = None,
     ) -> str | None:
         """
         Get current Load Balancer certificate fingerprint
@@ -83,6 +93,7 @@ class CloudAdapter(ABC):
         :param listener_port: Listener port
         :param region: Region
         :param credentials: Credentials
+        :param auth_method: Authentication method (optional)
         :return: Certificate fingerprint, or None if query fails
         """
         pass

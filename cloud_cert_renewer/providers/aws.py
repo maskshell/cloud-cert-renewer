@@ -18,6 +18,7 @@ class AWSAdapter(CloudAdapter):
         cert_private_key: str,
         region: str,
         credentials: Credentials,
+        auth_method: str | None = None,
     ) -> bool:
         """Update AWS CloudFront certificate"""
         # TODO: Implement AWS CloudFront certificate renewal logic
@@ -31,13 +32,18 @@ class AWSAdapter(CloudAdapter):
         cert_private_key: str,
         region: str,
         credentials: Credentials,
+        auth_method: str | None = None,
     ) -> bool:
         """Update AWS ELB/ALB certificate"""
         # TODO: Implement AWS ELB/ALB certificate renewal logic
         raise NotImplementedError("AWS adapter is not yet implemented")
 
     def get_current_cdn_certificate(
-        self, domain_name: str, region: str, credentials: Credentials
+        self,
+        domain_name: str,
+        region: str,
+        credentials: Credentials,
+        auth_method: str | None = None,
     ) -> str | None:
         """Get AWS CloudFront current certificate"""
         # TODO: Implement AWS CloudFront certificate query logic
@@ -49,6 +55,7 @@ class AWSAdapter(CloudAdapter):
         listener_port: int,
         region: str,
         credentials: Credentials,
+        auth_method: str | None = None,
     ) -> str | None:
         """Get AWS ELB/ALB current certificate fingerprint"""
         # TODO: Implement AWS ELB/ALB certificate fingerprint query logic

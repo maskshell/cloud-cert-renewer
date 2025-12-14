@@ -92,72 +92,81 @@ class TestCdnCertRenewerStrategy(unittest.TestCase):
         self.assertEqual(result, "test:fingerprint:sha256")
         mock_get_fingerprint.assert_called_once_with("test_cert")
 
-    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
+    @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.CloudAdapterFactory")
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.get_cert_fingerprint_sha256")
-    def test_get_current_cert_fingerprint(self, mock_get_fingerprint, mock_get_cert):
+    def test_get_current_cert_fingerprint(self, mock_get_fingerprint, mock_factory):
         """Test getting current certificate fingerprint"""
-        mock_get_cert.return_value = "current_cert_content"
+        mock_adapter = MagicMock()
+        mock_adapter.get_current_cdn_certificate.return_value = "current_cert_content"
+        mock_factory.create.return_value = mock_adapter
         mock_get_fingerprint.return_value = "current:fingerprint"
 
         result = self.strategy.get_current_cert_fingerprint()
 
         self.assertEqual(result, "current:fingerprint")
-        mock_get_cert.assert_called_once()
+        mock_adapter.get_current_cdn_certificate.assert_called_once_with(
+            domain_name="test.example.com",
+            region="cn-hangzhou",
+            credentials=self.credentials,
+            auth_method="access_key",
+        )
         mock_get_fingerprint.assert_called_once_with("current_cert_content")
 
-    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.renew_cert")
-    def test_do_renew(self, mock_renew_cert):
+    @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.CloudAdapterFactory")
+    def test_do_renew(self, mock_factory):
         """Test executing certificate renewal"""
-        mock_renew_cert.return_value = True
+        mock_adapter = MagicMock()
+        mock_adapter.update_cdn_certificate.return_value = True
+        mock_factory.create.return_value = mock_adapter
 
         result = self.strategy._do_renew("test_cert", "test_key")
 
         self.assertTrue(result)
-        mock_renew_cert.assert_called_once()
+        mock_adapter.update_cdn_certificate.assert_called_once_with(
+            domain_name="test.example.com",
+            cert="test_cert",
+            cert_private_key="test_key",
+            region="cn-hangzhou",
+            credentials=self.credentials,
+            auth_method="access_key",
+        )
 
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.is_cert_valid")
-    @patch(
-        "cloud_cert_renewer.cert_renewer.cdn_renewer.CdnCertRenewerStrategy.get_current_cert_fingerprint"
-    )
-    @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.get_cert_fingerprint_sha256")
-    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.renew_cert")
-    def test_strategy_renew_success(
-        self,
-        mock_renew_cert,
-        mock_get_fingerprint,
-        mock_get_current_fingerprint,
-        mock_is_cert_valid,
-    ):
+    @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.CloudAdapterFactory")
+    def test_strategy_renew_success(self, mock_factory, mock_is_cert_valid):
         """Test successful certificate renewal through strategy"""
         # Setup mocks
         mock_is_cert_valid.return_value = True
-        mock_get_current_fingerprint.return_value = None  # No current certificate
-        mock_get_fingerprint.return_value = "new:fingerprint"
-        mock_renew_cert.return_value = True
+        mock_adapter = MagicMock()
+        mock_adapter.get_current_cdn_certificate.return_value = None
+        mock_adapter.update_cdn_certificate.return_value = True
+        mock_factory.create.return_value = mock_adapter
 
         result = self.strategy.renew()
 
         self.assertTrue(result)
         mock_is_cert_valid.assert_called_once()
-        mock_renew_cert.assert_called_once()
+        mock_adapter.update_cdn_certificate.assert_called_once()
 
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.is_cert_valid")
-    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
+    @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.CloudAdapterFactory")
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.get_cert_fingerprint_sha256")
     def test_strategy_renew_skip_when_same(
-        self, mock_get_fingerprint, mock_get_current_cert, mock_is_cert_valid
+        self, mock_get_fingerprint, mock_factory, mock_is_cert_valid
     ):
         """Test strategy skips renewal when certificate is the same"""
         # Setup mocks
         mock_is_cert_valid.return_value = True
-        mock_get_current_cert.return_value = "current_cert"
+        mock_adapter = MagicMock()
+        mock_adapter.get_current_cdn_certificate.return_value = "current_cert"
+        mock_adapter.update_cdn_certificate.return_value = True
+        mock_factory.create.return_value = mock_adapter
         mock_get_fingerprint.return_value = "same:fingerprint"  # Same fingerprint
 
         result = self.strategy.renew()
 
         self.assertTrue(result)
-        # Verify renewal was skipped (renew_cert should not be called)
-        # This is verified by the fact that we don't patch renew_cert
+        mock_adapter.update_cdn_certificate.assert_not_called()
 
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.is_cert_valid")
     def test_strategy_renew_invalid_cert(self, mock_is_cert_valid):
@@ -225,87 +234,86 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
         self.assertEqual(result, "test:fingerprint:sha1")
         mock_get_fingerprint.assert_called_once_with("test_cert")
 
-    @patch(
-        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
-    )
-    def test_get_current_cert_fingerprint(self, mock_get_fingerprint):
+    @patch("cloud_cert_renewer.cert_renewer.load_balancer_renewer.CloudAdapterFactory")
+    def test_get_current_cert_fingerprint(self, mock_factory):
         """Test getting current certificate fingerprint"""
-        mock_get_fingerprint.return_value = "AA:BB:CC"
+        mock_adapter = MagicMock()
+        mock_adapter.get_current_lb_certificate_fingerprint.return_value = "AA:BB:CC"
+        mock_factory.create.return_value = mock_adapter
 
         result = self.strategy.get_current_cert_fingerprint()
 
         self.assertEqual(result, "aa:bb:cc")
-        mock_get_fingerprint.assert_called_once()
+        mock_adapter.get_current_lb_certificate_fingerprint.assert_called_once_with(
+            instance_id="test-instance-id",
+            listener_port=443,
+            region="cn-hangzhou",
+            credentials=self.credentials,
+            auth_method="access_key",
+        )
 
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.renew_cert")
-    def test_do_renew(self, mock_renew_cert):
+    @patch("cloud_cert_renewer.cert_renewer.load_balancer_renewer.CloudAdapterFactory")
+    def test_do_renew(self, mock_factory):
         """Test executing certificate renewal"""
-        mock_renew_cert.return_value = True
+        mock_adapter = MagicMock()
+        mock_adapter.update_load_balancer_certificate.return_value = True
+        mock_factory.create.return_value = mock_adapter
 
         result = self.strategy._do_renew("test_cert", "test_key")
 
         self.assertTrue(result)
-        mock_renew_cert.assert_called_once()
+        mock_adapter.update_load_balancer_certificate.assert_called_once_with(
+            instance_id="test-instance-id",
+            listener_port=443,
+            cert="test_cert",
+            cert_private_key="test_key",
+            region="cn-hangzhou",
+            credentials=self.credentials,
+            auth_method="access_key",
+        )
 
     @patch(
         "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate"
     )
-    @patch(
-        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.LoadBalancerCertRenewerStrategy.get_current_cert_fingerprint"
-    )
-    @patch(
-        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.get_cert_fingerprint_sha1"
-    )
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.renew_cert")
-    def test_strategy_renew_success(
-        self,
-        mock_renew_cert,
-        mock_get_fingerprint,
-        mock_get_current_fingerprint,
-        mock_load_cert,
-    ):
+    @patch("cloud_cert_renewer.cert_renewer.load_balancer_renewer.CloudAdapterFactory")
+    def test_strategy_renew_success(self, mock_factory, mock_load_cert):
         """Test successful certificate renewal through strategy"""
         # Setup mocks
         mock_load_cert.return_value = MagicMock()
-        mock_get_current_fingerprint.return_value = None  # No current certificate
-        mock_get_fingerprint.return_value = "new:fingerprint"
-        mock_renew_cert.return_value = True
+        mock_adapter = MagicMock()
+        mock_adapter.get_current_lb_certificate_fingerprint.return_value = None
+        mock_adapter.update_load_balancer_certificate.return_value = True
+        mock_factory.create.return_value = mock_adapter
 
         result = self.strategy.renew()
 
         self.assertTrue(result)
-        mock_renew_cert.assert_called_once()
+        mock_adapter.update_load_balancer_certificate.assert_called_once()
 
     @patch(
         "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate"
     )
-    @patch(
-        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.get_current_cert_fingerprint"
-    )
+    @patch("cloud_cert_renewer.cert_renewer.load_balancer_renewer.CloudAdapterFactory")
     @patch(
         "cloud_cert_renewer.cert_renewer.load_balancer_renewer.get_cert_fingerprint_sha1"
     )
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.renew_cert")
     def test_strategy_renew_skip_when_same(
-        self,
-        mock_renew_cert,
-        mock_get_fingerprint,
-        mock_get_current_fingerprint,
-        mock_load_cert,
+        self, mock_get_fingerprint, mock_factory, mock_load_cert
     ):
         """Test strategy skips renewal when certificate is the same"""
         # Setup mocks
         mock_load_cert.return_value = MagicMock()
-        mock_get_current_fingerprint.return_value = "AA:BB:CC"
-        mock_get_fingerprint.return_value = (
-            "aa:bb:cc"  # Same fingerprint after normalization
-        )
+        mock_adapter = MagicMock()
+        mock_adapter.get_current_lb_certificate_fingerprint.return_value = "AA:BB:CC"
+        mock_adapter.update_load_balancer_certificate.return_value = True
+        mock_factory.create.return_value = mock_adapter
+        mock_get_fingerprint.return_value = "aa:bb:cc"
 
         result = self.strategy.renew()
 
         self.assertTrue(result)
         # Verify renewal was skipped
-        mock_renew_cert.assert_not_called()
+        mock_adapter.update_load_balancer_certificate.assert_not_called()
 
     def test_get_cert_info_missing_config(self):
         """Test get_cert_info raises error when lb_config is missing"""

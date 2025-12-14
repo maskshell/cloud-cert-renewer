@@ -18,6 +18,7 @@ class AzureAdapter(CloudAdapter):
         cert_private_key: str,
         region: str,
         credentials: Credentials,
+        auth_method: str | None = None,
     ) -> bool:
         """Update Azure CDN certificate"""
         # TODO: Implement Azure CDN certificate renewal logic
@@ -31,13 +32,18 @@ class AzureAdapter(CloudAdapter):
         cert_private_key: str,
         region: str,
         credentials: Credentials,
+        auth_method: str | None = None,
     ) -> bool:
         """Update Azure Load Balancer certificate"""
         # TODO: Implement Azure Load Balancer certificate renewal logic
         raise NotImplementedError("Azure adapter is not yet implemented")
 
     def get_current_cdn_certificate(
-        self, domain_name: str, region: str, credentials: Credentials
+        self,
+        domain_name: str,
+        region: str,
+        credentials: Credentials,
+        auth_method: str | None = None,
     ) -> str | None:
         """Get Azure CDN current certificate"""
         # TODO: Implement Azure CDN certificate query logic
@@ -49,6 +55,7 @@ class AzureAdapter(CloudAdapter):
         listener_port: int,
         region: str,
         credentials: Credentials,
+        auth_method: str | None = None,
     ) -> str | None:
         """Get Azure Load Balancer current certificate fingerprint"""
         # TODO: Implement Azure Load Balancer certificate fingerprint query logic

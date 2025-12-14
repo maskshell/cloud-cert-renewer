@@ -4,11 +4,9 @@ Implements specific strategy for CDN certificate renewal.
 """
 
 import logging
-import sys
-from importlib import import_module
 
-from cloud_cert_renewer.auth.factory import CredentialProviderFactory
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
+from cloud_cert_renewer.providers.base import CloudAdapterFactory
 from cloud_cert_renewer.utils.ssl_cert_parser import (
     get_cert_fingerprint_sha256,
     is_cert_valid,
@@ -43,24 +41,12 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
         if not self.config.cdn_config:
             return None
 
-        # Create credential provider and get credential client
-        provider = CredentialProviderFactory.create(
-            auth_method=self.config.auth_method, credentials=self.config.credentials
-        )
-        credential_client = provider.get_credential_client()
-
-        # Lazy import to avoid circular dependencies
-        # Dynamically import clients module
-        if "cloud_cert_renewer.clients.alibaba" not in sys.modules:
-            clients_module = import_module("cloud_cert_renewer.clients.alibaba")
-        else:
-            clients_module = sys.modules["cloud_cert_renewer.clients.alibaba"]
-
-        cdn_cert_renewer = getattr(clients_module, "CdnCertRenewer")
-
-        current_cert = cdn_cert_renewer.get_current_cert(
+        adapter = CloudAdapterFactory.create(self.config.cloud_provider)
+        current_cert = adapter.get_current_cdn_certificate(
             domain_name=self.config.cdn_config.domain_name,
-            credential_client=credential_client,
+            region=self.config.cdn_config.region,
+            credentials=self.config.credentials,
+            auth_method=self.config.auth_method,
         )
         if current_cert:
             return get_cert_fingerprint_sha256(current_cert)
@@ -71,26 +57,12 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
         if not self.config.cdn_config:
             raise ValueError("CDN configuration does not exist")
 
-        # Create credential provider and get credential client
-        provider = CredentialProviderFactory.create(
-            auth_method=self.config.auth_method, credentials=self.config.credentials
-        )
-        credential_client = provider.get_credential_client()
-
-        # Lazy import to avoid circular dependencies
-        # Dynamically import clients module
-        if "cloud_cert_renewer.clients.alibaba" not in sys.modules:
-            clients_module = import_module("cloud_cert_renewer.clients.alibaba")
-        else:
-            clients_module = sys.modules["cloud_cert_renewer.clients.alibaba"]
-
-        cdn_cert_renewer = getattr(clients_module, "CdnCertRenewer")
-
-        return cdn_cert_renewer.renew_cert(
+        adapter = CloudAdapterFactory.create(self.config.cloud_provider)
+        return adapter.update_cdn_certificate(
             domain_name=self.config.cdn_config.domain_name,
             cert=cert,
             cert_private_key=cert_private_key,
             region=self.config.cdn_config.region,
-            credential_client=credential_client,
-            force=self.config.force_update,
+            credentials=self.config.credentials,
+            auth_method=self.config.auth_method,
         )

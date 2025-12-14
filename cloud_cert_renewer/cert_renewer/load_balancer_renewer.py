@@ -4,14 +4,12 @@ Implements specific strategy for Load Balancer certificate renewal.
 """
 
 import logging
-import sys
-from importlib import import_module
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 
-from cloud_cert_renewer.auth.factory import CredentialProviderFactory
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
+from cloud_cert_renewer.providers.base import CloudAdapterFactory
 from cloud_cert_renewer.utils.ssl_cert_parser import (
     get_cert_fingerprint_sha1,
     normalize_hex_fingerprint,
@@ -56,26 +54,13 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
         if not self.config.lb_config:
             return None
 
-        # Create credential provider and get credential client
-        provider = CredentialProviderFactory.create(
-            auth_method=self.config.auth_method, credentials=self.config.credentials
-        )
-        credential_client = provider.get_credential_client()
-
-        # Lazy import to avoid circular dependencies
-        # Dynamically import clients module
-        if "cloud_cert_renewer.clients.alibaba" not in sys.modules:
-            clients_module = import_module("cloud_cert_renewer.clients.alibaba")
-        else:
-            clients_module = sys.modules["cloud_cert_renewer.clients.alibaba"]
-
-        load_balancer_cert_renewer = getattr(clients_module, "LoadBalancerCertRenewer")
-
-        fingerprint = load_balancer_cert_renewer.get_current_cert_fingerprint(
+        adapter = CloudAdapterFactory.create(self.config.cloud_provider)
+        fingerprint = adapter.get_current_lb_certificate_fingerprint(
             instance_id=self.config.lb_config.instance_id,
             listener_port=self.config.lb_config.listener_port,
             region=self.config.lb_config.region,
-            credential_client=credential_client,
+            credentials=self.config.credentials,
+            auth_method=self.config.auth_method,
         )
         if fingerprint:
             return normalize_hex_fingerprint(fingerprint)
@@ -86,27 +71,13 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
         if not self.config.lb_config:
             raise ValueError("Load Balancer configuration does not exist")
 
-        # Create credential provider and get credential client
-        provider = CredentialProviderFactory.create(
-            auth_method=self.config.auth_method, credentials=self.config.credentials
-        )
-        credential_client = provider.get_credential_client()
-
-        # Lazy import to avoid circular dependencies
-        # Dynamically import clients module
-        if "cloud_cert_renewer.clients.alibaba" not in sys.modules:
-            clients_module = import_module("cloud_cert_renewer.clients.alibaba")
-        else:
-            clients_module = sys.modules["cloud_cert_renewer.clients.alibaba"]
-
-        load_balancer_cert_renewer = getattr(clients_module, "LoadBalancerCertRenewer")
-
-        return load_balancer_cert_renewer.renew_cert(
+        adapter = CloudAdapterFactory.create(self.config.cloud_provider)
+        return adapter.update_load_balancer_certificate(
             instance_id=self.config.lb_config.instance_id,
             listener_port=self.config.lb_config.listener_port,
             cert=cert,
             cert_private_key=cert_private_key,
             region=self.config.lb_config.region,
-            credential_client=credential_client,
-            force=self.config.force_update,
+            credentials=self.config.credentials,
+            auth_method=self.config.auth_method,
         )
