@@ -96,3 +96,7 @@ Desktop.ini
 *.bak
 *.backup
 *~
+
+# AI Agent
+.cursor/
+.claude/
