@@ -69,6 +69,12 @@ The project supports configuration via environment variables or `.env` files. Re
 - `AUTH_METHOD`: Authentication method, options: `access_key`, `sts`, `iam_role`, `oidc`, `service_account`, `env` (default: `access_key`)
 - `CLOUD_SECURITY_TOKEN`: STS temporary security token (optional, required when `AUTH_METHOD=sts`)
 
+### SDK Configuration (Optional)
+
+- `CLOUD_API_CONNECT_TIMEOUT`: API connection timeout in milliseconds (default: SDK default)
+- `CLOUD_API_READ_TIMEOUT`: API read timeout in milliseconds (default: SDK default)
+- `CLOUD_API_MAX_ATTEMPTS`: Maximum retry attempts for API calls (default: SDK default, enables auto-retry when set)
+
 ### OIDC Authentication (RRSA)
 
 When using OIDC authentication (`AUTH_METHOD=oidc`), the following environment variables are automatically injected by Kubernetes Service Account and RRSA:

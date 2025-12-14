@@ -14,6 +14,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic environment variable injection by Kubernetes Service Account
   - Service Account configuration in Helm Chart
   - Conditional environment variable setup (access_key not required for OIDC)
+- Python 3.14 support with dedicated CI quality gates
+  - Pre-commit validation under Python 3.14
+  - Package build and install smoke tests
+
+### Changed
+
+- Enhanced `CredentialProvider` Protocol with `get_credential_client()` method for type safety
+- Improved certificate fingerprint comparison with normalization (handles API format variations)
+- Consolidated certificate fingerprint comparison at `BaseCertRenewer` level
+- Configurable SDK timeout/retry via environment variables (`CLOUD_API_CONNECT_TIMEOUT`, `CLOUD_API_READ_TIMEOUT`, `CLOUD_API_MAX_ATTEMPTS`)
+
+### Fixed
+
+- Fixed DIContainer singleton semantics (non-singleton factories now correctly return new instances)
+- Fixed certificate validity parsing to use UTC-aware datetime (removes cryptography deprecation warnings)
+- Tightened wildcard domain matching to comply with RFC 6125 (single-label only)
+- Fixed CloudAdapterFactory default adapter registration (custom adapters no longer prevent defaults)
+- Removed unused `force` parameter from adapter/client layer
+
+### Improved
+
+- Test coverage increased from 80% to 94%
+- Added comprehensive tests for `IAMRoleCredentialProvider` (100% coverage)
+- Added comprehensive tests for `EnvCredentialProvider` (100% coverage)
+- Total test count increased from ~100 to 169
 
 ## [0.1.0] - 2025-11-15
 
