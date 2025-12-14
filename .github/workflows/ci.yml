@@ -40,6 +40,40 @@ jobs:
       - name: Check YAML files
         run: uv run yamllint . --config-file .yamllint || true
 
+  security-audit:
+    name: Dependency Security Audit (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Install pip-audit
+        run: uv run python -m pip install pip-audit
+
+      - name: Run pip-audit (informational)
+        run: |
+          uv run pip-audit -f json -o pip-audit.json || true
+          cat pip-audit.json || true
+
+      - name: Upload pip-audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit
+          path: pip-audit.json
+
   language-check:
     name: Language Policy Check
     runs-on: ubuntu-latest
