@@ -111,7 +111,6 @@ class CdnCertRenewer:
         cert_private_key: str,
         region: str,
         credential_client: CredClient,
-        force: bool = False,
     ) -> bool:
         """
         Update CDN domain SSL certificate
@@ -120,8 +119,6 @@ class CdnCertRenewer:
         :param cert_private_key: SSL certificate private key
         :param region: Region
         :param credential_client: Alibaba Cloud Credentials client
-        :param force: Whether to force update (update even if certificate is
-            the same, for testing)
         :return: Whether successful
         """
         try:
@@ -294,7 +291,6 @@ class LoadBalancerCertRenewer:
         cert_private_key: str,
         region: str,
         credential_client: CredClient,
-        force: bool = False,
     ) -> bool:
         """
         Update SLB instance SSL certificate
@@ -304,8 +300,6 @@ class LoadBalancerCertRenewer:
         :param cert_private_key: SSL certificate private key
         :param region: Region
         :param credential_client: Alibaba Cloud Credentials client
-        :param force: Whether to force update (update even if certificate is
-            the same, for testing)
         :return: Whether successful
         """
         try:

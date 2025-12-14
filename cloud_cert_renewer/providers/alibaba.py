@@ -57,7 +57,6 @@ class AlibabaCloudAdapter(CloudAdapter):
             cert_private_key=cert_private_key,
             region=region,
             credential_client=credential_client,
-            force=False,
         )
 
     def update_load_balancer_certificate(
@@ -82,7 +81,6 @@ class AlibabaCloudAdapter(CloudAdapter):
             cert_private_key=cert_private_key,
             region=region,
             credential_client=credential_client,
-            force=False,
         )
 
     def get_current_cdn_certificate(

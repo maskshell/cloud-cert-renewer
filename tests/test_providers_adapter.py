@@ -55,7 +55,6 @@ class TestAlibabaCloudAdapter(unittest.TestCase):
             cert_private_key="test_key",
             region="cn-hangzhou",
             credential_client=mock_credential_client,
-            force=False,
         )
 
     @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.renew_cert")
@@ -85,7 +84,6 @@ class TestAlibabaCloudAdapter(unittest.TestCase):
             cert_private_key="test_key",
             region="cn-hangzhou",
             credential_client=mock_credential_client,
-            force=False,
         )
 
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")

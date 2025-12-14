@@ -157,34 +157,6 @@ MIIEpQIBAAKCAQEA...
         mock_client.set_cdn_domain_sslcertificate_with_options.assert_called_once()
 
     @patch("cloud_cert_renewer.clients.alibaba.is_cert_valid")
-    @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.create_client")
-    def test_renew_cert_force_update(self, mock_create_client, mock_is_cert_valid):
-        """Test force flag still performs the update"""
-        # Setup mocks
-        mock_is_cert_valid.return_value = True
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_client.set_cdn_domain_sslcertificate_with_options.return_value = (
-            mock_response
-        )
-        mock_create_client.return_value = mock_client
-
-        # Execute test (force=True)
-        result = CdnCertRenewer.renew_cert(
-            domain_name=self.domain_name,
-            cert=self.cert,
-            cert_private_key=self.cert_private_key,
-            region=self.region,
-            credential_client=self.credential_client,
-            force=True,
-        )
-
-        # Verify results
-        self.assertTrue(result)
-        mock_client.set_cdn_domain_sslcertificate_with_options.assert_called_once()
-
-    @patch("cloud_cert_renewer.clients.alibaba.is_cert_valid")
     def test_renew_cert_invalid_cert(self, mock_is_cert_valid):
         """Test certificate validation failure"""
         # Setup mock
@@ -339,40 +311,6 @@ MIIEpQIBAAKCAQEA...
 
         self.assertTrue(result)
         mock_get_current_cert_fingerprint.assert_not_called()
-
-    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
-    def test_renew_cert_force_update(self, mock_create_client):
-        """Test force flag still performs the update"""
-        # Setup mocks
-        mock_client = MagicMock()
-        mock_upload_response = MagicMock()
-        mock_upload_response.body = MagicMock()
-        mock_upload_response.body.server_certificate_id = "test-cert-id"
-        mock_client.upload_server_certificate_with_options.return_value = (
-            mock_upload_response
-        )
-        mock_bind_response = MagicMock()
-        mock_bind_response.status_code = 200
-        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
-            mock_bind_response
-        )
-        mock_create_client.return_value = mock_client
-
-        # Execute test (force=True)
-        result = LoadBalancerCertRenewer.renew_cert(
-            instance_id=self.instance_id,
-            listener_port=self.listener_port,
-            cert=self.cert,
-            cert_private_key=self.cert_private_key,
-            region=self.region,
-            credential_client=self.credential_client,
-            force=True,
-        )
-
-        # Verify results
-        self.assertTrue(result)
-        mock_client.upload_server_certificate_with_options.assert_called_once()
-        mock_client.set_load_balancer_https_listener_attribute_with_options.assert_called_once()
 
 
 class TestCdnCertRenewerErrorHandling(unittest.TestCase):
