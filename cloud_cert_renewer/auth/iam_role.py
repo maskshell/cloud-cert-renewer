@@ -8,6 +8,7 @@ import os
 from alibabacloud_credentials.client import Client as CredClient
 from alibabacloud_credentials.models import Config as CredConfig
 
+from cloud_cert_renewer.auth.errors import AuthError
 from cloud_cert_renewer.config import Credentials
 
 
@@ -43,7 +44,7 @@ class IAMRoleCredentialProvider:
             "CLOUD_ACCESS_KEY_ID"
         )
         if not access_key_id:
-            raise ValueError(
+            raise AuthError(
                 "IAM Role authentication requires access_key_id. "
                 "Set ALIBABA_CLOUD_ACCESS_KEY_ID or "
                 "CLOUD_ACCESS_KEY_ID environment variable, "
@@ -59,7 +60,7 @@ class IAMRoleCredentialProvider:
             "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
         ) or os.environ.get("CLOUD_ACCESS_KEY_SECRET")
         if not access_key_secret:
-            raise ValueError(
+            raise AuthError(
                 "IAM Role authentication requires access_key_secret. "
                 "Set ALIBABA_CLOUD_ACCESS_KEY_SECRET or CLOUD_ACCESS_KEY_SECRET "
                 "environment variable, or pass access_key_secret parameter."

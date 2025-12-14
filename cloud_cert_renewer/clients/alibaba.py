@@ -15,6 +15,7 @@ from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_tea_util import models as util_models
 
 from cloud_cert_renewer.cert_renewer.base import CertValidationError
+from cloud_cert_renewer.errors import CloudApiError
 from cloud_cert_renewer.utils.ssl_cert_parser import is_cert_valid
 
 logger = logging.getLogger(__name__)
@@ -170,7 +171,7 @@ class CdnCertRenewer:
                 recommend = data.get("Recommend")
                 if recommend:
                     logger.error("Diagnostic URL: %s", recommend)
-            raise
+            raise CloudApiError(f"CDN certificate update failed: {error_msg}") from e
 
 
 class LoadBalancerCertRenewer:
@@ -372,4 +373,4 @@ class LoadBalancerCertRenewer:
                 recommend = data.get("Recommend")
                 if recommend:
                     logger.error("Diagnostic URL: %s", recommend)
-            raise
+            raise CloudApiError(f"SLB certificate update failed: {error_msg}") from e

@@ -9,6 +9,7 @@ import os
 from alibabacloud_credentials.client import Client as CredClient
 from alibabacloud_credentials.models import Config as CredConfig
 
+from cloud_cert_renewer.auth.errors import AuthError
 from cloud_cert_renewer.config import Credentials
 
 
@@ -46,7 +47,7 @@ class ServiceAccountCredentialProvider:
             "CLOUD_ROLE_ARN"
         )
         if not role_arn:
-            raise ValueError(
+            raise AuthError(
                 "ServiceAccount authentication requires role_arn. "
                 "Set ALIBABA_CLOUD_ROLE_ARN or CLOUD_ROLE_ARN environment variable, "
                 "or pass role_arn parameter. "
@@ -62,7 +63,7 @@ class ServiceAccountCredentialProvider:
             "ALIBABA_CLOUD_OIDC_PROVIDER_ARN"
         ) or os.environ.get("CLOUD_OIDC_PROVIDER_ARN")
         if not oidc_provider_arn:
-            raise ValueError(
+            raise AuthError(
                 "ServiceAccount authentication requires oidc_provider_arn. "
                 "Set ALIBABA_CLOUD_OIDC_PROVIDER_ARN or CLOUD_OIDC_PROVIDER_ARN "
                 "environment variable, or pass oidc_provider_arn parameter."
@@ -83,7 +84,7 @@ class ServiceAccountCredentialProvider:
 
         # Verify token file exists
         if not os.path.exists(oidc_token_file):
-            raise ValueError(
+            raise AuthError(
                 f"ServiceAccount token file not found: {oidc_token_file}. "
                 f"Ensure the pod is running with a ServiceAccount and "
                 f"RRSA is properly configured."

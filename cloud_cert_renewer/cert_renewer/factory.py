@@ -9,6 +9,7 @@ from cloud_cert_renewer.cert_renewer.load_balancer_renewer import (
     LoadBalancerCertRenewerStrategy,
 )
 from cloud_cert_renewer.config import AppConfig
+from cloud_cert_renewer.errors import UnsupportedServiceTypeError
 
 
 class CertRenewerFactory:
@@ -27,4 +28,6 @@ class CertRenewerFactory:
         elif config.service_type == "lb":
             return LoadBalancerCertRenewerStrategy(config)
         else:
-            raise ValueError(f"Unsupported service type: {config.service_type}")
+            raise UnsupportedServiceTypeError(
+                f"Unsupported service type: {config.service_type}"
+            )

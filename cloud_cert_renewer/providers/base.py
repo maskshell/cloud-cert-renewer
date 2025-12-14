@@ -7,6 +7,7 @@ import logging
 from abc import ABC, abstractmethod
 
 from cloud_cert_renewer.config import Credentials
+from cloud_cert_renewer.errors import UnsupportedCloudProviderError
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +137,7 @@ class CloudAdapterFactory:
         adapter_class = cls._adapters.get(cloud_provider)
         if not adapter_class:
             supported = ", ".join(cls._adapters.keys())
-            raise ValueError(
+            raise UnsupportedCloudProviderError(
                 f"Unsupported cloud service provider: {cloud_provider}, "
                 f"supported: {supported}"
             )

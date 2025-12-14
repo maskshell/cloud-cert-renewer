@@ -17,7 +17,7 @@ from cryptography.x509.oid import NameOID
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.cli import run  # noqa: E402
+from cloud_cert_renewer.cli import ExitCode, run  # noqa: E402
 from cloud_cert_renewer.container import get_container  # noqa: E402
 
 
@@ -92,6 +92,6 @@ class TestCliSmoke(unittest.TestCase):
         )
 
         code = run()
-        self.assertEqual(code, 0)
+        self.assertEqual(code, int(ExitCode.SUCCESS))
 
         self.assertGreaterEqual(mock_create.call_count, 1)

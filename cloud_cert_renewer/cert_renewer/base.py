@@ -39,6 +39,15 @@ class BaseCertRenewer(ABC):
         # Get certificate and private key
         cert, cert_private_key, domain_or_instance = self._get_cert_info()
 
+        logger.info(
+            "Renewal started: service_type=%s, cloud_provider=%s, "
+            "target=%s, force_update=%s",
+            self.config.service_type,
+            self.config.cloud_provider,
+            domain_or_instance,
+            self.config.force_update,
+        )
+
         # Step 1: Validate certificate
         if not self._validate_cert(cert, domain_or_instance):
             raise CertValidationError(
@@ -58,6 +67,12 @@ class BaseCertRenewer(ABC):
                         new_fingerprint[:20] + "...",
                     )
                     return True
+            else:
+                logger.info(
+                    "Current certificate fingerprint unavailable, "
+                    "will proceed with renewal: %s",
+                    domain_or_instance,
+                )
         else:
             logger.info(
                 "Force update mode enabled, will update even if certificate "
@@ -66,7 +81,12 @@ class BaseCertRenewer(ABC):
             )
 
         # Step 3: Execute renewal
-        return self._do_renew(cert, cert_private_key)
+        success = self._do_renew(cert, cert_private_key)
+        if success:
+            logger.info("Renewal succeeded: %s", domain_or_instance)
+        else:
+            logger.error("Renewal failed: %s", domain_or_instance)
+        return success
 
     @abstractmethod
     def _get_cert_info(self) -> tuple[str, str, str]:

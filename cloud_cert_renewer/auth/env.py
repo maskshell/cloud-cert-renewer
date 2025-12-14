@@ -8,6 +8,7 @@ import os
 from alibabacloud_credentials.client import Client as CredClient
 from alibabacloud_credentials.models import Config as CredConfig
 
+from cloud_cert_renewer.auth.errors import AuthError
 from cloud_cert_renewer.config import Credentials
 
 
@@ -69,7 +70,7 @@ class EnvCredentialProvider:
         security_token = os.environ.get("CLOUD_SECURITY_TOKEN")
 
         if not access_key_id or not access_key_secret:
-            raise ValueError(
+            raise AuthError(
                 "Missing required environment variables: "
                 "CLOUD_ACCESS_KEY_ID or CLOUD_ACCESS_KEY_SECRET"
             )

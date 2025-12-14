@@ -8,6 +8,7 @@ import os
 from cloud_cert_renewer.auth.access_key import AccessKeyCredentialProvider
 from cloud_cert_renewer.auth.base import CredentialProvider
 from cloud_cert_renewer.auth.env import EnvCredentialProvider
+from cloud_cert_renewer.auth.errors import AuthError
 from cloud_cert_renewer.auth.iam_role import IAMRoleCredentialProvider
 from cloud_cert_renewer.auth.oidc import OidcCredentialProvider
 from cloud_cert_renewer.auth.service_account import ServiceAccountCredentialProvider
@@ -45,7 +46,7 @@ class CredentialProviderFactory:
             access_key_id = kwargs.get("access_key_id")
             access_key_secret = kwargs.get("access_key_secret")
             if not access_key_id or not access_key_secret:
-                raise ValueError(
+                raise AuthError(
                     "access_key authentication method requires "
                     "access_key_id and access_key_secret"
                 )
@@ -65,7 +66,7 @@ class CredentialProviderFactory:
             access_key_secret = kwargs.get("access_key_secret")
             security_token = kwargs.get("security_token")
             if not access_key_id or not access_key_secret or not security_token:
-                raise ValueError(
+                raise AuthError(
                     "sts authentication method requires access_key_id, "
                     "access_key_secret and security_token"
                 )
@@ -82,7 +83,7 @@ class CredentialProviderFactory:
                 or os.environ.get("CLOUD_ROLE_ARN")
             )
             if not role_arn:
-                raise ValueError(
+                raise AuthError(
                     "iam_role authentication method requires role_arn. "
                     "Set ALIBABA_CLOUD_ROLE_ARN or CLOUD_ROLE_ARN environment "
                     "variable, or pass role_arn parameter."
@@ -142,7 +143,7 @@ class CredentialProviderFactory:
             return EnvCredentialProvider()
 
         else:
-            raise ValueError(
+            raise AuthError(
                 f"Unsupported authentication method: {auth_method}, "
                 f"supported methods: access_key, sts, iam_role, oidc, "
                 f"service_account, env"
