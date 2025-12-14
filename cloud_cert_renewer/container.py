@@ -20,6 +20,7 @@ class DIContainer:
         """Initialize container"""
         self._services: dict[str, Any] = {}
         self._factories: dict[str, Callable[[], Any]] = {}
+        self._singleton_factories: set[str] = set()
         self._singletons: dict[str, Any] = {}
 
     def register(
@@ -36,15 +37,21 @@ class DIContainer:
         :param factory: Factory function (for creating service instances)
         :param singleton: Whether singleton mode
         """
+        # Allow re-registration by clearing previous entries.
+        self._services.pop(service_name, None)
+        self._factories.pop(service_name, None)
+        self._singletons.pop(service_name, None)
+        self._singleton_factories.discard(service_name)
+
         if instance is not None:
             self._services[service_name] = instance
             logger.debug("Registered service instance: %s", service_name)
         elif factory is not None:
+            self._factories[service_name] = factory
             if singleton:
-                self._factories[service_name] = factory
+                self._singleton_factories.add(service_name)
                 logger.debug("Registered singleton factory: %s", service_name)
             else:
-                self._factories[service_name] = factory
                 logger.debug("Registered factory: %s", service_name)
         else:
             raise ValueError("Must provide instance or factory parameter")
@@ -64,24 +71,14 @@ class DIContainer:
         if service_name in self._factories:
             factory = self._factories[service_name]
 
-            # Check if singleton
-            if service_name in self._singletons:
-                return self._singletons[service_name]
-
-            # Create instance
-            instance = factory()
-
-            # If singleton, cache instance
-            if service_name in self._factories:
-                # Check if should be singleton (by checking if already
-                # registered in singletons)
-                # Here simplified: if factory exists and not in singletons,
-                # create and cache
-                # Actually should judge by singleton parameter during register,
-                # here simplified implementation
+            if service_name in self._singleton_factories:
+                if service_name in self._singletons:
+                    return self._singletons[service_name]
+                instance = factory()
                 self._singletons[service_name] = instance
+                return instance
 
-            return instance
+            return factory()
 
         raise KeyError(f"Service not registered: {service_name}")
 
@@ -101,6 +98,7 @@ class DIContainer:
         """Clear container"""
         self._services.clear()
         self._factories.clear()
+        self._singleton_factories.clear()
         self._singletons.clear()
         logger.debug("Container cleared")
 

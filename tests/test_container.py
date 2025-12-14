@@ -52,6 +52,23 @@ class TestDIContainer(unittest.TestCase):
         self.assertIsInstance(result, dict)
         self.assertEqual(result["created"], "by_factory")
 
+    def test_factory_non_singleton_returns_new_instances(self):
+        """Non-singleton factories should create a new instance each get()."""
+        call_count = 0
+
+        def factory():
+            nonlocal call_count
+            call_count += 1
+            return {"id": call_count}
+
+        self.container.register("test_service", factory=factory, singleton=False)
+
+        instance1 = self.container.get("test_service")
+        instance2 = self.container.get("test_service")
+
+        self.assertNotEqual(instance1, instance2)
+        self.assertEqual(call_count, 2)
+
     def test_register_singleton(self):
         """Test registering singleton service"""
         call_count = 0
