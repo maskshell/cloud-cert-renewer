@@ -236,6 +236,80 @@ class TestLoadConfig(unittest.TestCase):
         self.assertEqual(result.credentials.access_key_id, "legacy_key_id")
         self.assertEqual(result.credentials.access_key_secret, "legacy_key_secret")
 
+    def test_load_config_auth_method_env_does_not_require_access_key(self):
+        """Test env auth method does not require explicit AccessKey values"""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "cdn",
+                "AUTH_METHOD": "env",
+                "CDN_DOMAIN_NAME": "test.example.com",
+                "CDN_CERT": "test_cert",
+                "CDN_CERT_PRIVATE_KEY": "test_key",
+            }
+        )
+
+        result = load_config()
+
+        self.assertEqual(result.auth_method, "env")
+        self.assertEqual(result.credentials.access_key_id, "")
+        self.assertEqual(result.credentials.access_key_secret, "")
+
+    def test_load_config_auth_method_service_account_does_not_require_access_key(self):
+        """Test service_account auth method does not require explicit AccessKey"""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "cdn",
+                "AUTH_METHOD": "service_account",
+                "CDN_DOMAIN_NAME": "test.example.com",
+                "CDN_CERT": "test_cert",
+                "CDN_CERT_PRIVATE_KEY": "test_key",
+            }
+        )
+
+        result = load_config()
+
+        self.assertEqual(result.auth_method, "service_account")
+        self.assertEqual(result.credentials.access_key_id, "")
+        self.assertEqual(result.credentials.access_key_secret, "")
+
+    def test_load_config_auth_method_oidc_does_not_require_access_key(self):
+        """Test OIDC auth method does not require explicit AccessKey values"""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "cdn",
+                "AUTH_METHOD": "oidc",
+                "CDN_DOMAIN_NAME": "test.example.com",
+                "CDN_CERT": "test_cert",
+                "CDN_CERT_PRIVATE_KEY": "test_key",
+            }
+        )
+
+        result = load_config()
+
+        self.assertEqual(result.auth_method, "oidc")
+        self.assertEqual(result.credentials.access_key_id, "")
+        self.assertEqual(result.credentials.access_key_secret, "")
+
+    def test_load_config_auth_method_sts_requires_security_token(self):
+        """Test STS auth method requires CLOUD_SECURITY_TOKEN"""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "cdn",
+                "AUTH_METHOD": "sts",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "CDN_DOMAIN_NAME": "test.example.com",
+                "CDN_CERT": "test_cert",
+                "CDN_CERT_PRIVATE_KEY": "test_key",
+                # Missing CLOUD_SECURITY_TOKEN
+            }
+        )
+
+        with self.assertRaises(ConfigError) as context:
+            load_config()
+
+        self.assertIn("CLOUD_SECURITY_TOKEN", str(context.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

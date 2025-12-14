@@ -90,19 +90,10 @@ def load_config() -> AppConfig:
     # Get authentication method (default access_key)
     auth_method = (_get_env_with_fallback("AUTH_METHOD") or "access_key").lower()
 
-    # Get access credentials (supports old and new names)
-    # For OIDC, access_key_id and access_key_secret are not required
-    # (credentials are fetched dynamically from OIDC)
-    if auth_method == "oidc":
-        # For OIDC, credentials are fetched dynamically, so use placeholder values
-        # The actual credentials will be obtained via OidcCredentialProvider
-        credentials = Credentials(
-            access_key_id="",  # Placeholder, not used for OIDC
-            access_key_secret="",  # Placeholder, not used for OIDC
-            security_token=None,
-        )
-    else:
-        # For other auth methods, require access_key_id and access_key_secret
+    # Credentials requirements depend on auth_method.
+    # Some auth methods (e.g., env, oidc, service_account) do not require
+    # explicit AccessKey values at config-load time.
+    if auth_method in {"access_key", "sts"}:
         access_key_id = _get_env_required(
             "CLOUD_ACCESS_KEY_ID",
             "ALIBABA_CLOUD_ACCESS_KEY_ID",
@@ -116,13 +107,25 @@ def load_config() -> AppConfig:
             "CLOUD_ACCESS_KEY_SECRET or ALIBABA_CLOUD_ACCESS_KEY_SECRET",
         )
 
-        # STS temporary credentials (optional)
         security_token = _get_env_with_fallback("CLOUD_SECURITY_TOKEN")
+        if auth_method == "sts" and not security_token:
+            raise ConfigError(
+                "Missing required environment variable: CLOUD_SECURITY_TOKEN "
+                "(required when AUTH_METHOD=sts)"
+            )
 
         credentials = Credentials(
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
             security_token=security_token,
+        )
+    else:
+        # Placeholder credentials; actual credentials may be resolved at runtime
+        # by the selected CredentialProvider (e.g., OIDC/RRSA, env chain, etc.).
+        credentials = Credentials(
+            access_key_id="",
+            access_key_secret="",
+            security_token=None,
         )
 
     # Get force update flag
