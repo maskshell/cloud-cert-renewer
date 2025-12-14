@@ -107,16 +107,19 @@ class CloudAdapterFactory:
     @classmethod
     def _register_default_adapters(cls) -> None:
         """Register default adapters"""
-        if not cls._adapters:
-            from cloud_cert_renewer.providers.alibaba import AlibabaCloudAdapter
-            from cloud_cert_renewer.providers.aws import AWSAdapter
-            from cloud_cert_renewer.providers.azure import AzureAdapter
+        from cloud_cert_renewer.providers.alibaba import AlibabaCloudAdapter
+        from cloud_cert_renewer.providers.aws import AWSAdapter
+        from cloud_cert_renewer.providers.azure import AzureAdapter
 
-            cls._adapters = {
-                "alibaba": AlibabaCloudAdapter,
-                "aws": AWSAdapter,
-                "azure": AzureAdapter,
-            }
+        defaults: dict[str, type[CloudAdapter]] = {
+            "alibaba": AlibabaCloudAdapter,
+            "aws": AWSAdapter,
+            "azure": AzureAdapter,
+        }
+
+        # Merge defaults without overwriting any adapters already registered.
+        for name, adapter in defaults.items():
+            cls._adapters.setdefault(name, adapter)
 
     @classmethod
     def create(cls, cloud_provider: str) -> CloudAdapter:
@@ -146,5 +149,6 @@ class CloudAdapterFactory:
         :param cloud_provider: Cloud service provider name
         :param adapter_class: Adapter class
         """
+        cls._register_default_adapters()
         cls._adapters[cloud_provider.lower()] = adapter_class
         logger.info("Registered cloud service adapter: %s", cloud_provider)

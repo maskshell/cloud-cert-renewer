@@ -145,6 +145,14 @@ class TestAlibabaCloudAdapter(unittest.TestCase):
 class TestCloudAdapterFactory(unittest.TestCase):
     """Cloud adapter factory tests (Factory Pattern)"""
 
+    def setUp(self):
+        self._original_adapters = dict(CloudAdapterFactory._adapters)
+        CloudAdapterFactory._adapters.clear()
+
+    def tearDown(self):
+        CloudAdapterFactory._adapters.clear()
+        CloudAdapterFactory._adapters.update(self._original_adapters)
+
     def test_factory_create_alibaba_adapter(self):
         """Test factory creates Alibaba Cloud adapter"""
         adapter = CloudAdapterFactory.create("alibaba")
@@ -166,6 +174,66 @@ class TestCloudAdapterFactory(unittest.TestCase):
 
         self.assertIsInstance(adapter1, AlibabaCloudAdapter)
         self.assertIsInstance(adapter2, AlibabaCloudAdapter)
+
+    def test_factory_register_adapter_before_create_keeps_defaults(self):
+        class CustomAdapter(CloudAdapter):
+            def update_cdn_certificate(
+                self,
+                domain_name: str,
+                cert: str,
+                cert_private_key: str,
+                region: str,
+                credentials: Credentials,
+                auth_method: str | None = None,
+            ) -> bool:
+                return True
+
+            def update_load_balancer_certificate(
+                self,
+                instance_id: str,
+                listener_port: int,
+                cert: str,
+                cert_private_key: str,
+                region: str,
+                credentials: Credentials,
+                auth_method: str | None = None,
+            ) -> bool:
+                return True
+
+            def get_current_cdn_certificate(
+                self,
+                domain_name: str,
+                region: str,
+                credentials: Credentials,
+                auth_method: str | None = None,
+            ) -> str | None:
+                return None
+
+            def get_current_lb_certificate_fingerprint(
+                self,
+                instance_id: str,
+                listener_port: int,
+                region: str,
+                credentials: Credentials,
+                auth_method: str | None = None,
+            ) -> str | None:
+                return None
+
+        CloudAdapterFactory.register_adapter("custom", CustomAdapter)
+
+        custom = CloudAdapterFactory.create("custom")
+        alibaba = CloudAdapterFactory.create("alibaba")
+
+        self.assertIsInstance(custom, CustomAdapter)
+        self.assertIsInstance(alibaba, AlibabaCloudAdapter)
+
+    def test_factory_register_adapter_overrides_default(self):
+        class CustomAlibabaAdapter(AlibabaCloudAdapter):
+            pass
+
+        CloudAdapterFactory.register_adapter("alibaba", CustomAlibabaAdapter)
+        adapter = CloudAdapterFactory.create("alibaba")
+        self.assertIsInstance(adapter, CustomAlibabaAdapter)
 
 
 if __name__ == "__main__":
