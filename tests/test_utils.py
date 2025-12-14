@@ -1,7 +1,7 @@
 import os
 import sys
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 # Add parent directory to path to import modules
@@ -35,7 +35,7 @@ class TestSslCertParser(unittest.TestCase):
         """Test wildcard domain name matching"""
         domain_list = ["*.example.com"]
         self.assertTrue(is_domain_name_match("test.example.com", domain_list))
-        self.assertTrue(is_domain_name_match("sub.test.example.com", domain_list))
+        self.assertFalse(is_domain_name_match("sub.test.example.com", domain_list))
         self.assertFalse(is_domain_name_match("example.com", domain_list))
         self.assertFalse(is_domain_name_match("other.com", domain_list))
 
@@ -45,6 +45,7 @@ class TestSslCertParser(unittest.TestCase):
         self.assertTrue(is_domain_name_match("example.com", domain_list))
         self.assertTrue(is_domain_name_match("test.example.com", domain_list))
         self.assertTrue(is_domain_name_match("sub.example.com", domain_list))
+        self.assertFalse(is_domain_name_match("a.b.example.com", domain_list))
         self.assertFalse(is_domain_name_match("other.com", domain_list))
 
     def test_parse_cert_info(self):
@@ -95,9 +96,8 @@ class TestSslCertParser(unittest.TestCase):
         domain_list, expire_date = parse_cert_info(cert_pem)
 
         self.assertIsInstance(domain_list, list)
-        self.assertIsInstance(expire_date, str)
-        # Expire date should be in format "YYYY-MM-DD HH:MM:SS"
-        self.assertRegex(expire_date, r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
+        self.assertIsInstance(expire_date, datetime)
+        self.assertIsNotNone(expire_date.tzinfo)
         # Should contain test.example.com from CN
         self.assertIn("test.example.com", domain_list)
         # Should also contain SAN domains
@@ -146,9 +146,7 @@ class TestSslCertParser(unittest.TestCase):
     def test_is_cert_valid_with_valid_cert(self, mock_match, mock_parse):
         """Test valid certificate validation"""
         # Mock parse_cert_info to return valid cert info
-        future_date = (datetime.now() + timedelta(days=30)).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+        future_date = datetime.now(timezone.utc) + timedelta(days=30)
         mock_parse.return_value = (["test.example.com"], future_date)
         mock_match.return_value = True
 
@@ -162,9 +160,7 @@ class TestSslCertParser(unittest.TestCase):
     @patch("cloud_cert_renewer.utils.ssl_cert_parser.is_domain_name_match")
     def test_is_cert_valid_with_invalid_domain(self, mock_match, mock_parse):
         """Test certificate validation with mismatched domain"""
-        future_date = (datetime.now() + timedelta(days=30)).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+        future_date = datetime.now(timezone.utc) + timedelta(days=30)
         mock_parse.return_value = (["other.example.com"], future_date)
         mock_match.return_value = False
 
@@ -176,7 +172,7 @@ class TestSslCertParser(unittest.TestCase):
     @patch("cloud_cert_renewer.utils.ssl_cert_parser.is_domain_name_match")
     def test_is_cert_valid_with_expired_cert(self, mock_match, mock_parse):
         """Test expired certificate validation"""
-        past_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        past_date = datetime.now(timezone.utc) - timedelta(days=30)
         mock_parse.return_value = (["test.example.com"], past_date)
         mock_match.return_value = True
 

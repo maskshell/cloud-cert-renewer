@@ -1,24 +1,31 @@
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 
 
-def parse_cert_info(cert_content: str) -> (list[str], str):
+def parse_cert_info(cert_content: str) -> tuple[list[str], datetime]:
     """
     Parse cert info from cert content, return domain name list and expire date and time.
     For certificate chains, only the first certificate (server certificate) is parsed.
     :param cert_content: cert content (may contain certificate chain)
-    :return: domain name list and expire date
+    :return: domain name list and expire datetime (UTC-aware)
     """
     # For certificate chains, only parse the first certificate
     # (server certificate)
     # load_pem_x509_certificate will automatically handle this,
     # only loading the first certificate
     cert = x509.load_pem_x509_certificate(cert_content.encode(), default_backend())
-    cert_expire_date = cert.not_valid_after.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Prefer UTC-aware datetime to avoid deprecated naive datetime properties.
+    not_valid_after_utc = getattr(cert, "not_valid_after_utc", None)
+    if not_valid_after_utc is not None:
+        cert_expire_date = not_valid_after_utc
+    else:
+        # Backward compatible fallback for older cryptography versions.
+        cert_expire_date = cert.not_valid_after.replace(tzinfo=timezone.utc)
 
     # Get domain name list (from Subject and SAN extension)
     cert_domain_name_list = []
@@ -53,19 +60,32 @@ def is_domain_name_match(domain_name: str, domain_name_list: list[str]) -> bool:
     :return: True if specified domain name in the list, otherwise False.
     """
     for domain_name_item in domain_name_list:
+        if domain_name_item == "*":
+            return True
+
+        # RFC 6125-style wildcard: "*.example.com" matches exactly one label.
+        if domain_name_item.startswith("*."):
+            suffix = domain_name_item[2:]
+            if domain_name == suffix:
+                continue
+            if domain_name.endswith("." + suffix):
+                prefix = domain_name[: -(len(suffix) + 1)]
+                if prefix and "." not in prefix:
+                    return True
+            continue
+
         if domain_name_item.startswith("*"):
-            # If the domain name item in the list is a wildcard domain name,
-            # use regular expression to check.
+            # Fallback for non-standard wildcard patterns.
             if re.match(
                 r"^" + domain_name_item.replace(".", r"\.").replace("*", r".*") + "$",
                 domain_name,
             ):
                 return True
-        else:
-            # If the domain name item in the list is not a wildcard domain name,
-            # just check it.
-            if domain_name_item == domain_name:
-                return True
+            continue
+
+        # Exact match
+        if domain_name_item == domain_name:
+            return True
     return False
 
 
@@ -80,12 +100,10 @@ def is_cert_valid(cert_content: str, domain_name: str) -> bool:
     date is later than current date, otherwise return False.
     """
     cert_domain_name_list, cert_expire_date = parse_cert_info(cert_content)
-    if is_domain_name_match(domain_name, cert_domain_name_list):
-        # If the specified domain name in the cert, and the cert expire date
-        # is later than current date, then return True, otherwise return False.
-        if cert_expire_date > datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
-            return True
-    return False
+    if not is_domain_name_match(domain_name, cert_domain_name_list):
+        return False
+
+    return cert_expire_date > datetime.now(timezone.utc)
 
 
 def get_cert_fingerprint_sha256(cert_content: str) -> str:
