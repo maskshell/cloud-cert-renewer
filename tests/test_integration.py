@@ -13,7 +13,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from cloud_cert_renewer.cert_renewer import (  # noqa: E402
     CertRenewerFactory,
-    CertValidationError,
 )
 from cloud_cert_renewer.config import ConfigError, load_config  # noqa: E402
 from cloud_cert_renewer.container import get_container, register_service  # noqa: E402
@@ -163,9 +162,10 @@ class TestIntegration(unittest.TestCase):
         factory = container.get("cert_renewer_factory")
         renewer = factory.create(config)
 
-        # Execute renewal and verify exception
-        with self.assertRaises(CertValidationError):
-            renewer.renew()
+        # Execute renewal and verify failure
+        # (CompositeCertRenewer returns False on error)
+        result = renewer.renew()
+        self.assertFalse(result)
 
     def test_integration_config_loading_error(self):
         """Test integration with configuration loading error"""
@@ -183,7 +183,8 @@ class TestIntegration(unittest.TestCase):
 
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.is_cert_valid")
     @patch(
-        "cloud_cert_renewer.cert_renewer.cdn_renewer.CdnCertRenewerStrategy.get_current_cert_fingerprint"
+        "cloud_cert_renewer.cert_renewer.cdn_renewer.CdnCertRenewerStrategy."
+        "get_current_cert_fingerprint"
     )
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.get_cert_fingerprint_sha256")
     @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.CloudAdapterFactory")

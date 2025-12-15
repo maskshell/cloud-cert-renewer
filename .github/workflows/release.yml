@@ -44,6 +44,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       is_release: ${{ steps.version.outputs.is_release }}
       is_test: ${{ steps.version.outputs.is_test }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -66,12 +67,24 @@ jobs:
             RELEASE_TYPE="release"
           fi
 
-          # Determine if this is a release or test build
-          if [ "$RELEASE_TYPE" = "test" ] || [[ "$VERSION" =~ -(test|dev|rc) ]]; then
+          # Logic:
+          # - is_test: Publish to TestPyPI? (true for test/dev, false for rc/release)
+          # - is_prerelease: Mark as GitHub Pre-release? (true for test/dev/rc, false for release)
+          # - is_release: Is it a stable release? (true ONLY for pure semantic versions)
+
+          if [ "$RELEASE_TYPE" = "test" ] || [[ "$VERSION" =~ -(test|dev) ]]; then
             IS_TEST="true"
+            IS_PRERELEASE="true"
+            IS_RELEASE="false"
+          elif [[ "$VERSION" =~ -rc ]]; then
+            # RC versions go to Prod PyPI but are Pre-releases
+            IS_TEST="false"
+            IS_PRERELEASE="true"
             IS_RELEASE="false"
           else
+            # Stable release
             IS_TEST="false"
+            IS_PRERELEASE="false"
             if [ "$RELEASE_TYPE" = "release" ]; then
               IS_RELEASE="true"
             else
@@ -85,7 +98,8 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "is_release=$IS_RELEASE" >> $GITHUB_OUTPUT
           echo "is_test=$IS_TEST" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION, Tag: $TAG, Is Release: $IS_RELEASE, Is Test: $IS_TEST"
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION, Tag: $TAG, Release: $IS_RELEASE, Test: $IS_TEST, Pre: $IS_PRERELEASE"
 
       - name: Update versions in all files
         if: github.event.inputs.version != '' || github.event_name == 'push'
@@ -159,16 +173,16 @@ jobs:
       - name: Build distribution packages
         run: |
           rm -rf dist/ build/ *.egg-info
-          python -m build
+          uv run python -m build
           ls -lh dist/
 
       - name: Verify distribution packages
         run: |
-          python -m twine check dist/*
-          python -m pip install dist/*.whl --dry-run
+          uv run python -m twine check dist/*
+          uv pip install dist/*.whl --dry-run
 
       - name: Upload PyPI artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pypi-packages
           path: dist/*
@@ -296,7 +310,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
-          git add index.yaml charts/
+          touch .nojekyll
+          git add index.yaml charts/ .nojekyll
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
@@ -305,7 +320,7 @@ jobs:
           fi
 
       - name: Upload Helm chart artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: helm-chart
           path: charts/*.tgz
@@ -323,6 +338,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
       - name: Download PyPI artifacts
         uses: actions/download-artifact@v7
         with:
@@ -336,7 +361,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
           echo "Publishing to TestPyPI..."
-          python -m twine upload --repository testpypi dist/*
+          uvx twine upload --repository testpypi dist/*
           echo "Published to TestPyPI successfully!"
 
       - name: Publish to PyPI
@@ -346,7 +371,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           echo "Publishing to PyPI..."
-          python -m twine upload dist/*
+          uvx twine upload dist/*
           echo "Published to PyPI successfully!"
           echo "Package URL: https://pypi.org/project/cloud-cert-renewer/"
 
@@ -355,7 +380,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare, build-docker, build-helm, publish-pypi]
     if: >-
-      needs.prepare.outputs.is_release == 'true' &&
+      (needs.prepare.outputs.is_release == 'true' || needs.prepare.outputs.is_prerelease == 'true') &&
       (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     permissions:
       contents: write
@@ -420,10 +445,10 @@ jobs:
 
             ### Helm Chart
             - Chart version: `${{ needs.prepare.outputs.version }}`
-            - Repository: `https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts`
+            - Repository: `https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/`
             - Install: >-
                 `helm repo add cloud-cert-renewer
-                https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts &&
+                https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ &&
                 helm install cloud-cert-renewer cloud-cert-renewer/cloud-cert-renewer`
 
             ### PyPI Package
@@ -432,6 +457,6 @@ jobs:
             - URL: https://pypi.org/project/cloud-cert-renewer/
           files: charts/*.tgz
           draft: false
-          prerelease: false
+          prerelease: ${{ needs.prepare.outputs.is_prerelease == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

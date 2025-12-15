@@ -42,13 +42,13 @@ class TestCdnCertRenewerStrategy(unittest.TestCase):
             credentials=self.credentials,
             force_update=False,
             cdn_config=CdnConfig(
-                domain_name="test.example.com",
+                domain_names=["test.example.com"],
                 cert="test_cert",
                 cert_private_key="test_key",
                 region="cn-hangzhou",
             ),
         )
-        self.strategy = CdnCertRenewerStrategy(self.config)
+        self.strategy = CdnCertRenewerStrategy(self.config, "test.example.com")
 
     def test_get_cert_info_missing_config(self):
         """Test get_cert_info raises error when cdn_config is missing"""
@@ -57,7 +57,7 @@ class TestCdnCertRenewerStrategy(unittest.TestCase):
 
         mock_config = MagicMock()
         mock_config.cdn_config = None
-        strategy = CdnCertRenewerStrategy(mock_config)
+        strategy = CdnCertRenewerStrategy(mock_config, "test.example.com")
 
         with self.assertRaises(ValueError) as context:
             strategy._get_cert_info()
@@ -193,14 +193,14 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
             credentials=self.credentials,
             force_update=False,
             lb_config=LoadBalancerConfig(
-                instance_id="test-instance-id",
+                instance_ids=["test-instance-id"],
                 listener_port=443,
                 cert="test_cert",
                 cert_private_key="test_key",
                 region="cn-hangzhou",
             ),
         )
-        self.strategy = LoadBalancerCertRenewerStrategy(self.config)
+        self.strategy = LoadBalancerCertRenewerStrategy(self.config, "test-instance-id")
 
     def test_get_cert_info(self):
         """Test getting certificate information"""
@@ -211,7 +211,8 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
         self.assertEqual(instance_id, "test-instance-id")
 
     @patch(
-        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate"
+        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509."
+        "load_pem_x509_certificate"
     )
     def test_validate_cert(self, mock_load_cert):
         """Test certificate validation"""
@@ -223,7 +224,8 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
         mock_load_cert.assert_called_once()
 
     @patch(
-        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.get_cert_fingerprint_sha1"
+        "cloud_cert_renewer.cert_renewer.load_balancer_renewer."
+        "get_cert_fingerprint_sha1"
     )
     def test_calculate_fingerprint(self, mock_get_fingerprint):
         """Test fingerprint calculation"""
@@ -273,10 +275,17 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
         )
 
     @patch(
-        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate"
+        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509."
+        "load_pem_x509_certificate"
     )
     @patch("cloud_cert_renewer.cert_renewer.load_balancer_renewer.CloudAdapterFactory")
-    def test_strategy_renew_success(self, mock_factory, mock_load_cert):
+    @patch(
+        "cloud_cert_renewer.cert_renewer.load_balancer_renewer."
+        "get_cert_fingerprint_sha1"
+    )
+    def test_strategy_renew_success(
+        self, mock_get_fingerprint, mock_factory, mock_load_cert
+    ):
         """Test successful certificate renewal through strategy"""
         # Setup mocks
         mock_load_cert.return_value = MagicMock()
@@ -291,11 +300,13 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
         mock_adapter.update_load_balancer_certificate.assert_called_once()
 
     @patch(
-        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate"
+        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509."
+        "load_pem_x509_certificate"
     )
     @patch("cloud_cert_renewer.cert_renewer.load_balancer_renewer.CloudAdapterFactory")
     @patch(
-        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.get_cert_fingerprint_sha1"
+        "cloud_cert_renewer.cert_renewer.load_balancer_renewer."
+        "get_cert_fingerprint_sha1"
     )
     def test_strategy_renew_skip_when_same(
         self, mock_get_fingerprint, mock_factory, mock_load_cert
@@ -322,7 +333,7 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
 
         mock_config = MagicMock()
         mock_config.lb_config = None
-        strategy = LoadBalancerCertRenewerStrategy(mock_config)
+        strategy = LoadBalancerCertRenewerStrategy(mock_config, "test-instance-id")
 
         with self.assertRaises(ValueError) as context:
             strategy._get_cert_info()
@@ -332,7 +343,8 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
         )
 
     @patch(
-        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509.load_pem_x509_certificate"
+        "cloud_cert_renewer.cert_renewer.load_balancer_renewer.x509."
+        "load_pem_x509_certificate"
     )
     def test_validate_cert_invalid_format(self, mock_load_cert):
         """Test certificate validation with invalid format"""
@@ -354,7 +366,7 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
 
         mock_config = MagicMock()
         mock_config.lb_config = None
-        strategy = LoadBalancerCertRenewerStrategy(mock_config)
+        strategy = LoadBalancerCertRenewerStrategy(mock_config, "test-instance-id")
 
         result = strategy.get_current_cert_fingerprint()
 
@@ -367,7 +379,7 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
 
         mock_config = MagicMock()
         mock_config.lb_config = None
-        strategy = LoadBalancerCertRenewerStrategy(mock_config)
+        strategy = LoadBalancerCertRenewerStrategy(mock_config, "test-instance-id")
 
         with self.assertRaises(ValueError) as context:
             strategy._do_renew("test_cert", "test_key")

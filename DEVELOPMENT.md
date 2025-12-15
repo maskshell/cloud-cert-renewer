@@ -122,14 +122,14 @@ When using OIDC authentication (`AUTH_METHOD=oidc`), the following environment v
 
 ### CDN Configuration (when SERVICE_TYPE=cdn)
 
-- `CDN_DOMAIN_NAME`: CDN domain name
+- `CDN_DOMAIN_NAME`: Comma-separated list of CDN domain names (e.g., `cdn1.example.com,cdn2.example.com`)
 - `CDN_CERT`: SSL certificate content (PEM format, supports multi-line)
 - `CDN_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line)
 - `CDN_REGION`: Region (default: `cn-hangzhou`)
 
 ### Load Balancer Configuration (when SERVICE_TYPE=lb or slb)
 
-- `LB_INSTANCE_ID`: Load Balancer instance ID (new name, preferred)
+- `LB_INSTANCE_ID`: Comma-separated list of Load Balancer instance IDs (e.g., `lb-xxxxxxxx,lb-yyyyyyyy`) (new name, preferred)
 - `LB_LISTENER_PORT`: Listener port (new name, preferred)
 - `LB_CERT`: SSL certificate content (PEM format, supports multi-line) (new name, preferred)
 - `LB_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line) (new name, preferred)

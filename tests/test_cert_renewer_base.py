@@ -70,7 +70,7 @@ class TestBaseCertRenewer(unittest.TestCase):
             credentials=self.credentials,
             force_update=False,
             cdn_config=CdnConfig(
-                domain_name="test.example.com",
+                domain_names=["test.example.com"],
                 cert="test_cert",
                 cert_private_key="test_key",
                 region="cn-hangzhou",

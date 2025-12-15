@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0-rc1] - 2025-12-15
 
 ### Added
 
@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Python 3.14 support with dedicated CI quality gates
   - Pre-commit validation under Python 3.14
   - Package build and install smoke tests
+- `[project.scripts]` entry point for direct CLI usage via `cloud-cert-renewer`
+- Multi-architecture Docker image support (amd64 and arm64)
 
 ### Changed
 
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved certificate fingerprint comparison with normalization (handles API format variations)
 - Consolidated certificate fingerprint comparison at `BaseCertRenewer` level
 - Configurable SDK timeout/retry via environment variables (`CLOUD_API_CONNECT_TIMEOUT`, `CLOUD_API_READ_TIMEOUT`, `CLOUD_API_MAX_ATTEMPTS`)
+- Default Helm chart image repository updated to `ghcr.io/maskshell/cloud-cert-renewer`
 
 ### Fixed
 

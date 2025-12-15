@@ -2,8 +2,8 @@ apiVersion: v2
 name: cloud-cert-renewer
 description: A Helm chart for cloud certificate renewal service (CDN and Load Balancer). Supports multiple cloud providers (currently Alibaba Cloud, with architecture designed for multi-cloud extension).
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.2.0-rc1
+appVersion: "0.2.0-rc1"
 keywords:
   - cloud
   - certificate

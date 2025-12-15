@@ -14,6 +14,7 @@ COPY --from=uv_source /uv /usr/local/bin/uv
 
 # Copy project files
 COPY pyproject.toml ./
+COPY README.md ./
 COPY main.py ./
 COPY cloud_cert_renewer/ ./cloud_cert_renewer/
 

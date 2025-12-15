@@ -10,10 +10,10 @@ import unittest
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer  # noqa: E402
 from cloud_cert_renewer.cert_renewer.cdn_renewer import (  # noqa: E402
     CdnCertRenewerStrategy,
 )
+from cloud_cert_renewer.cert_renewer.composite import CompositeCertRenewer  # noqa: E402
 from cloud_cert_renewer.cert_renewer.factory import CertRenewerFactory  # noqa: E402
 from cloud_cert_renewer.cert_renewer.load_balancer_renewer import (  # noqa: E402
     LoadBalancerCertRenewerStrategy,
@@ -45,7 +45,7 @@ class TestCertRenewerFactory(unittest.TestCase):
             credentials=self.credentials,
             force_update=False,
             cdn_config=CdnConfig(
-                domain_name="test.example.com",
+                domain_names=["test.example.com"],
                 cert="test_cert",
                 cert_private_key="test_key",
                 region="cn-hangzhou",
@@ -54,9 +54,10 @@ class TestCertRenewerFactory(unittest.TestCase):
 
         renewer = CertRenewerFactory.create(config)
 
-        self.assertIsInstance(renewer, BaseCertRenewer)
-        self.assertIsInstance(renewer, CdnCertRenewerStrategy)
-        self.assertEqual(renewer.config, config)
+        self.assertIsInstance(renewer, CompositeCertRenewer)
+        self.assertEqual(len(renewer.renewers), 1)
+        self.assertIsInstance(renewer.renewers[0], CdnCertRenewerStrategy)
+        self.assertEqual(renewer.renewers[0].config, config)
 
     def test_factory_create_lb_renewer(self):
         """Test factory creates Load Balancer renewer strategy"""
@@ -67,7 +68,7 @@ class TestCertRenewerFactory(unittest.TestCase):
             credentials=self.credentials,
             force_update=False,
             lb_config=LoadBalancerConfig(
-                instance_id="test-instance-id",
+                instance_ids=["test-instance-id"],
                 listener_port=443,
                 cert="test_cert",
                 cert_private_key="test_key",
@@ -77,9 +78,10 @@ class TestCertRenewerFactory(unittest.TestCase):
 
         renewer = CertRenewerFactory.create(config)
 
-        self.assertIsInstance(renewer, BaseCertRenewer)
-        self.assertIsInstance(renewer, LoadBalancerCertRenewerStrategy)
-        self.assertEqual(renewer.config, config)
+        self.assertIsInstance(renewer, CompositeCertRenewer)
+        self.assertEqual(len(renewer.renewers), 1)
+        self.assertIsInstance(renewer.renewers[0], LoadBalancerCertRenewerStrategy)
+        self.assertEqual(renewer.renewers[0].config, config)
 
     def test_factory_invalid_service_type(self):
         """Test factory raises error for invalid service type"""
@@ -90,7 +92,7 @@ class TestCertRenewerFactory(unittest.TestCase):
             credentials=self.credentials,
             force_update=False,
             cdn_config=CdnConfig(
-                domain_name="test.example.com",
+                domain_names=["test.example.com"],
                 cert="test_cert",
                 cert_private_key="test_key",
                 region="cn-hangzhou",
@@ -111,7 +113,7 @@ class TestCertRenewerFactory(unittest.TestCase):
             credentials=self.credentials,
             force_update=False,
             cdn_config=CdnConfig(
-                domain_name="cdn.example.com",
+                domain_names=["cdn.example.com"],
                 cert="cdn_cert",
                 cert_private_key="cdn_key",
                 region="cn-hangzhou",
@@ -125,7 +127,7 @@ class TestCertRenewerFactory(unittest.TestCase):
             credentials=self.credentials,
             force_update=False,
             lb_config=LoadBalancerConfig(
-                instance_id="lb-instance-id",
+                instance_ids=["lb-instance-id"],
                 listener_port=443,
                 cert="lb_cert",
                 cert_private_key="lb_key",
@@ -136,9 +138,13 @@ class TestCertRenewerFactory(unittest.TestCase):
         cdn_renewer = CertRenewerFactory.create(cdn_config)
         lb_renewer = CertRenewerFactory.create(lb_config)
 
-        self.assertIsInstance(cdn_renewer, CdnCertRenewerStrategy)
-        self.assertIsInstance(lb_renewer, LoadBalancerCertRenewerStrategy)
-        self.assertNotEqual(type(cdn_renewer), type(lb_renewer))
+        self.assertIsInstance(cdn_renewer, CompositeCertRenewer)
+        self.assertIsInstance(cdn_renewer.renewers[0], CdnCertRenewerStrategy)
+
+        self.assertIsInstance(lb_renewer, CompositeCertRenewer)
+        self.assertIsInstance(lb_renewer.renewers[0], LoadBalancerCertRenewerStrategy)
+
+        self.assertNotEqual(type(cdn_renewer.renewers[0]), type(lb_renewer.renewers[0]))
 
 
 if __name__ == "__main__":

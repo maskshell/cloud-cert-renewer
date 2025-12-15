@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 class CdnCertRenewerStrategy(BaseCertRenewer):
     """CDN certificate renewal strategy"""
 
+    def __init__(self, config, target_domain: str) -> None:
+        super().__init__(config)
+        self.target_domain = target_domain
+
     def _get_cert_info(self) -> tuple[str, str, str]:
         """Get CDN certificate information"""
         if not self.config.cdn_config:
@@ -25,7 +29,7 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
         return (
             self.config.cdn_config.cert,
             self.config.cdn_config.cert_private_key,
-            self.config.cdn_config.domain_name,
+            self.target_domain,
         )
 
     def _validate_cert(self, cert: str, domain_name: str) -> bool:
@@ -43,7 +47,7 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
 
         adapter = CloudAdapterFactory.create(self.config.cloud_provider)
         current_cert = adapter.get_current_cdn_certificate(
-            domain_name=self.config.cdn_config.domain_name,
+            domain_name=self.target_domain,
             region=self.config.cdn_config.region,
             credentials=self.config.credentials,
             auth_method=self.config.auth_method,
@@ -59,7 +63,7 @@ class CdnCertRenewerStrategy(BaseCertRenewer):
 
         adapter = CloudAdapterFactory.create(self.config.cloud_provider)
         return adapter.update_cdn_certificate(
-            domain_name=self.config.cdn_config.domain_name,
+            domain_name=self.target_domain,
             cert=cert,
             cert_private_key=cert_private_key,
             region=self.config.cdn_config.region,

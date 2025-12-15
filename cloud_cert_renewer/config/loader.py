@@ -154,10 +154,12 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
 
     # Get different configurations based on service type
     if service_type == "cdn":
-        domain_name = _get_env_required(
+        domain_name_str = _get_env_required(
             "CDN_DOMAIN_NAME",
             error_msg="Missing required environment variable: CDN_DOMAIN_NAME",
         )
+        domain_names = [d.strip() for d in domain_name_str.split(",") if d.strip()]
+
         cert = _get_env_required(
             "CDN_CERT", error_msg="Missing required environment variable: CDN_CERT"
         )
@@ -168,7 +170,7 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
         region = _get_env_with_fallback("CDN_REGION") or "cn-hangzhou"
 
         cdn_config = CdnConfig(
-            domain_name=domain_name,
+            domain_names=domain_names,
             cert=cert,
             cert_private_key=cert_private_key,
             region=region,
@@ -185,11 +187,13 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
         )
 
     elif service_type == "lb":
-        instance_id = _get_env_required(
+        instance_id_str = _get_env_required(
             "LB_INSTANCE_ID",
             "SLB_INSTANCE_ID",
             "Missing required environment variable: LB_INSTANCE_ID or SLB_INSTANCE_ID",
         )
+        instance_ids = [i.strip() for i in instance_id_str.split(",") if i.strip()]
+
         listener_port_str = _get_env_required(
             "LB_LISTENER_PORT",
             "SLB_LISTENER_PORT",
@@ -221,7 +225,7 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
             ) from e
 
         lb_config = LoadBalancerConfig(
-            instance_id=instance_id,
+            instance_ids=instance_ids,
             listener_port=listener_port,
             cert=cert,
             cert_private_key=cert_private_key,

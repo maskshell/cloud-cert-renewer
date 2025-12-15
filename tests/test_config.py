@@ -53,11 +53,11 @@ class TestLoadConfig(unittest.TestCase):
         self.assertEqual(result.credentials.access_key_id, "test_key_id")
         self.assertEqual(result.credentials.access_key_secret, "test_key_secret")
         self.assertIsNotNone(result.cdn_config)
-        self.assertEqual(result.cdn_config.domain_name, "test.example.com")
+        self.assertEqual(result.cdn_config.domain_names, ["test.example.com"])
         self.assertEqual(result.cdn_config.cert, "test_cert")
         self.assertEqual(result.cdn_config.cert_private_key, "test_key")
         self.assertEqual(result.cdn_config.region, "cn-hangzhou")
-        self.assertEqual(result.force_update, False)  # force defaults to False
+        self.assertFalse(result.force_update)
 
     def test_load_config_lb(self):
         """Test loading Load Balancer configuration (formerly SLB)"""
@@ -81,12 +81,12 @@ class TestLoadConfig(unittest.TestCase):
         self.assertEqual(result.credentials.access_key_id, "test_key_id")
         self.assertEqual(result.credentials.access_key_secret, "test_key_secret")
         self.assertIsNotNone(result.lb_config)
-        self.assertEqual(result.lb_config.instance_id, "test-instance-id")
+        self.assertEqual(result.lb_config.instance_ids, ["test-instance-id"])
         self.assertEqual(result.lb_config.listener_port, 443)
         self.assertEqual(result.lb_config.cert, "test_cert")
         self.assertEqual(result.lb_config.cert_private_key, "test_key")
         self.assertEqual(result.lb_config.region, "cn-beijing")
-        self.assertEqual(result.force_update, False)  # force defaults to False
+        self.assertFalse(result.force_update)
 
     def test_load_config_slb_backward_compat(self):
         """

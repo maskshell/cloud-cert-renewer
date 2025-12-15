@@ -20,7 +20,7 @@ class Credentials:
 class CdnConfig:
     """CDN configuration"""
 
-    domain_name: str
+    domain_names: list[str]
     cert: str
     cert_private_key: str
     region: str = "cn-hangzhou"
@@ -30,7 +30,7 @@ class CdnConfig:
 class LoadBalancerConfig:
     """Load Balancer configuration (formerly SLB)"""
 
-    instance_id: str
+    instance_ids: list[str]
     listener_port: int
     cert: str
     cert_private_key: str
@@ -59,3 +59,9 @@ class AppConfig:
             raise ValueError("CDN service type must provide cdn_config")
         if self.service_type == "lb" and not self.lb_config:
             raise ValueError("LB service type must provide lb_config")
+
+        if self.cdn_config and not self.cdn_config.domain_names:
+            raise ValueError("CDN config must contain at least one domain name")
+
+        if self.lb_config and not self.lb_config.instance_ids:
+            raise ValueError("LB config must contain at least one instance ID")

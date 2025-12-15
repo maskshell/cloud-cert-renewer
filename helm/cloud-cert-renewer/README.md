@@ -27,7 +27,7 @@ helm install cloud-cert-renewer ./helm/cloud-cert-renewer
 ```bash
 helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set serviceType=cdn \
-  --set cdn.domainName=example.com \
+  --set cdn.domainName="example.com,www.example.com" \
   --set image.tag=v0.1.0
 ```
 
@@ -40,6 +40,7 @@ helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
 
 ## Configuration
 
+
 The following table lists the configurable parameters and their default values:
 
 | Parameter                              | Description                           | Default                      |
@@ -51,9 +52,9 @@ The following table lists the configurable parameters and their default values:
 | `image.tag`                            | Image tag                             | `latest`                     |
 | `image.pullPolicy`                     | Image pull policy                     | `IfNotPresent`               |
 | `replicas`                             | Number of replicas                    | `1`                          |
-| `cdn.domainName`                       | CDN domain name                       | `schema.amugua.com`          |
+| `cdn.domainName`                       | CDN domain names (comma-separated)    | `schema.amugua.com`          |
 | `cdn.region`                           | CDN region                            | `cn-hangzhou`                |
-| `lb.instanceId`                        | Load Balancer instance ID (new name, preferred) | `""`                         |
+| `lb.instanceId`                        | Load Balancer instance IDs (comma-separated, new name, preferred) | `""`                         |
 | `lb.listenerPort`                      | Load Balancer listener port           | `443`                        |
 | `lb.region`                            | Load Balancer region                  | `cn-hangzhou`                |
 | `slb.instanceId`                       | SLB instance ID (old name, backward compatible)    | `""`                         |
@@ -315,7 +316,7 @@ Alternatively, you can use the system policy `AliyunSLBReadOnlyAccess` combined 
 serviceType: cdn
 cloudProvider: alibaba
 cdn:
-  domainName: example.com
+  domainName: "example.com,cdn.example.com" # Comma-separated domains
   region: cn-hangzhou
 ```
 
@@ -325,7 +326,7 @@ cdn:
 serviceType: lb  # or use slb (backward compatible)
 cloudProvider: alibaba
 lb:
-  instanceId: lb-xxxxxxxxx
+  instanceId: "lb-xxxxxxxx,lb-yyyyyyyy" # Comma-separated instance IDs
   listenerPort: 443
   region: cn-hangzhou
 ```
