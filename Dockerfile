@@ -1,3 +1,7 @@
+# Get uv binary from its official image
+# BuildKit automatically resolves the correct architecture for the target platform
+FROM ghcr.io/astral-sh/uv:latest AS uv_source
+
 # Use Python 3.11 as base image
 FROM python:3.11-slim
 LABEL maintainer="analyser <analyser@gmail.com>"
@@ -6,7 +10,7 @@ LABEL maintainer="analyser <analyser@gmail.com>"
 WORKDIR /app
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=uv_source /uv /usr/local/bin/uv
 
 # Copy project files
 COPY pyproject.toml ./
