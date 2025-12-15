@@ -15,6 +15,7 @@ Automated HTTPS certificate renewal tool for cloud services, supporting CDN and 
 - Automatic certificate renewal for cloud Load Balancer services (currently supports Alibaba Cloud SLB)
 - Certificate validation (domain matching, expiration checking)
 - Support for wildcard domain certificates
+- CLI support with arguments (`--dry-run`, `--verbose`, `--version`)
 - Multiple authentication methods:
   - Access Key authentication
   - STS (Security Token Service) temporary credentials

@@ -39,6 +39,10 @@ cp .env.example .env
 
 # 4. Run the program
 uv run python main.py
+
+# Run with arguments
+uv run python main.py --help
+uv run python main.py --dry-run
 ```
 
 ### Detailed Setup
@@ -49,6 +53,31 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install project dependencies and development dependencies
 uv sync --extra dev
+```
+
+## CLI Arguments
+
+The application supports the following command-line arguments:
+
+| Argument    | Short | Description                                                                              |
+| ----------- | ----- | ---------------------------------------------------------------------------------------- |
+| `--help`    | `-h`  | Show help message and exit                                                               |
+| `--version` |       | Show program's version number and exit                                                   |
+| `--verbose` | `-v`  | Enable verbose logging (DEBUG level)                                                     |
+| `--quiet`   | `-q`  | Enable quiet logging (WARNING level)                                                     |
+| `--dry-run` |       | Perform a trial run without making any changes (validates certificate and configuration) |
+
+**Examples:**
+
+```bash
+# Check version
+uv run python main.py --version
+
+# Run in dry-run mode with verbose logging
+uv run python main.py --dry-run --verbose
+
+# Run in quiet mode
+uv run python main.py --quiet
 ```
 
 ## Configuration

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- CLI enhancements:
+  - Added command-line argument support (`--help`, `--version`, `--verbose`, `--quiet`)
+  - Added `--dry-run` mode for safe testing and validation without API calls
 - OIDC (OpenID Connect) authentication support for Kubernetes RRSA (RAM Role for Service Account)
   - Support for dynamic credential retrieval via OIDC tokens
   - Automatic environment variable injection by Kubernetes Service Account
