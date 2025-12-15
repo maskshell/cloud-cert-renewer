@@ -6,6 +6,7 @@ Implements composite pattern for handling multiple resources.
 import logging
 import threading
 
+from cloud_cert_renewer import __version__
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
 from cloud_cert_renewer.webhook.events import (
     EventMetadata,
@@ -116,7 +117,7 @@ class CompositeCertRenewer:
 
         # Prepare metadata
         metadata = EventMetadata(
-            version="0.2.1-rc1",
+            version=__version__,
             total_resources=total,
             successful_resources=total - failures,
             failed_resources=failures,

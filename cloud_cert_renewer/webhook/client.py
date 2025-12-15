@@ -11,6 +11,7 @@ from typing import Any
 import urllib3
 from urllib3 import HTTPResponse
 
+from cloud_cert_renewer import __version__
 from cloud_cert_renewer.webhook.exceptions import WebhookDeliveryError
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ class WebhookClient:
             ),
             headers={
                 "Content-Type": "application/json",
-                "User-Agent": "cloud-cert-renewer/0.2.1-rc1",
+                "User-Agent": f"cloud-cert-renewer/{__version__}",
             },
         )
 

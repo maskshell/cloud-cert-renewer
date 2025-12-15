@@ -9,6 +9,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 
+from cloud_cert_renewer import __version__
 from cloud_cert_renewer.config import AppConfig
 from cloud_cert_renewer.webhook.events import (
     EventCertificate,
@@ -112,7 +113,7 @@ class BaseCertRenewer(ABC):
             execution_time_ms = int((time.time() - self._renewal_start_time) * 1000)
 
         metadata = EventMetadata(
-            version="0.2.1-rc1",
+            version=__version__,
             execution_time_ms=execution_time_ms,
             force_update=self.config.force_update,
             dry_run=self.config.dry_run,

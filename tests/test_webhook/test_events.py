@@ -3,6 +3,7 @@
 import json
 from datetime import datetime, timezone
 
+from cloud_cert_renewer import __version__
 from cloud_cert_renewer.webhook.events import (
     EventCertificate,
     EventMetadata,
@@ -93,7 +94,7 @@ class TestEventMetadata:
     def test_event_metadata(self):
         """Test EventMetadata creation"""
         metadata = EventMetadata(
-            version="0.2.1-rc1",
+            version=__version__,
             execution_time_ms=1500,
             total_resources=3,
             successful_resources=3,
@@ -101,7 +102,7 @@ class TestEventMetadata:
             force_update=False,
             dry_run=False,
         )
-        assert metadata.version == "0.2.1-rc1"
+        assert metadata.version == __version__
         assert metadata.execution_time_ms == 1500
         assert metadata.total_resources == 3
         assert metadata.successful_resources == 3
@@ -121,7 +122,7 @@ class TestWebhookEvent:
         target = EventTarget(domain_names=["example.com"])
         cert = EventCertificate(fingerprint="sha256:abcd1234")
         result = EventResult(status="success", message="Renewed")
-        metadata = EventMetadata(version="0.2.1-rc1")
+        metadata = EventMetadata(version=__version__)
 
         event = WebhookEvent(
             event_type="renewal_success",
@@ -153,7 +154,7 @@ class TestWebhookEvent:
                 fingerprint="sha256:abcd1234",
                 not_after=datetime(2026, 1, 1, tzinfo=timezone.utc),
             ),
-            metadata=EventMetadata(version="0.2.1-rc1"),
+            metadata=EventMetadata(version=__version__),
         )
 
         data = event.to_dict()
@@ -216,7 +217,7 @@ class TestWebhookEvent:
             target=EventTarget(),
             result=EventResult(status="success", message="Batch completed"),
             metadata=EventMetadata(
-                version="0.2.1-rc1",
+                version=__version__,
                 total_resources=5,
                 successful_resources=5,
                 failed_resources=0,

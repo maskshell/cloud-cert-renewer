@@ -57,7 +57,7 @@ All webhook notifications are sent as HTTP POST requests with a JSON payload:
     "retry_count": 0
   },
   "metadata": {
-    "version": "0.2.1-rc1",
+    "version": "0.2.2-beta1",
     "execution_time_ms": 1500,
     "total_resources": null,
     "successful_resources": null,
