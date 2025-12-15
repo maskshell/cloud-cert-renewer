@@ -29,6 +29,32 @@ Automated HTTPS certificate renewal tool for cloud services, supporting CDN and 
 - Integration with cert-manager and Reloader
 - Automated release workflow with multi-architecture Docker images, Helm Charts, and PyPI packages
 
+## Installation
+
+### Using pip (PyPI)
+
+You can install the tool directly from PyPI:
+
+```bash
+pip install cloud-cert-renewer
+```
+
+After installation, you can run the tool using the `cloud-cert-renewer` command:
+
+```bash
+# View help
+cloud-cert-renewer --help
+
+# Run in dry-run mode
+cloud-cert-renewer --dry-run --verbose
+
+# Run with environment variables
+export SERVICE_TYPE=cdn
+export CLOUD_ACCESS_KEY_ID=your_key
+...
+cloud-cert-renewer
+```
+
 ## Kubernetes Deployment
 
 ### Prerequisites

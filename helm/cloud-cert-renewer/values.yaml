@@ -16,7 +16,7 @@ forceUpdate: false
 
 # Image configuration
 image:
-  repository: cloud-cert-renewer
+  repository: ghcr.io/maskshell/cloud-cert-renewer
   tag: latest
   pullPolicy: IfNotPresent
 

@@ -45,6 +45,9 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
+[project.scripts]
+cloud-cert-renewer = "cloud_cert_renewer.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/maskshell/cloud-cert-renewer"
 Documentation = "https://github.com/maskshell/cloud-cert-renewer#readme"
