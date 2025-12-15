@@ -97,13 +97,13 @@ class WebhookEvent:
 
         if self.certificate:
             if self.certificate.not_after:
-                data["certificate"][
-                    "not_after"
-                ] = self.certificate.not_after.isoformat()
+                data["certificate"]["not_after"] = (
+                    self.certificate.not_after.isoformat()
+                )
             if self.certificate.not_before:
-                data["certificate"][
-                    "not_before"
-                ] = self.certificate.not_before.isoformat()
+                data["certificate"]["not_before"] = (
+                    self.certificate.not_before.isoformat()
+                )
 
         return data
 
