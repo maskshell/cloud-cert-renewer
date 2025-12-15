@@ -48,6 +48,7 @@ class AppConfig:
     )
     credentials: Credentials
     force_update: bool = False
+    dry_run: bool = False
     # Service-specific configuration
     cdn_config: CdnConfig | None = None
     lb_config: LoadBalancerConfig | None = None

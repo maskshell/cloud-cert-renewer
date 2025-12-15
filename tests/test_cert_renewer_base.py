@@ -158,6 +158,29 @@ class TestBaseCertRenewer(unittest.TestCase):
         with self.assertRaises(TypeError):
             BaseCertRenewer(self.config)  # type: ignore
 
+    def test_template_method_dry_run(self):
+        """Test template method with dry_run enabled"""
+        # Setup config with dry_run=True
+        self.config.dry_run = True
+        self.renewer = MockCertRenewer(self.config)
+
+        # Ensure validation passes
+        self.renewer._mock_validate_cert.return_value = True
+        # Ensure fingerprints differ so it would normally update
+        self.renewer._mock_get_current_fingerprint.return_value = "old:fingerprint"
+        self.renewer._mock_calculate_fingerprint.return_value = "new:fingerprint"
+
+        result = self.renewer.renew()
+
+        # Verify validation was called
+        self.renewer._mock_validate_cert.assert_called_once()
+        # Verify fingerprint logic ran
+        self.renewer._mock_get_current_fingerprint.assert_called_once()
+        # Verify do_renew was NOT called
+        self.renewer._mock_do_renew.assert_not_called()
+        # Verify it returns True
+        self.assertTrue(result)
+
 
 if __name__ == "__main__":
     unittest.main()

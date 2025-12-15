@@ -357,6 +357,34 @@ class TestLoadConfig(unittest.TestCase):
         self.assertEqual(result.credentials.access_key_id, "test_key_id")
         self.assertEqual(result.credentials.access_key_secret, "test_key_secret")
 
+    def test_load_config_with_dry_run_args(self):
+        """Test loading configuration with dry-run argument"""
+        import argparse
+
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "cdn",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "CDN_DOMAIN_NAME": "test.example.com",
+                "CDN_CERT": "test_cert",
+                "CDN_CERT_PRIVATE_KEY": "test_key",
+            }
+        )
+
+        args = argparse.Namespace(dry_run=True)
+        result = load_config(args)
+        self.assertTrue(result.dry_run)
+
+        # Test default (no args)
+        result = load_config()
+        self.assertFalse(result.dry_run)
+
+        # Test dry_run=False in args
+        args = argparse.Namespace(dry_run=False)
+        result = load_config(args)
+        self.assertFalse(result.dry_run)
+
 
 if __name__ == "__main__":
     unittest.main()

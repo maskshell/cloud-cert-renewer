@@ -81,6 +81,14 @@ class BaseCertRenewer(ABC):
             )
 
         # Step 3: Execute renewal
+        if self.config.dry_run:
+            logger.info(
+                "DRY-RUN: Would update certificate for %s (skipping API call)",
+                domain_or_instance,
+            )
+            logger.info("DRY-RUN: Certificate renewal simulation completed")
+            return True
+
         success = self._do_renew(cert, cert_private_key)
         if success:
             logger.info("Renewal succeeded: %s", domain_or_instance)

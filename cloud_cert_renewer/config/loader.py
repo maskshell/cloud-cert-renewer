@@ -4,6 +4,7 @@ Loads configuration from environment variables, supports fallback for old and
 new environment variable names.
 """
 
+import argparse
 import logging
 import os
 
@@ -60,10 +61,11 @@ def _parse_bool_env(env_name: str, default: bool = False) -> bool:
     return value in ("true", "1", "yes", "on")
 
 
-def load_config() -> AppConfig:
+def load_config(args: argparse.Namespace | None = None) -> AppConfig:
     """
     Load configuration from environment variables
     Supports old and new environment variable names, prioritizing new names
+    :param args: Optional command-line arguments
     :return: AppConfig configuration object
     :raises ConfigError: Raises when configuration error occurs
     """
@@ -145,6 +147,11 @@ def load_config() -> AppConfig:
     # Get force update flag
     force_update = _parse_bool_env("FORCE_UPDATE", False)
 
+    # Get dry_run from args if available
+    dry_run = False
+    if args and hasattr(args, "dry_run"):
+        dry_run = args.dry_run
+
     # Get different configurations based on service type
     if service_type == "cdn":
         domain_name = _get_env_required(
@@ -173,6 +180,7 @@ def load_config() -> AppConfig:
             auth_method=auth_method,
             credentials=credentials,
             force_update=force_update,
+            dry_run=dry_run,
             cdn_config=cdn_config,
         )
 
@@ -226,6 +234,7 @@ def load_config() -> AppConfig:
             auth_method=auth_method,
             credentials=credentials,
             force_update=force_update,
+            dry_run=dry_run,
             lb_config=lb_config,
         )
 
