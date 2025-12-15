@@ -14,6 +14,7 @@ AppConfig = models.AppConfig
 CdnConfig = models.CdnConfig
 Credentials = models.Credentials
 LoadBalancerConfig = models.LoadBalancerConfig
+WebhookConfig = models.WebhookConfig
 
 __all__ = [
     "AppConfig",
@@ -21,5 +22,6 @@ __all__ = [
     "ConfigError",
     "Credentials",
     "LoadBalancerConfig",
+    "WebhookConfig",
     "load_config",
 ]

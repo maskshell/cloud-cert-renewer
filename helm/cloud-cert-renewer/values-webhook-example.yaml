@@ -1,0 +1,64 @@
+# Example values file for cloud-cert-renewer with webhook configuration
+# This file demonstrates how to configure webhook notifications
+
+# Basic configuration
+serviceType: cdn
+cloudProvider: alibaba
+authMethod: access_key
+
+# CDN configuration
+cdn:
+  domainName: example.com,www.example.com
+  region: cn-hangzhou
+
+# Force update (optional)
+forceUpdate: false
+
+# Webhook configuration
+webhook:
+  # Enable webhook notifications
+  enabled: true
+
+  # Webhook endpoint URL
+  # Replace with your actual webhook URL
+  # Slack example: https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+  # Discord example: https://discord.com/api/webhooks/YOUR/DISCORD/WEBHOOK
+  url: "https://example.com/webhook"
+
+  # Webhook timeout in seconds (optional, default: 30)
+  timeout: 30
+
+  # Number of retry attempts on failure (optional, default: 3)
+  retryAttempts: 3
+
+  # Initial delay between retries in seconds (optional, default: 1.0)
+  retryDelay: 1.0
+
+  # Events to notify on (optional, default: all events)
+  # Comma-separated list of events:
+  # - renewal_started
+  # - renewal_success
+  # - renewal_failed
+  # - renewal_skipped
+  # - batch_completed
+  enabledEvents: "renewal_success,renewal_failed,renewal_skipped"
+
+# Secrets configuration
+secrets:
+  cloudCredentials:
+    name: cloud-credentials
+    accessKeyIdKey: access-key-id
+    accessKeySecretKey: access-key-secret
+  certificate:
+    name: cert-secret
+    certKey: tls.crt
+    privateKeyKey: tls.key
+
+# Image configuration
+image:
+  repository: ghcr.io/maskshell/cloud-cert-renewer
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Deployment configuration
+replicas: 1

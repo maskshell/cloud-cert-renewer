@@ -14,6 +14,28 @@ authMethod: access_key # access_key, sts, iam_role, oidc, service_account, env
 # When enabled, certificate will be updated even if it's the same
 forceUpdate: false
 
+# Webhook configuration (optional)
+webhook:
+  # Enable webhook notifications
+  enabled: false
+  # Webhook endpoint URL
+  # Example for Slack: https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+  # Example for Discord: https://discord.com/api/webhooks/YOUR/DISCORD/WEBHOOK
+  url: ""
+  # Webhook request timeout in seconds (default: 30)
+  timeout: 30
+  # Number of retry attempts on failure (default: 3)
+  retryAttempts: 3
+  # Initial delay between retries in seconds (exponential backoff) (default: 1.0)
+  retryDelay: 1.0
+  # Comma-separated list of events to notify on (default: all events)
+  # Options: renewal_started, renewal_success, renewal_failed, renewal_skipped, batch_completed
+  enabledEvents: ""
+  # Secret containing webhook URL (alternative to specifying url in values)
+  secret:
+    name: "" # Name of the secret containing webhook URL
+    key: "webhook-url" # Key in the secret containing the webhook URL
+
 # Image configuration
 image:
   repository: ghcr.io/maskshell/cloud-cert-renewer

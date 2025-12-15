@@ -137,6 +137,29 @@ spec:
             - name: FORCE_UPDATE
               value: {{ .Values.forceUpdate | quote }}
             {{- end }}
+            # Webhook configuration
+            {{- if .Values.webhook.enabled }}
+            - name: WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.webhook.secret.name }}
+                  name: {{ .Values.webhook.secret.name }}
+                  key: {{ .Values.webhook.secret.key }}
+                  {{- else if .Values.webhook.url }}
+                  name: {{ include "cloud-cert-renewer.fullname" . }}-webhook
+                  key: webhook-url
+                  {{- end }}
+            - name: WEBHOOK_TIMEOUT
+              value: {{ .Values.webhook.timeout | quote }}
+            - name: WEBHOOK_RETRY_ATTEMPTS
+              value: {{ .Values.webhook.retryAttempts | quote }}
+            - name: WEBHOOK_RETRY_DELAY
+              value: {{ .Values.webhook.retryDelay | quote }}
+            {{- if .Values.webhook.enabledEvents }}
+            - name: WEBHOOK_ENABLED_EVENTS
+              value: {{ .Values.webhook.enabledEvents | quote }}
+            {{- end }}
+            {{- end }}
           resources:
             {{- toYaml .Values.initContainer.resources | nindent 12 }}
       # Main container: Placeholder container to keep Deployment running (never exits)

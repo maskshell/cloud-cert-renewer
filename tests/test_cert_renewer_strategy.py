@@ -57,6 +57,9 @@ class TestCdnCertRenewerStrategy(unittest.TestCase):
 
         mock_config = MagicMock()
         mock_config.cdn_config = None
+        mock_config.webhook_config = (
+            None  # Disable webhook to avoid initialization issues
+        )
         strategy = CdnCertRenewerStrategy(mock_config, "test.example.com")
 
         with self.assertRaises(ValueError) as context:
@@ -333,6 +336,9 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
 
         mock_config = MagicMock()
         mock_config.lb_config = None
+        mock_config.webhook_config = (
+            None  # Disable webhook to avoid initialization issues
+        )
         strategy = LoadBalancerCertRenewerStrategy(mock_config, "test-instance-id")
 
         with self.assertRaises(ValueError) as context:
@@ -366,6 +372,9 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
 
         mock_config = MagicMock()
         mock_config.lb_config = None
+        mock_config.webhook_config = (
+            None  # Disable webhook to avoid initialization issues
+        )
         strategy = LoadBalancerCertRenewerStrategy(mock_config, "test-instance-id")
 
         result = strategy.get_current_cert_fingerprint()
@@ -379,6 +388,9 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
 
         mock_config = MagicMock()
         mock_config.lb_config = None
+        mock_config.webhook_config = (
+            None  # Disable webhook to avoid initialization issues
+        )
         strategy = LoadBalancerCertRenewerStrategy(mock_config, "test-instance-id")
 
         with self.assertRaises(ValueError) as context:

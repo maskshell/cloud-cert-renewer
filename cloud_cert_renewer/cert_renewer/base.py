@@ -4,9 +4,20 @@ Defines abstract interfaces and template methods for certificate renewers.
 """
 
 import logging
+import threading
+import time
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 
 from cloud_cert_renewer.config import AppConfig
+from cloud_cert_renewer.webhook.events import (
+    EventCertificate,
+    EventMetadata,
+    EventResult,
+    EventSource,
+    EventTarget,
+    WebhookEvent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +37,139 @@ class BaseCertRenewer(ABC):
         :param config: Application configuration
         """
         self.config = config
+        self._webhook_service = None
+        self._renewal_start_time = None
+
+        # Initialize webhook service if configured
+        if config.webhook_config and config.webhook_config.url:
+            from cloud_cert_renewer.webhook import WebhookService
+
+            self._webhook_service = WebhookService(
+                url=config.webhook_config.url,
+                timeout=config.webhook_config.timeout,
+                retry_attempts=config.webhook_config.retry_attempts,
+                retry_delay=config.webhook_config.retry_delay,
+                enabled_events=config.webhook_config.enabled_events,
+            )
+
+    def _send_webhook_event(
+        self,
+        event_type: str,
+        cert_info: tuple[str, str, str] | None = None,
+        result: EventResult | None = None,
+    ) -> None:
+        """
+        Send webhook event if configured
+
+        :param event_type: Type of event
+        :param cert_info: Certificate info tuple
+            (cert, cert_private_key, domain_or_instance)
+        :param result: Event result information
+        """
+        if not self._webhook_service or not self._webhook_service.is_enabled(
+            event_type
+        ):
+            return
+
+        # Prepare event source
+        source = EventSource(
+            service_type=self.config.service_type,
+            cloud_provider=self.config.cloud_provider,
+            region=self._get_region(),
+        )
+
+        # Prepare event target
+        target = EventTarget()
+        if cert_info:
+            _, _, domain_or_instance = cert_info
+            if self.config.service_type == "cdn":
+                target.domain_names = [domain_or_instance]
+            else:  # lb
+                target.instance_ids = [domain_or_instance]
+                if self.config.lb_config:
+                    target.listener_port = self.config.lb_config.listener_port
+
+        # Prepare certificate info if available
+        certificate = None
+        if cert_info and event_type in [
+            "renewal_started",
+            "renewal_success",
+            "renewal_skipped",
+        ]:
+            cert, _, _ = cert_info
+            fingerprint = self._calculate_fingerprint(cert)
+            cert_data = self._parse_cert_info(cert)
+            certificate = EventCertificate(
+                fingerprint=fingerprint,
+                not_after=cert_data.get("not_after"),
+                not_before=cert_data.get("not_before"),
+                issuer=cert_data.get("issuer"),
+            )
+
+        # Prepare metadata
+        execution_time_ms = None
+        if self._renewal_start_time:
+            execution_time_ms = int((time.time() - self._renewal_start_time) * 1000)
+
+        metadata = EventMetadata(
+            version="0.2.1-rc1",
+            execution_time_ms=execution_time_ms,
+            force_update=self.config.force_update,
+            dry_run=self.config.dry_run,
+        )
+
+        # Create and send event
+        event = WebhookEvent(
+            event_type=event_type,
+            source=source,
+            target=target,
+            certificate=certificate,
+            result=result,
+            metadata=metadata,
+        )
+
+        # Send asynchronously without blocking
+        threading.Thread(
+            target=self._webhook_service.send_event,
+            args=(event,),
+            daemon=True,
+        ).start()
+
+    def _get_region(self) -> str:
+        """Get region from configuration"""
+        if self.config.service_type == "cdn" and self.config.cdn_config:
+            return self.config.cdn_config.region
+        elif self.config.service_type == "lb" and self.config.lb_config:
+            return self.config.lb_config.region
+        return "cn-hangzhou"  # Default region
+
+    def _parse_cert_info(self, cert: str) -> dict[str, datetime | str | None]:
+        """
+        Parse certificate information for webhook payload
+        :param cert: Certificate content (PEM format)
+        :return: Dictionary with certificate info
+        """
+        try:
+            from cryptography import x509
+            from cryptography.hazmat.backends import default_backend
+
+            # Load certificate from PEM format
+            cert_obj = x509.load_pem_x509_certificate(
+                cert.encode("utf-8"), default_backend()
+            )
+
+            return {
+                "not_after": cert_obj.not_valid_after.replace(tzinfo=timezone.utc),
+                "not_before": cert_obj.not_valid_before.replace(tzinfo=timezone.utc),
+                "issuer": cert_obj.issuer.rfc4514_string(),
+            }
+        except Exception as e:
+            logger.debug("Failed to parse certificate info for webhook: %s", e)
+            return {
+                "not_after": None,
+                "not_before": None,
+                "issuer": None,
+            }
 
     def renew(self) -> bool:
         """
@@ -38,6 +182,10 @@ class BaseCertRenewer(ABC):
         """
         # Get certificate and private key
         cert, cert_private_key, domain_or_instance = self._get_cert_info()
+        cert_info = (cert, cert_private_key, domain_or_instance)
+
+        # Track start time for metrics
+        self._renewal_start_time = time.time()
 
         logger.info(
             "Renewal started: service_type=%s, cloud_provider=%s, "
@@ -47,6 +195,9 @@ class BaseCertRenewer(ABC):
             domain_or_instance,
             self.config.force_update,
         )
+
+        # Send renewal started webhook
+        self._send_webhook_event("renewal_started", cert_info=cert_info)
 
         # Step 1: Validate certificate
         if not self._validate_cert(cert, domain_or_instance):
@@ -65,6 +216,15 @@ class BaseCertRenewer(ABC):
                         "Certificate unchanged, skipping renewal: %s, fingerprint=%s",
                         domain_or_instance,
                         new_fingerprint[:20] + "...",
+                    )
+                    # Send renewal skipped webhook
+                    self._send_webhook_event(
+                        "renewal_skipped",
+                        cert_info=cert_info,
+                        result=EventResult(
+                            status="skipped",
+                            message="Certificate unchanged, skipping renewal",
+                        ),
                     )
                     return True
             else:
@@ -87,13 +247,41 @@ class BaseCertRenewer(ABC):
                 domain_or_instance,
             )
             logger.info("DRY-RUN: Certificate renewal simulation completed")
+            # Send dry-run success webhook
+            self._send_webhook_event(
+                "renewal_success",
+                cert_info=cert_info,
+                result=EventResult(
+                    status="success",
+                    message="DRY-RUN: Certificate renewal simulation completed",
+                ),
+            )
             return True
 
         success = self._do_renew(cert, cert_private_key)
         if success:
             logger.info("Renewal succeeded: %s", domain_or_instance)
+            # Send renewal success webhook
+            self._send_webhook_event(
+                "renewal_success",
+                cert_info=cert_info,
+                result=EventResult(
+                    status="success",
+                    message="Certificate renewed successfully",
+                ),
+            )
         else:
             logger.error("Renewal failed: %s", domain_or_instance)
+            # Send renewal failed webhook
+            self._send_webhook_event(
+                "renewal_failed",
+                cert_info=cert_info,
+                result=EventResult(
+                    status="failure",
+                    message="Certificate renewal failed",
+                    error_code="RENEWAL_FAILED",
+                ),
+            )
         return success
 
     @abstractmethod

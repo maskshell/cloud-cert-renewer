@@ -4,8 +4,16 @@ Implements composite pattern for handling multiple resources.
 """
 
 import logging
+import threading
 
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
+from cloud_cert_renewer.webhook.events import (
+    EventMetadata,
+    EventResult,
+    EventSource,
+    EventTarget,
+    WebhookEvent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +57,10 @@ class CompositeCertRenewer:
                 )
                 failures += 1
 
+        # Send batch summary webhook if webhook service is available
+        if self.renewers and self.renewers[0]._webhook_service:
+            self._send_batch_summary_webhook(total, failures)
+
         if failures > 0:
             logger.error(
                 "Batch renewal completed with errors: %d/%d failed", failures, total
@@ -59,3 +71,71 @@ class CompositeCertRenewer:
             "Batch renewal completed successfully: %d/%d succeeded", total, total
         )
         return True
+
+    def _send_batch_summary_webhook(self, total: int, failures: int) -> None:
+        """Send batch completion webhook"""
+        if not self.renewers:
+            return
+
+        # Get reference to first renewer for config
+        first_renewer = self.renewers[0]
+        webhook_service = first_renewer._webhook_service
+
+        if not webhook_service or not webhook_service.is_enabled("batch_completed"):
+            return
+
+        # Prepare event source
+        source = EventSource(
+            service_type=first_renewer.config.service_type,
+            cloud_provider=first_renewer.config.cloud_provider,
+            region=first_renewer._get_region(),
+        )
+
+        # Prepare event target (summary of all resources)
+        target = EventTarget()
+        if first_renewer.config.service_type == "cdn":
+            all_domains = []
+            for renewer in self.renewers:
+                if renewer.config.cdn_config:
+                    all_domains.extend(renewer.config.cdn_config.domain_names)
+            target.domain_names = list(set(all_domains))  # Remove duplicates
+        else:  # lb
+            all_instances = []
+            for renewer in self.renewers:
+                if renewer.config.lb_config:
+                    all_instances.extend(renewer.config.lb_config.instance_ids)
+            target.instance_ids = list(set(all_instances))  # Remove duplicates
+            if first_renewer.config.lb_config:
+                target.listener_port = first_renewer.config.lb_config.listener_port
+
+        # Prepare result
+        result = EventResult(
+            status="success" if failures == 0 else "failure",
+            message=f"Batch renewal completed: {total - failures}/{total} succeeded",
+        )
+
+        # Prepare metadata
+        metadata = EventMetadata(
+            version="0.2.1-rc1",
+            total_resources=total,
+            successful_resources=total - failures,
+            failed_resources=failures,
+            force_update=first_renewer.config.force_update,
+            dry_run=first_renewer.config.dry_run,
+        )
+
+        # Create and send event
+        event = WebhookEvent(
+            event_type="batch_completed",
+            source=source,
+            target=target,
+            result=result,
+            metadata=metadata,
+        )
+
+        # Send asynchronously
+        threading.Thread(
+            target=webhook_service.send_event,
+            args=(event,),
+            daemon=True,
+        ).start()

@@ -3,7 +3,7 @@
 Defines data classes related to configuration.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 
@@ -38,6 +38,25 @@ class LoadBalancerConfig:
 
 
 @dataclass
+class WebhookConfig:
+    """Webhook notification configuration"""
+
+    url: str | None = None
+    timeout: int = 30  # seconds
+    retry_attempts: int = 3
+    retry_delay: float = 1.0  # seconds
+    enabled_events: set[str] = field(
+        default_factory=lambda: {
+            "renewal_started",
+            "renewal_success",
+            "renewal_failed",
+            "renewal_skipped",
+            "batch_completed",
+        }
+    )
+
+
+@dataclass
 class AppConfig:
     """Application configuration"""
 
@@ -52,6 +71,8 @@ class AppConfig:
     # Service-specific configuration
     cdn_config: CdnConfig | None = None
     lb_config: LoadBalancerConfig | None = None
+    # Webhook configuration
+    webhook_config: WebhookConfig | None = None
 
     def __post_init__(self) -> None:
         """Configuration validation"""

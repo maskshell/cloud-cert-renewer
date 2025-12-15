@@ -70,6 +70,14 @@ The following table lists the configurable parameters and their default values:
 | `secrets.certificate.certKey`          | Certificate key name in secret         | `tls.crt`                    |
 | `secrets.certificate.privateKeyKey`   | Private key key name in secret         | `tls.key`                    |
 | `forceUpdate`                          | Force update certificate even if same | `false`                      |
+| `webhook.enabled`                       | Enable webhook notifications          | `false`                      |
+| `webhook.url`                           | Webhook endpoint URL                  | `""`                         |
+| `webhook.timeout`                       | Webhook request timeout in seconds    | `30`                         |
+| `webhook.retryAttempts`                 | Number of retry attempts on failure   | `3`                          |
+| `webhook.retryDelay`                    | Initial delay between retries in seconds | `1.0`                    |
+| `webhook.enabledEvents`                 | Comma-separated events to notify on   | `""` (all events)           |
+| `webhook.secret.name`                   | Secret containing webhook URL         | `""`                         |
+| `webhook.secret.key`                    | Key in secret for webhook URL         | `webhook-url`               |
 | `reloader.enabled`                     | Enable Reloader annotations           | `true`                       |
 | `reloader.auto`                        | Enable automatic reload (Reloader)     | `true`                       |
 | `reloader.search`                      | Enable search mode (Reloader)          | `true`                       |
@@ -172,6 +180,80 @@ forceUpdate: true
 ```
 
 This sets the `FORCE_UPDATE` environment variable to `"true"`.
+
+### Webhook Configuration
+
+To enable webhook notifications for certificate renewal events:
+
+#### Option 1: Configure Webhook URL in Values File
+
+```yaml
+webhook:
+  enabled: true
+  url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  timeout: 30
+  retryAttempts: 3
+  retryDelay: 1.0
+  enabledEvents: "renewal_success,renewal_failed"  # Optional: specify events
+```
+
+#### Option 2: Store Webhook URL in Secret
+
+1. Create a secret with your webhook URL:
+
+```bash
+kubectl create secret generic webhook-secret \
+  --from-literal=webhook-url=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+```
+
+2. Reference the secret in your values file:
+
+```yaml
+webhook:
+  enabled: true
+  secret:
+    name: webhook-secret
+    key: webhook-url
+```
+
+#### Webhook Events
+
+The webhook system can notify on the following events:
+- `renewal_started` - Certificate renewal initiated
+- `renewal_success` - Certificate renewal succeeded
+- `renewal_failed` - Certificate renewal failed
+- `renewal_skipped` - Certificate unchanged, renewal skipped
+- `batch_completed` - Batch renewal summary (for multiple resources)
+
+If `enabledEvents` is not specified, all events will be sent.
+
+#### Example Configurations
+
+**Slack Integration:**
+```yaml
+webhook:
+  enabled: true
+  url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  enabledEvents: "renewal_success,renewal_failed"
+```
+
+**Discord Integration:**
+```yaml
+webhook:
+  enabled: true
+  url: "https://discord.com/api/webhooks/YOUR/DISCORD/WEBHOOK"
+  enabledEvents: "renewal_success,renewal_failed,batch_completed"
+```
+
+**Custom Webhook Server:**
+```yaml
+webhook:
+  enabled: true
+  url: "https://your-server.example.com/webhooks/cert-renewal"
+  timeout: 60
+  retryAttempts: 5
+  retryDelay: 2.0
+```
 
 ### Resources
 

@@ -15,6 +15,7 @@ from cloud_cert_renewer.config.models import (
     CdnConfig,
     Credentials,
     LoadBalancerConfig,
+    WebhookConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,40 @@ def _parse_bool_env(env_name: str, default: bool = False) -> bool:
     """Parse boolean environment variable"""
     value = os.environ.get(env_name, "").lower()
     return value in ("true", "1", "yes", "on")
+
+
+def _parse_int_env(env_name: str, default: int) -> int:
+    """Parse integer environment variable"""
+    value = os.environ.get(env_name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        logger.warning(
+            "Invalid integer value for %s: %s, using default: %d",
+            env_name,
+            value,
+            default,
+        )
+        return default
+
+
+def _parse_float_env(env_name: str, default: float) -> float:
+    """Parse float environment variable"""
+    value = os.environ.get(env_name)
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        logger.warning(
+            "Invalid float value for %s: %s, using default: %f",
+            env_name,
+            value,
+            default,
+        )
+        return default
 
 
 def load_config(args: argparse.Namespace | None = None) -> AppConfig:
@@ -152,6 +187,39 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
     if args and hasattr(args, "dry_run"):
         dry_run = args.dry_run
 
+    # Load webhook configuration
+    webhook_url = _get_env_with_fallback("WEBHOOK_URL")
+    webhook_config = None
+    if webhook_url:
+        webhook_timeout = _parse_int_env("WEBHOOK_TIMEOUT", 30)
+        webhook_retry_attempts = _parse_int_env("WEBHOOK_RETRY_ATTEMPTS", 3)
+        webhook_retry_delay = _parse_float_env("WEBHOOK_RETRY_DELAY", 1.0)
+
+        # Parse enabled events
+        webhook_enabled_events_str = _get_env_with_fallback("WEBHOOK_ENABLED_EVENTS")
+        webhook_enabled_events = None
+        if webhook_enabled_events_str:
+            webhook_enabled_events = {
+                event.strip()
+                for event in webhook_enabled_events_str.split(",")
+                if event.strip()
+            }
+
+        webhook_config = WebhookConfig(
+            url=webhook_url,
+            timeout=webhook_timeout,
+            retry_attempts=webhook_retry_attempts,
+            retry_delay=webhook_retry_delay,
+            enabled_events=webhook_enabled_events
+            or {
+                "renewal_started",
+                "renewal_success",
+                "renewal_failed",
+                "renewal_skipped",
+                "batch_completed",
+            },
+        )
+
     # Get different configurations based on service type
     if service_type == "cdn":
         domain_name_str = _get_env_required(
@@ -184,6 +252,7 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
             force_update=force_update,
             dry_run=dry_run,
             cdn_config=cdn_config,
+            webhook_config=webhook_config,
         )
 
     elif service_type == "lb":
@@ -240,6 +309,7 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
             force_update=force_update,
             dry_run=dry_run,
             lb_config=lb_config,
+            webhook_config=webhook_config,
         )
 
     else:
