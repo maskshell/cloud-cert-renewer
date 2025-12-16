@@ -472,6 +472,10 @@ The release workflow automatically synchronizes versions across all files:
 - `pyproject.toml` - Python package version
 - `cloud_cert_renewer/__init__.py` - `__version__`
 - `helm/cloud-cert-renewer/Chart.yaml` - `version` and `appVersion`
+- `CHANGELOG.md` - Version entry (when using `update_version.sh` script)
+- `uv.lock` - Package version in lock file (when using `update_version.sh` script)
+
+**Note:** The `uv.lock` file uses PEP 440 version format (e.g., `0.2.3b1` for `0.2.3-beta1`), which is the standard format for Python packages. This is automatically handled by `uv lock`.
 
 **Automatic Version Synchronization:**
 
@@ -488,9 +492,89 @@ You can use the helper script to update versions locally before committing:
 
 This script:
 
-- Updates versions in all three files
+- Updates versions in all three files (`pyproject.toml`, `__init__.py`, `Chart.yaml`)
+- Updates `CHANGELOG.md` (replaces `[Unreleased]` with version and date, adds new `[Unreleased]` section)
+- Updates `uv.lock` (synchronizes lock file with new package version)
 - Validates version consistency
 - Supports semantic versioning (e.g., `0.1.0`, `0.1.0-rc.1`, `0.1.0-test`)
+
+**Note:** The `uv.lock` file records the exact version of your package when installed in editable mode. It should be updated whenever the package version changes to ensure consistency across environments. The script automatically runs `uv lock` to update the lock file.
+
+### CHANGELOG Update Workflow
+
+The project follows the [Keep a Changelog](https://keepachangelog.com/) standard format.
+
+#### CHANGELOG Format
+
+The `CHANGELOG.md` file uses the following format:
+
+```markdown
+## [Unreleased]
+
+### Added
+
+- (New features to be released)
+
+### Changed
+
+- (Changes to be released)
+
+## [0.2.3-beta1] - 2025-12-16
+
+### Changed
+
+- Actual release notes...
+```
+
+#### Updating CHANGELOG During Development
+
+**For AI Agents and Developers:**
+
+1. **Add changes to `[Unreleased]` section**: When making changes, add them to the `[Unreleased]` section at the top of `CHANGELOG.md`
+2. **Follow Keep a Changelog format**: Use standard categories (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`)
+3. **Keep entries clear and concise**: Write user-facing descriptions, not technical implementation details
+
+**Example:**
+
+```markdown
+## [Unreleased]
+
+### Added
+
+- Support for YAML list format in Helm Chart `cdn.domainName` configuration
+
+### Fixed
+
+- Fixed certificate fingerprint comparison to handle API format variations
+```
+
+#### Releasing a Version
+
+When releasing a version, use the `update_version.sh` script:
+
+```bash
+./scripts/update_version.sh 0.2.4
+```
+
+The script will:
+
+1. **Update version files**: `pyproject.toml`, `__init__.py`, `Chart.yaml`
+2. **Update CHANGELOG.md**:
+   - Replace `## [Unreleased]` with `## [0.2.4] - YYYY-MM-DD` (using current date)
+   - Add a new `## [Unreleased]` section at the top for future changes
+3. **Verify version consistency**: Ensure all files have the same version
+
+**Note:** If `CHANGELOG.md` doesn't have an `[Unreleased]` section, the script will skip CHANGELOG updates and show a warning.
+
+#### GitHub Release Notes Extraction
+
+The GitHub Actions release workflow automatically extracts release notes from `CHANGELOG.md`:
+
+- **Extraction**: The workflow extracts content from the version entry (e.g., `## [0.2.4] - 2025-12-16`) up to the next version entry
+- **Inclusion**: All subsections (`### Added`, `### Changed`, etc.) and their content are included
+- **Fallback**: If extraction fails, a simple "Release {VERSION}" message is used
+
+The extracted release notes are automatically included in the GitHub Release body along with artifact information.
 
 ### Manual Publishing
 
@@ -504,9 +588,10 @@ If you prefer to publish manually:
 
 ### Pre-Release Checklist
 
-- [ ] Update version in `pyproject.toml` and `cloud_cert_renewer/__init__.py`
-- [ ] Update `CHANGELOG.md` with release notes
-- [ ] Update `[project.urls]` in `pyproject.toml` with actual repository URLs
+- [ ] Ensure `CHANGELOG.md` has an `[Unreleased]` section with all changes documented
+- [ ] Update version using `scripts/update_version.sh <version>` (updates all files including CHANGELOG)
+- [ ] Review `CHANGELOG.md` to ensure the version entry is correct and complete
+- [ ] Update `[project.urls]` in `pyproject.toml` with actual repository URLs (if needed)
 - [ ] Run all tests: `uv run pytest`
 - [ ] Check code quality: `uv run ruff check .`
 - [ ] Verify README.md renders correctly on PyPI
@@ -572,19 +657,23 @@ Follow [Semantic Versioning](https://semver.org/):
 
 **Manual update:**
 
-Update version in:
+If you prefer to update versions manually:
 
 1. `pyproject.toml` - `version = "x.y.z"`
 2. `cloud_cert_renewer/__init__.py` - `__version__ = "x.y.z"`
 3. `helm/cloud-cert-renewer/Chart.yaml` - `version: x.y.z` and `appVersion: "x.y.z"`
-4. `CHANGELOG.md` - Add new version entry
+4. `CHANGELOG.md` - Replace `## [Unreleased]` with `## [x.y.z] - YYYY-MM-DD` and add new `## [Unreleased]` section
+5. `uv.lock` - Run `uv lock` to update the lock file with the new package version
+
+**Note:** Using `scripts/update_version.sh` is recommended as it handles all files automatically and ensures consistency. The script automatically runs `uv lock` to update the lock file.
 
 ### Release Checklist
 
 Before creating a release:
 
-- [ ] Update version in all files (or use `scripts/update_version.sh`)
-- [ ] Update `CHANGELOG.md` with release notes (format: `## [version]`)
+- [ ] Ensure `CHANGELOG.md` has an `[Unreleased]` section with all changes documented
+- [ ] Update version in all files using `scripts/update_version.sh <version>` (handles CHANGELOG automatically)
+- [ ] Review the updated `CHANGELOG.md` to ensure version entry is correct
 - [ ] Run all tests: `uv run pytest`
 - [ ] Check code quality: `uv run ruff check .`
 - [ ] Verify README.md renders correctly

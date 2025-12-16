@@ -50,6 +50,47 @@ else
     echo "Warning: helm/cloud-cert-renewer/Chart.yaml not found"
 fi
 
+# Update CHANGELOG.md
+if [ -f "CHANGELOG.md" ]; then
+    # Get current date in YYYY-MM-DD format
+    RELEASE_DATE=$(date +%Y-%m-%d)
+
+    # Check if [Unreleased] section exists
+    if grep -q "^## \[Unreleased\]" CHANGELOG.md; then
+        # Replace [Unreleased] with version and date
+        # Use a temporary file to handle the replacement safely
+        sed -i.bak "s/^## \[Unreleased\]/## [$VERSION] - $RELEASE_DATE/" CHANGELOG.md
+        rm -f CHANGELOG.md.bak
+        echo "✓ Updated CHANGELOG.md: Replaced [Unreleased] with [$VERSION] - $RELEASE_DATE"
+
+        # Add new [Unreleased] section at the top (after the header)
+        # Find the line number of the first version entry
+        FIRST_VERSION_LINE=$(grep -n "^## \[" CHANGELOG.md | head -1 | cut -d: -f1)
+        if [ -n "$FIRST_VERSION_LINE" ]; then
+            # Insert [Unreleased] section before the first version entry
+            sed -i.bak "${FIRST_VERSION_LINE}i\\
+## [Unreleased]\\
+" CHANGELOG.md
+            rm -f CHANGELOG.md.bak
+            echo "✓ Added new [Unreleased] section to CHANGELOG.md"
+        fi
+    else
+        echo "Warning: [Unreleased] section not found in CHANGELOG.md, skipping CHANGELOG update"
+    fi
+else
+    echo "Warning: CHANGELOG.md not found"
+fi
+
+# Update uv.lock
+if command -v uv &> /dev/null; then
+    echo "Updating uv.lock..."
+    uv lock
+    echo "✓ Updated uv.lock"
+else
+    echo "Warning: uv command not found, skipping uv.lock update"
+    echo "  Please run 'uv lock' manually after updating versions"
+fi
+
 # Verify version consistency
 echo ""
 echo "Verifying version consistency..."

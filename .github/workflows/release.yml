@@ -418,14 +418,37 @@ jobs:
         id: release_notes
         run: |
           VERSION="${{ needs.prepare.outputs.version }}"
-          awk "/^## \[${VERSION}\]/,/^## \[|^$/{if (!/^## \[${VERSION}\]/ && !/^## \[/) print}" \
-            CHANGELOG.md > /tmp/release_notes.txt || \
+          # Extract release notes from CHANGELOG.md
+          # Match from "## [VERSION] - DATE" or "## [VERSION]" to next "## [" line
+          # Exclude the version header line itself
+          awk -v version="$VERSION" '
+            BEGIN { in_section = 0 }
+            /^## \[/ {
+              if (in_section) { exit }
+              if ($0 ~ "^## \\[" version "\\]") {
+                in_section = 1
+                next
+              }
+            }
+            in_section { print }
+          ' CHANGELOG.md > /tmp/release_notes.txt || true
+
+          # Check if extraction was successful (file is not empty and has content)
+          if [ ! -s /tmp/release_notes.txt ] || [ "$(wc -l < /tmp/release_notes.txt)" -eq 0 ]; then
+            echo "Warning: Failed to extract release notes for version $VERSION, using fallback"
             echo "Release $VERSION" > /tmp/release_notes.txt
+          fi
+
+          # Output release notes to GitHub Actions output
           {
             echo "notes<<EOF"
             cat /tmp/release_notes.txt
             echo "EOF"
           } >> $GITHUB_OUTPUT
+
+          # Debug: Show extracted content
+          echo "Extracted release notes:"
+          cat /tmp/release_notes.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
