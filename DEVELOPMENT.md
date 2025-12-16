@@ -355,7 +355,7 @@ docker buildx build \
   --load .
 ```
 
-**Note:** The GitHub Actions release workflow automatically builds and publishes multi-architecture images (amd64 and arm64) to GitHub Container Registry. No manual multi-architecture build is required for releases.
+**Note:** The GitHub Actions release workflow automatically builds and publishes multi-architecture images (amd64 and arm64) to both GitHub Container Registry (GHCR) and Docker Hub (if configured). Both registries contain identical image content with the same digest for each architecture. No manual multi-architecture build is required for releases.
 
 ## Release Workflow
 
@@ -372,6 +372,15 @@ The project includes a comprehensive release workflow that publishes all artifac
    - Go to **Settings** → **Secrets and variables** → **Actions**
    - Add secret `PYPI_API_TOKEN` with your PyPI API token
    - Add secret `TEST_PYPI_API_TOKEN` with your TestPyPI API token (optional, for testing)
+   - **Docker Hub** (optional, for publishing to Docker Hub):
+     - Add secret `DOCKERHUB_USERNAME` with your Docker Hub username
+     - Add secret `DOCKERHUB_TOKEN` with your Docker Hub access token
+     - To create a Docker Hub access token:
+       1. Go to [Docker Hub Account Settings](https://hub.docker.com/settings/security)
+       2. Click **New Access Token**
+       3. Give it a name (e.g., "GitHub Actions")
+       4. Set permissions to **Read & Write**
+       5. Copy the token (you'll only see it once)
 4. **GitHub Pages**: Enable GitHub Pages for Helm Chart repository:
    - Go to **Settings** → **Pages**
    - Source: **Deploy from a branch**

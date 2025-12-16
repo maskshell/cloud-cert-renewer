@@ -214,16 +214,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer
+          images: |
+            ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer
+            ${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}.{{patch}}
             type=raw,value=latest,enable=${{ needs.prepare.outputs.is_release == 'true' }}
             type=raw,value=${{ needs.prepare.outputs.version }}
+          # Ensure consistent labels and metadata for digest consistency
+          labels: |
+            org.opencontainers.image.title=cloud-cert-renewer
+            org.opencontainers.image.description=Automated HTTPS certificate renewal tool for cloud services
+            org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -233,13 +248,20 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Use same cache for consistency
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Output image tags
         run: |
-          echo "Docker image published with tags:"
+          echo "Docker images published with tags:"
           echo "${{ steps.meta.outputs.tags }}"
+          echo ""
+          echo "Published to:"
+          echo "  - GitHub Container Registry: ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer"
+          echo "  - Docker Hub: ${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer"
+          echo ""
+          echo "Both registries contain identical image content (same digest for each architecture)"
 
   build-helm:
     name: Build and Publish Helm Chart
@@ -461,10 +483,19 @@ jobs:
             ## Artifacts
 
             ### Docker Image
+
+            **GitHub Container Registry:**
             - `ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer:${{ needs.prepare.outputs.version }}`
             - `ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer:${{ needs.prepare.outputs.tag }}`
             - `ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer:latest`
+
+            **Docker Hub:**
+            - `${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer:${{ needs.prepare.outputs.version }}`
+            - `${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer:${{ needs.prepare.outputs.tag }}`
+            - `${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer:latest`
+
             - **Multi-architecture**: Supports amd64 and arm64 platforms
+            - **Digest consistency**: Both registries contain identical image content (same digest for each architecture)
 
             ### Helm Chart
             - Chart version: `${{ needs.prepare.outputs.version }}`
