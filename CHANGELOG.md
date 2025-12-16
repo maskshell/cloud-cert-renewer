@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6-beta6] - 2025-12-16
+
+### Fixed
+
+- CI/CD workflow improvements:
+  - Fixed multi-line custom section handling in release workflow by writing content to temporary file before outputting to GITHUB_OUTPUT, ensuring proper formatting of the CUSTOM_SECTION variable
+
 ## [0.2.6-beta5] - 2025-12-16
 
 ### Fixed
