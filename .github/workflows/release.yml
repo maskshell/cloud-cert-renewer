@@ -267,6 +267,10 @@ jobs:
           echo "Both registries contain identical image content (same digest for each architecture)"
 
       - name: Update Docker Hub description from README
+        # Note: This step requires a Docker Hub Personal Access Token (PAT) with read, write, and delete permissions.
+        # If the token doesn't have proper permissions, this step will fail with "Forbidden" error.
+        # To fix: Create a new PAT at https://hub.docker.com/settings/security with all permissions.
+        continue-on-error: true
         uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}

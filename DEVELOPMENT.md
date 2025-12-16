@@ -379,8 +379,9 @@ The project includes a comprehensive release workflow that publishes all artifac
        1. Go to [Docker Hub Account Settings](https://hub.docker.com/settings/security)
        2. Click **New Access Token**
        3. Give it a name (e.g., "GitHub Actions")
-       4. Set permissions to **Read & Write**
+       4. Set permissions to **Read, Write & Delete** (all three permissions are required for updating repository descriptions)
        5. Copy the token (you'll only see it once)
+     - **Note**: The token must have `read`, `write`, and `delete` permissions for the `dockerhub-description` action to work. If you get a "Forbidden" error, verify your token has all three permissions.
 4. **GitHub Pages**: Enable GitHub Pages for Helm Chart repository:
    - Go to **Settings** → **Pages**
    - Source: **Deploy from a branch**
