@@ -220,13 +220,44 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Check Custom Registry
+        id: check-custom-registry
+        run: |
+          if [ -n "${{ secrets.CUSTOM_REGISTRY_URL }}" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log in to Custom Registry
+        if: steps.check-custom-registry.outputs.enabled == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.CUSTOM_REGISTRY_URL }}
+          username: ${{ secrets.CUSTOM_REGISTRY_USERNAME }}
+          password: ${{ secrets.CUSTOM_REGISTRY_PASSWORD }}
+
+      - name: Prepare image list
+        id: images
+        run: |
+          IMAGES="ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer
+          ${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer"
+
+          if [ -n "${{ secrets.CUSTOM_REGISTRY_URL }}" ] && [ -n "${{ secrets.CUSTOM_REGISTRY_IMAGE }}" ]; then
+            CUSTOM_IMAGE="${{ secrets.CUSTOM_REGISTRY_URL }}/${{ secrets.CUSTOM_REGISTRY_IMAGE }}"
+            IMAGES="$IMAGES
+          $CUSTOM_IMAGE"
+          fi
+
+          echo "images<<EOF" >> $GITHUB_OUTPUT
+          echo "$IMAGES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer
-            ${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer
+          images: ${{ steps.images.outputs.images }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}.{{patch}}
@@ -263,8 +294,11 @@ jobs:
           echo "Published to:"
           echo "  - GitHub Container Registry: ghcr.io/${{ github.repository_owner }}/cloud-cert-renewer"
           echo "  - Docker Hub: ${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer"
+          if [ -n "${{ secrets.CUSTOM_REGISTRY_URL }}" ] && [ -n "${{ secrets.CUSTOM_REGISTRY_IMAGE }}" ]; then
+            echo "  - Custom Registry: ${{ secrets.CUSTOM_REGISTRY_URL }}/${{ secrets.CUSTOM_REGISTRY_IMAGE }}"
+          fi
           echo ""
-          echo "Both registries contain identical image content (same digest for each architecture)"
+          echo "All registries contain identical image content (same digest for each architecture)"
 
       - name: Update Docker Hub description from README
         # Note: This step requires a Docker Hub Personal Access Token (PAT) with read, write, and delete permissions.
@@ -487,6 +521,30 @@ jobs:
           echo "Extracted release notes:"
           cat /tmp/release_notes.txt
 
+      - name: Prepare custom registry section
+        id: custom_registry
+        run: |
+          if [ -n "${{ secrets.CUSTOM_REGISTRY_URL }}" ] && [ -n "${{ secrets.CUSTOM_REGISTRY_IMAGE }}" ]; then
+            REGISTRY_URL="${{ secrets.CUSTOM_REGISTRY_URL }}"
+            REGISTRY_IMAGE="${{ secrets.CUSTOM_REGISTRY_IMAGE }}"
+            VERSION="${{ needs.prepare.outputs.version }}"
+            TAG="${{ needs.prepare.outputs.tag }}"
+            CUSTOM_SECTION="**Custom Registry:**
+            - \`${REGISTRY_URL}/${REGISTRY_IMAGE}:${VERSION}\`
+            - \`${REGISTRY_URL}/${REGISTRY_IMAGE}:${TAG}\`
+            - \`${REGISTRY_URL}/${REGISTRY_IMAGE}:latest\`
+
+            "
+          else
+            CUSTOM_SECTION=""
+          fi
+
+          {
+            echo "section<<EOF"
+            echo -n "$CUSTOM_SECTION"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -509,8 +567,10 @@ jobs:
             - `${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer:${{ needs.prepare.outputs.tag }}`
             - `${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer:latest`
 
+            ${{ steps.custom_registry.outputs.section }}
+
             - **Multi-architecture**: Supports amd64 and arm64 platforms
-            - **Digest consistency**: Both registries contain identical image content (same digest for each architecture)
+            - **Digest consistency**: All registries contain identical image content (same digest for each architecture)
 
             ### Helm Chart
             - Chart version: `${{ needs.prepare.outputs.version }}`
