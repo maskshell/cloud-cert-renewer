@@ -412,3 +412,87 @@ jobs:
           else
             echo "⚠️  container.py: Coverage may be below 100%"
           fi
+
+  helm-test:
+    name: Helm Chart Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "latest"
+
+      - name: Lint Helm chart
+        run: |
+          echo "Linting Helm chart..."
+          helm lint helm/cloud-cert-renewer
+
+      - name: Test Helm chart template rendering (default values)
+        run: |
+          echo "Testing chart template rendering with default values..."
+          helm template test-release helm/cloud-cert-renewer --debug
+
+      - name: Test Helm chart template rendering (CDN values)
+        run: |
+          echo "Testing chart template rendering with CDN values..."
+          helm template test-release helm/cloud-cert-renewer \
+            --values helm/cloud-cert-renewer/values-cdn.yaml \
+            --debug
+
+      - name: Test Helm chart template rendering (SLB values)
+        run: |
+          echo "Testing chart template rendering with SLB values..."
+          helm template test-release helm/cloud-cert-renewer \
+            --values helm/cloud-cert-renewer/values-slb.yaml \
+            --debug
+
+      - name: Test Helm chart template rendering (webhook example values)
+        run: |
+          echo "Testing chart template rendering with webhook example values..."
+          helm template test-release helm/cloud-cert-renewer \
+            --values helm/cloud-cert-renewer/values-webhook-example.yaml \
+            --debug
+
+      - name: Test Helm chart template rendering (webhook secret values)
+        run: |
+          echo "Testing chart template rendering with webhook secret values..."
+          helm template test-release helm/cloud-cert-renewer \
+            --values helm/cloud-cert-renewer/values-webhook-secret.yaml \
+            --debug
+
+      - name: Validate Helm chart dependencies
+        run: |
+          echo "Validating Helm chart dependencies..."
+          helm dependency list helm/cloud-cert-renewer || echo "No dependencies found (expected)"
+
+      - name: Test Helm chart dry-run install (default values)
+        run: |
+          echo "Testing Helm chart dry-run install with default values..."
+          helm install test-release helm/cloud-cert-renewer \
+            --dry-run \
+            --debug \
+            --namespace test-namespace \
+            --create-namespace
+
+      - name: Test Helm chart dry-run install (CDN values)
+        run: |
+          echo "Testing Helm chart dry-run install with CDN values..."
+          helm install test-release helm/cloud-cert-renewer \
+            --values helm/cloud-cert-renewer/values-cdn.yaml \
+            --dry-run \
+            --debug \
+            --namespace test-namespace \
+            --create-namespace
+
+      - name: Test Helm chart dry-run install (SLB values)
+        run: |
+          echo "Testing Helm chart dry-run install with SLB values..."
+          helm install test-release helm/cloud-cert-renewer \
+            --values helm/cloud-cert-renewer/values-slb.yaml \
+            --dry-run \
+            --debug \
+            --namespace test-namespace \
+            --create-namespace
