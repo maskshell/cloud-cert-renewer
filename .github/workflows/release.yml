@@ -539,9 +539,12 @@ jobs:
             CUSTOM_SECTION=""
           fi
 
+          # Write to temporary file to handle multi-line content properly
+          printf '%s' "$CUSTOM_SECTION" > /tmp/custom_section.txt
+
           {
             echo "section<<EOF"
-            echo -n "$CUSTOM_SECTION"
+            cat /tmp/custom_section.txt
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
