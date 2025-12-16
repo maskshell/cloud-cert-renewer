@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6-beta5] - 2025-12-16
+
+### Fixed
+
+- Webhook handling improvements:
+  - Fixed potential race condition in batch webhook summary by adding delay to ensure individual webhook threads are queued before sending batch summary
+  - Simplified webhook threading by relying on `WebhookService.send_event()` internal threading instead of manual thread creation
+
 ## [0.2.6-beta4] - 2025-12-16
 
 ### Added
