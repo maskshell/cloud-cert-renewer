@@ -2,6 +2,28 @@ apiVersion: v1
 entries:
   cloud-cert-renewer:
   - apiVersion: v2
+    appVersion: 0.2.7-beta1
+    created: "2025-12-16T14:37:20.679580288Z"
+    description: A Helm chart for cloud certificate renewal service (CDN and Load
+      Balancer). Supports multiple cloud providers (currently Alibaba Cloud, with
+      architecture designed for multi-cloud extension).
+    digest: 301387dd78a3396b8352018a9a4c5ccb047c4211a8ef01dd91488d60407b1dff
+    keywords:
+    - cloud
+    - certificate
+    - ssl
+    - cdn
+    - load-balancer
+    - multi-cloud
+    maintainers:
+    - email: analyser@gmail.com
+      name: analyser
+    name: cloud-cert-renewer
+    type: application
+    urls:
+    - https://maskshell.github.io/cloud-cert-renewer/charts/cloud-cert-renewer-0.2.7-beta1.tgz
+    version: 0.2.7-beta1
+  - apiVersion: v2
     appVersion: 0.2.6-beta6
     created: "2025-12-16T14:07:43.017173754Z"
     description: A Helm chart for cloud certificate renewal service (CDN and Load
@@ -243,4 +265,4 @@ entries:
     urls:
     - https://maskshell.github.io/cloud-cert-renewer/charts/cloud-cert-renewer-0.2.0-rc1.tgz
     version: 0.2.0-rc1
-generated: "2025-12-16T14:07:43.016400127Z"
+generated: "2025-12-16T14:37:20.678774082Z"
