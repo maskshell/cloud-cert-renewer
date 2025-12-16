@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5-beta1] - 2025-12-16
+
+### Added
+
+- Docker Hub multi-architecture image publishing support
+  - Automatic publishing to Docker Hub alongside GitHub Container Registry
+  - Digest consistency between registries (same image content for each architecture)
+  - Updated release workflow to support dual registry publishing
+
 ## [0.2.4-beta1] - 2025-12-16
 
 ### Added
