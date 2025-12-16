@@ -12,8 +12,9 @@ WORKDIR /app
 # Install uv
 COPY --from=uv_source /uv /usr/local/bin/uv
 
-# Copy project files (excluding README.md and other non-runtime files via .dockerignore)
+# Copy project files (excluding non-runtime files via .dockerignore)
 COPY pyproject.toml ./
+COPY README.md ./
 COPY main.py ./
 COPY cloud_cert_renewer/ ./cloud_cert_renewer/
 
@@ -25,9 +26,9 @@ RUN uv pip install --system --no-cache -e . && \
     find /usr/local/lib/python3.13 -type f -name "*.pyo" -delete 2>/dev/null || true && \
     # Clean uv cache
     rm -rf /root/.cache/uv 2>/dev/null || true && \
-    # Create non-root user with fixed UID/GID for consistency
-    groupadd -r -g 1000 appuser && \
-    useradd -r -u 1000 -g appuser -d /app -s /bin/bash appuser && \
+    # Create non-root user with fixed UID/GID for consistency (UID < 1000 to avoid SYS_UID_MAX warning)
+    groupadd -r -g 999 appuser && \
+    useradd -r -u 999 -g appuser -d /app -s /bin/bash appuser && \
     # Change ownership of app directory
     chown -R appuser:appuser /app && \
     # Clean apt cache to reduce image size

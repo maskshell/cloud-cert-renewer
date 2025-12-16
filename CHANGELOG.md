@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6-beta2] - 2025-12-16
+
+### Fixed
+
+- Docker image build fixes:
+  - Fixed `OSError: Readme file does not exist: README.md` during Docker build by adding `COPY README.md ./` to Dockerfile (required by `pyproject.toml` readme field)
+  - Fixed `useradd warning: appuser's uid 1000 is greater than SYS_UID_MAX 999` by changing UID/GID from 1000 to 999
+
+### Added
+
+- CI/CD workflow enhancements:
+  - Added automatic Docker Hub description update from README.md using `peter-evans/dockerhub-description` action
+  - Docker Hub repository description now automatically syncs with README.md on each release
+
 ## [0.2.6-beta1] - 2025-12-16
 
 ### Changed

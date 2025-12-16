@@ -266,6 +266,14 @@ jobs:
           echo ""
           echo "Both registries contain identical image content (same digest for each architecture)"
 
+      - name: Update Docker Hub description from README
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/cloud-cert-renewer
+          readme-filepath: ./README.md
+
   build-helm:
     name: Build and Publish Helm Chart
     runs-on: ubuntu-latest
