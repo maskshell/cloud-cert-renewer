@@ -1,3 +1,3 @@
 # AI Agent Rules
 
-Follow rules in dir `.cursor/rules/`.
+Follow rules in the `.cursor/rules/` dir.

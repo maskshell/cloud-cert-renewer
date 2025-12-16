@@ -4,7 +4,7 @@ Implements composite pattern for handling multiple resources.
 """
 
 import logging
-import threading
+import time
 
 from cloud_cert_renewer import __version__
 from cloud_cert_renewer.cert_renewer.base import BaseCertRenewer
@@ -59,7 +59,9 @@ class CompositeCertRenewer:
                 failures += 1
 
         # Send batch summary webhook if webhook service is available
+        # Add a small delay to ensure all individual webhook threads have been started
         if self.renewers and self.renewers[0]._webhook_service:
+            time.sleep(0.05)  # Small delay to ensure individual webhooks are queued
             self._send_batch_summary_webhook(total, failures)
 
         if failures > 0:
@@ -134,9 +136,5 @@ class CompositeCertRenewer:
             metadata=metadata,
         )
 
-        # Send asynchronously
-        threading.Thread(
-            target=webhook_service.send_event,
-            args=(event,),
-            daemon=True,
-        ).start()
+        # Send asynchronously (send_event already handles threading)
+        webhook_service.send_event(event)
