@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8-beta1] - 2025-12-17
+
+### Added
+
+- Webhook builders and formatters with WeChat Work support:
+  - Added webhook builder pattern with WeChat Work implementation for flexible webhook client creation
+  - Added webhook formatter pattern with base, generic, and WeChat Work formatters for customizable message formatting
+  - Updated configuration loader to support webhook builder and formatter selection via environment variables
+  - Added comprehensive tests for builders and formatters (100% coverage)
+  - Backward compatible with existing webhook configuration
+- Webhook diagnostic and troubleshooting tools:
+  - Added `scripts/check-webhook-secret.sh` script to verify webhook secret existence and configuration
+  - Added `scripts/diagnose-webhook.sh` comprehensive diagnostic script for webhook configuration issues
+  - Added detailed webhook troubleshooting section to TROUBLESHOOTING.md with step-by-step solutions
+
+### Improved
+
+- Webhook configuration logging:
+  - Added logging when webhook URL is found or not found during configuration loading
+  - Added logging for webhook service initialization status with URL and enabled events information
+  - Improved debug logging for webhook configuration troubleshooting
+
 ## [0.2.7-beta1] - 2025-12-16
 
 ### Added
