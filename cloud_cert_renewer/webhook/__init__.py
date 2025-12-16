@@ -13,6 +13,7 @@ from cloud_cert_renewer.webhook.exceptions import (
     WebhookDeliveryError,
     WebhookError,
 )
+from cloud_cert_renewer.webhook.formatters import MessageFormatterFactory
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class WebhookService:
         retry_attempts: int = 3,
         retry_delay: float = 1.0,
         enabled_events: set[str] | None = None,
+        message_format: str = "generic",
     ) -> None:
         """
         Initialize webhook service
@@ -45,6 +47,7 @@ class WebhookService:
         :param retry_attempts: Number of retry attempts
         :param retry_delay: Delay between retries in seconds
         :param enabled_events: Set of event types to send webhooks for
+        :param message_format: Message format type (generic, wechat_work, etc.)
         """
         self.url = url
         self.enabled_events = enabled_events or {
@@ -54,6 +57,17 @@ class WebhookService:
             "renewal_skipped",
             "batch_completed",
         }
+
+        # Create message formatter
+        try:
+            self.formatter = MessageFormatterFactory.create(message_format)
+        except ValueError as e:
+            logger.warning(
+                "Invalid message format '%s', falling back to 'generic': %s",
+                message_format,
+                e,
+            )
+            self.formatter = MessageFormatterFactory.create("generic")
 
         if self.url:
             self.client = WebhookClient(
@@ -105,7 +119,8 @@ class WebhookService:
             return
 
         try:
-            payload = event.to_dict()
+            # Format event using configured formatter
+            payload = self.formatter.format(event)
             logger.debug("Sending webhook event: %s", event.event_type)
 
             success = self.client.deliver(self.url, payload)

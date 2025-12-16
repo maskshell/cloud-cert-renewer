@@ -51,6 +51,20 @@ class BaseCertRenewer(ABC):
                 retry_attempts=config.webhook_config.retry_attempts,
                 retry_delay=config.webhook_config.retry_delay,
                 enabled_events=config.webhook_config.enabled_events,
+                message_format=config.webhook_config.message_format,
+            )
+            logger.info(
+                "Webhook service initialized: url=%s, enabled_events=%s",
+                config.webhook_config.url[:50] + "..."
+                if len(config.webhook_config.url) > 50
+                else config.webhook_config.url,
+                config.webhook_config.enabled_events,
+            )
+        else:
+            logger.debug(
+                "Webhook service not initialized: webhook_config=%s, url=%s",
+                config.webhook_config is not None,
+                config.webhook_config.url if config.webhook_config else None,
             )
 
     def _send_webhook_event(

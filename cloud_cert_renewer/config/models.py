@@ -54,6 +54,7 @@ class WebhookConfig:
             "batch_completed",
         }
     )
+    message_format: str = "generic"  # Message format type (generic, wechat_work, etc.)
 
 
 @dataclass

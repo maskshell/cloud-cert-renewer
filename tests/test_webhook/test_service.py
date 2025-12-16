@@ -44,6 +44,12 @@ class TestWebhookService:
             "renewal_skipped",
             "batch_completed",
         }
+        # Default formatter should be generic
+        from cloud_cert_renewer.webhook.formatters.generic import (
+            GenericMessageFormatter,
+        )
+
+        assert isinstance(service.formatter, GenericMessageFormatter)
 
     def test_is_enabled_with_url_and_event(self):
         """Test is_enabled with URL and matching event"""
@@ -284,3 +290,71 @@ class TestWebhookService:
 
         # Verify warning was logged
         mock_logger.warning.assert_called_with("Webhook client not initialized")
+
+    def test_service_initialization_with_message_format(self):
+        """Test WebhookService initialization with message_format"""
+        from cloud_cert_renewer.webhook.formatters.generic import (
+            GenericMessageFormatter,
+        )
+        from cloud_cert_renewer.webhook.formatters.wechat_work import (
+            WeChatWorkMessageFormatter,
+        )
+
+        # Test generic format (default)
+        service1 = WebhookService(
+            url="https://example.com/webhook", message_format="generic"
+        )
+        assert isinstance(service1.formatter, GenericMessageFormatter)
+
+        # Test WeChat Work format
+        service2 = WebhookService(
+            url="https://example.com/webhook", message_format="wechat_work"
+        )
+        assert isinstance(service2.formatter, WeChatWorkMessageFormatter)
+
+        # Test invalid format (should fallback to generic)
+        service3 = WebhookService(
+            url="https://example.com/webhook", message_format="invalid"
+        )
+        assert isinstance(service3.formatter, GenericMessageFormatter)
+
+    @patch("cloud_cert_renewer.webhook.WebhookClient")
+    def test_send_event_uses_formatter(self, mock_client_class):
+        """Test that send_event uses configured formatter"""
+        from cloud_cert_renewer.webhook.formatters.wechat_work import (
+            WeChatWorkMessageFormatter,
+        )
+
+        mock_client = MagicMock()
+        mock_client.deliver.return_value = True
+        mock_client_class.return_value = mock_client
+
+        service = WebhookService(
+            url="https://example.com/webhook",
+            enabled_events={"renewal_success"},
+            message_format="wechat_work",
+        )
+
+        assert isinstance(service.formatter, WeChatWorkMessageFormatter)
+
+        event = WebhookEvent(
+            event_type="renewal_success",
+            source=EventSource(
+                service_type="cdn",
+                cloud_provider="alibaba",
+                region="cn-hangzhou",
+            ),
+            target=EventTarget(domain_names=["example.com"]),
+        )
+
+        service._send_event_sync(event)
+
+        # Verify client was called
+        mock_client.deliver.assert_called_once()
+        call_args = mock_client.deliver.call_args
+        payload = call_args[0][1]
+
+        # Verify payload is in WeChat Work format
+        assert payload["msgtype"] == "text"
+        assert "text" in payload
+        assert "content" in payload["text"]

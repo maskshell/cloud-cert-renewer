@@ -191,6 +191,7 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
     webhook_url = _get_env_with_fallback("WEBHOOK_URL")
     webhook_config = None
     if webhook_url:
+        logger.info("Webhook URL found in environment variables")
         webhook_timeout = _parse_int_env("WEBHOOK_TIMEOUT", 30)
         webhook_retry_attempts = _parse_int_env("WEBHOOK_RETRY_ATTEMPTS", 3)
         webhook_retry_delay = _parse_float_env("WEBHOOK_RETRY_DELAY", 1.0)
@@ -205,6 +206,11 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
                 if event.strip()
             }
 
+        # Get message format (default: generic)
+        webhook_message_format = (
+            _get_env_with_fallback("WEBHOOK_MESSAGE_FORMAT") or "generic"
+        ).lower()
+
         webhook_config = WebhookConfig(
             url=webhook_url,
             timeout=webhook_timeout,
@@ -218,6 +224,12 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
                 "renewal_skipped",
                 "batch_completed",
             },
+            message_format=webhook_message_format,
+        )
+    else:
+        logger.debug(
+            "Webhook URL not found in environment variables "
+            "(WEBHOOK_URL is not set or empty)"
         )
 
     # Get different configurations based on service type

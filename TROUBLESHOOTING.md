@@ -126,6 +126,107 @@ kubectl get deployment <deployment-name> -o yaml | grep -A 5 reloader
 - **Reloader not triggering**: Verify Reloader annotations are correct, check Reloader pod status
 - **Certificate not updating**: Check if cert-manager is updating the Secret, verify Reloader is detecting changes
 
+### 5. Webhook Notifications Not Working
+
+**Symptoms:** Webhook is configured but no notifications are received
+
+**Possible Causes:**
+
+- Webhook secret doesn't exist or is missing the required key
+- Webhook secret value is empty or invalid
+- `WEBHOOK_URL` environment variable is not set in the pod
+- Webhook URL is not accessible from the cluster
+- Webhook endpoint returns non-2xx status codes
+- Event type is not enabled in `WEBHOOK_ENABLED_EVENTS`
+
+**Solutions:**
+
+1. **Verify webhook secret exists and has correct value:**
+
+```bash
+# Check if secret exists
+kubectl get secret cert-renewer-webhook -n <namespace>
+
+# Check secret keys
+kubectl get secret cert-renewer-webhook -n <namespace> -o jsonpath='{.data}' | jq 'keys'
+
+# Decode and view webhook URL (replace <namespace> with your namespace)
+kubectl get secret cert-renewer-webhook -n <namespace> -o jsonpath='{.data.webhook-url}' | base64 -d
+
+# Create or update the secret if missing
+kubectl create secret generic cert-renewer-webhook \
+  --from-literal=webhook-url=https://your-webhook-url-here \
+  --namespace=<namespace> \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+2. **Check pod environment variables:**
+
+```bash
+# Get pod name
+POD_NAME=$(kubectl get pods -n <namespace> -l app.kubernetes.io/name=cloud-cert-renewer -o jsonpath='{.items[0].metadata.name}')
+
+# Check if WEBHOOK_URL is set in init container
+kubectl get pod $POD_NAME -n <namespace> -o jsonpath='{.spec.initContainers[?(@.name=="cert-renewer")].env[?(@.name=="WEBHOOK_URL")]}'
+
+# View init container logs for webhook-related messages
+kubectl logs $POD_NAME -n <namespace> -c cert-renewer | grep -i webhook
+```
+
+3. **Use diagnostic script:**
+
+```bash
+# Run the diagnostic script
+NAMESPACE=<your-namespace> SECRET_NAME=cert-renewer-webhook ./scripts/diagnose-webhook.sh
+```
+
+4. **Verify webhook URL is accessible:**
+
+```bash
+# Test webhook URL from within the cluster (if you have a debug pod)
+kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl -X POST 'https://your-webhook-url' \
+  -H 'Content-Type: application/json' \
+  -d '{"test":"message"}'
+```
+
+5. **Check webhook configuration in values file:**
+
+Ensure your Helm values file has:
+
+```yaml
+webhook:
+  enabled: true
+  secret:
+    name: cert-renewer-webhook # Must match the secret name
+    key: webhook-url # Must match the secret key
+  timeout: 30
+  retryAttempts: 3
+  retryDelay: 1.0
+  enabledEvents: "all" # Or specific events: "renewal_success,renewal_failed"
+```
+
+6. **Verify Helm chart rendered correctly:**
+
+```bash
+# Check rendered deployment template
+helm template <release-name> ./helm/cloud-cert-renewer -f <values-file> | grep -A 10 WEBHOOK_URL
+```
+
+7. **Check application logs for webhook errors:**
+
+```bash
+# View logs for webhook-related errors
+kubectl logs <pod-name> -n <namespace> -c cert-renewer | grep -i "webhook\|error"
+```
+
+**Common Issues:**
+
+- **Secret name mismatch**: Ensure `webhook.secret.name` in values file matches the actual secret name
+- **Secret key mismatch**: Ensure `webhook.secret.key` in values file matches the key in the secret
+- **Empty secret value**: The webhook URL must be non-empty, otherwise webhook service won't initialize
+- **Namespace mismatch**: Ensure secret is in the same namespace as the deployment
+- **Webhook URL format**: URL must start with `http://` or `https://`
+
 ## Debugging Tips
 
 ### 1. Local Test Configuration
