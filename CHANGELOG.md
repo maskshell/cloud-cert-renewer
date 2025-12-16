@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6-beta3] - 2025-12-16
+
+### Fixed
+
+- CI/CD workflow improvements:
+  - Fixed Docker Hub description update "Forbidden" error by making the step non-blocking (`continue-on-error: true`)
+  - Updated documentation to clarify Docker Hub token requires `Read, Write & Delete` permissions (not just Read & Write)
+  - Added workflow comments explaining token permission requirements
+
 ## [0.2.6-beta2] - 2025-12-16
 
 ### Fixed
