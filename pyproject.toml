@@ -1,6 +1,6 @@
 [project]
 name = "cloud-cert-renewer"
-version = "0.2.2-beta1"
+version = "0.2.3-beta1"
 description = "Automated HTTPS certificate renewal tool for cloud services, supporting CDN and Load Balancer (multi-cloud support, currently supports Alibaba Cloud)"
 readme = "README.md"
 license = {text = "MIT"}
