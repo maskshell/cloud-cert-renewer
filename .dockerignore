@@ -1,0 +1,66 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# CI/CD configuration
+.github
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Tests
+tests
+test_*.py
+*_test.py
+
+# Development tools
+.pre-commit-config.yaml
+.yamllint
+.cursorignore
+
+# Build artifacts
+dist
+build
+*.egg-info
+.eggs
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Helm charts (not needed in Docker image)
+helm
+
+# Kubernetes manifests (not needed in Docker image)
+k8s
+
+# Scripts (not needed in Docker image)
+scripts
+
+# Development dependencies
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.mypy_cache
+.ruff_cache

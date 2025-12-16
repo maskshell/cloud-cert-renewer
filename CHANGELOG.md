@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6-beta1] - 2025-12-16
+
+### Changed
+
+- Docker image optimizations:
+  - Added `.dockerignore` to exclude non-runtime files (tests, docs, CI/CD configs)
+  - Removed `README.md` from Docker image to reduce size
+  - Optimized Dockerfile with cache cleanup (Python cache, uv cache, apt cache)
+  - Merged RUN commands to reduce image layers
+  - Image size reduction expected: 30-50%
+
+### Security
+
+- Docker image security improvements:
+  - Added non-root user (`appuser` with UID/GID 1000) to run the application
+  - Enabled supply chain attestations (SBOM and Provenance) in CI/CD workflow
+  - Resolves Docker Hub security warnings for non-root user and missing attestations
+
 ## [0.2.5-beta1] - 2025-12-16
 
 ### Added
