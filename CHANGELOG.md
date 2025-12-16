@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7-beta1] - 2025-12-16
+
+### Added
+
+- Local GitHub Actions workflow testing support:
+  - Added `act` configuration file (`.actrc`) for local workflow testing
+  - Added `.secrets.example` template for local testing secrets
+  - Added `scripts/test-workflow.sh` helper script for testing workflows locally
+  - Added `scripts/test-workflow-output.sh` test script for verifying GitHub Actions output handling
+  - Added documentation section in DEVELOPMENT.md for local workflow testing with act
+  - Added `.secrets` to `.gitignore` to prevent committing local testing secrets
+
+### Fixed
+
+- CI/CD workflow improvements:
+  - Improved heredoc delimiter handling in release workflow by using unique delimiter (`CUSTOM_SECTION_EOF`) to avoid conflicts with content
+
 ## [0.2.6-beta6] - 2025-12-16
 
 ### Fixed
