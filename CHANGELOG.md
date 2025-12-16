@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Helm Chart enhancements:
+  - Added CI workflow for Helm chart testing (linting, template rendering, dependency validation, dry-run installation)
+  - Added `imagePullSecrets` support for private container registries
+  - Updated documentation with image pull secrets configuration examples
+
 ## [0.2.3-beta1] - 2025-12-16
 
 ### Changed
