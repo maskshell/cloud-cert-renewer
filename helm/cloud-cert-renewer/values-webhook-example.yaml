@@ -8,7 +8,13 @@ authMethod: access_key
 
 # CDN configuration
 cdn:
-  domainName: example.com,www.example.com
+  # Domain names can be specified as a YAML list (preferred) or comma-separated string (backward compatible)
+  # List format (recommended):
+  domainName:
+    - example.com
+    - www.example.com
+  # Or use comma-separated string (backward compatible):
+  # domainName: example.com,www.example.com
   region: cn-hangzhou
 
 # Force update (optional)

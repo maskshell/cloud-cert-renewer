@@ -75,3 +75,17 @@ Service Account name
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Convert domain names list or string to comma-separated string
+Supports both YAML list format (preferred) and comma-separated string (backward compatible)
+*/}}
+{{- define "cloud-cert-renewer.domainNames" -}}
+{{- if kindIs "slice" . }}
+{{- join "," . }}
+{{- else if kindIs "string" . }}
+{{- . }}
+{{- else }}
+{{- fail "domainName must be either a list or a string" }}
+{{- end }}
+{{- end }}

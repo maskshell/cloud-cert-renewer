@@ -3,7 +3,7 @@
 FROM ghcr.io/astral-sh/uv:latest AS uv_source
 
 # Use Python 3.11 as base image
-FROM python:3.11-slim
+FROM python:3.13-slim
 LABEL maintainer="analyser <analyser@gmail.com>"
 
 # Set working directory

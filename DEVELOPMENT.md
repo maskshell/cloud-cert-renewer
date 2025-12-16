@@ -127,6 +127,29 @@ When using OIDC authentication (`AUTH_METHOD=oidc`), the following environment v
 - `CDN_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line)
 - `CDN_REGION`: Region (default: `cn-hangzhou`)
 
+**Note for Helm Chart Users:**
+
+In Helm Chart values files, `cdn.domainName` can be specified in two formats:
+
+- **YAML list format (recommended)**: More readable and less error-prone, especially for long domain lists
+
+  ```yaml
+  cdn:
+    domainName:
+      - example.com
+      - www.example.com
+      - api.example.com
+  ```
+
+- **Comma-separated string (backward compatible)**: Still supported for compatibility
+
+  ```yaml
+  cdn:
+    domainName: "example.com,www.example.com"
+  ```
+
+Both formats are automatically converted to the `CDN_DOMAIN_NAME` environment variable (comma-separated string) for the application.
+
 ### Load Balancer Configuration (when SERVICE_TYPE=lb or slb)
 
 - `LB_INSTANCE_ID`: Comma-separated list of Load Balancer instance IDs (e.g., `lb-xxxxxxxx,lb-yyyyyyyy`) (new name, preferred)
@@ -586,6 +609,9 @@ Before creating a release:
 cloud-cert-renewer/
 ├── main.py                    # Main program entry point
 ├── cloud_cert_renewer/        # Core functionality module
+│   ├── __init__.py            # Package initialization
+│   ├── __main__.py            # Module entry point (python -m cloud_cert_renewer)
+│   ├── cli.py                 # CLI argument parsing and handling
 │   ├── auth/                  # Authentication module (supports multiple auth methods)
 │   │   ├── base.py            # Authentication provider abstract interface
 │   │   ├── access_key.py      # Access Key/Security Key authentication provider
@@ -594,12 +620,14 @@ cloud-cert-renewer/
 │   │   ├── oidc.py            # OIDC (RRSA) authentication provider for Kubernetes
 │   │   ├── service_account.py # ServiceAccount authentication provider
 │   │   ├── env.py             # Environment variable authentication provider
+│   │   ├── errors.py          # Authentication-specific errors
 │   │   └── factory.py         # Authentication provider factory
 │   ├── cert_renewer/          # Certificate renewer module (Strategy pattern)
 │   │   ├── base.py            # Abstract base class (Template Method pattern)
 │   │   ├── cdn_renewer.py     # CDN certificate renewal strategy
 │   │   ├── load_balancer_renewer.py # Load Balancer certificate renewal strategy
-│   │   └── factory.py         # Certificate renewer factory
+│   │   ├── composite.py       # Composite renewer (multiple renewers)
+│   │   └── factory.py        # Certificate renewer factory
 │   ├── clients/               # Client module
 │   │   └── alibaba.py        # Alibaba Cloud client wrapper
 │   ├── config/                # Configuration module
@@ -609,40 +637,66 @@ cloud-cert-renewer/
 │   │   ├── base.py            # Cloud service adapter interface
 │   │   ├── alibaba.py         # Alibaba Cloud adapter
 │   │   ├── aws.py             # AWS adapter (reserved)
-│   │   └── azure.py           # Azure adapter (reserved)
+│   │   ├── azure.py           # Azure adapter (reserved)
+│   │   └── noop.py            # No-op adapter (for testing)
+│   ├── webhook/               # Webhook notification module
+│   │   ├── client.py          # Webhook HTTP client
+│   │   ├── events.py          # Webhook event definitions
+│   │   └── exceptions.py     # Webhook-specific exceptions
 │   ├── utils/                 # Utility module
 │   │   └── ssl_cert_parser.py # SSL certificate parsing and validation utility
 │   ├── container.py           # Dependency injection container
+│   ├── errors.py              # Common error classes
+│   ├── logging_utils.py       # Logging configuration utilities
 │   ├── config.py              # Backward compatibility imports
 │   ├── renewer.py             # Backward compatibility imports
-│   └── adapters.py            # Backward compatibility imports
+│   ├── adapters.py            # Backward compatibility imports
+│   └── auth.py                # Backward compatibility imports
 ├── tests/                     # Test files (organized by design patterns)
 │   ├── __init__.py
 │   ├── test_clients.py         # Cloud client tests (Alibaba Cloud SDK)
 │   ├── test_config.py          # Configuration loading tests
 │   ├── test_utils.py           # Utility function tests (SSL certificate parser)
+│   ├── test_cli.py             # CLI tests
+│   ├── test_cli_smoke.py       # CLI smoke tests
 │   ├── test_cert_renewer_factory.py # CertRenewerFactory tests (Factory Pattern)
 │   ├── test_cert_renewer_strategy.py # CertRenewerStrategy tests (Strategy Pattern)
 │   ├── test_cert_renewer_base.py # BaseCertRenewer tests (Template Method Pattern)
 │   ├── test_auth_factory.py    # CredentialProviderFactory tests (Auth Factory Pattern)
 │   ├── test_auth_providers.py  # CredentialProvider tests (Auth Strategy Pattern)
+│   ├── test_auth_oidc.py       # OIDC authentication tests
 │   ├── test_providers_adapter.py # CloudAdapter tests (Adapter Pattern)
 │   ├── test_container.py       # DIContainer tests (Dependency Injection)
-│   └── test_integration.py     # Integration tests (end-to-end flows)
+│   ├── test_integration.py     # Integration tests (end-to-end flows)
+│   └── test_webhook/           # Webhook module tests
+│       ├── test_client.py      # Webhook client tests
+│       ├── test_events.py      # Webhook event tests
+│       ├── test_integration.py # Webhook integration tests
+│       └── test_service.py     # Webhook service tests
+├── docs/                      # Documentation
+│   └── webhook-configuration.md # Webhook configuration guide
+├── scripts/                    # Utility scripts
+│   ├── update_version.sh      # Version synchronization script
+│   └── check_language.sh      # Language validation script
 ├── k8s/                       # Kubernetes native deployment configuration
 │   └── deployment.yaml        # Deployment configuration
 ├── helm/                      # Helm Chart
 │   └── cloud-cert-renewer/
 │       ├── Chart.yaml         # Chart metadata
-│       ├── values.yaml        # Default configuration values
+│       ├── values.yaml         # Default configuration values
 │       ├── values-cdn.yaml    # CDN example configuration
 │       ├── values-slb.yaml    # SLB example configuration
+│       ├── values-webhook-example.yaml    # Webhook example configuration
+│       ├── values-webhook-secret.yaml     # Webhook secret example configuration
 │       └── templates/         # Kubernetes resource templates
 │           ├── _helpers.tpl   # Helper templates
-│           └── deployment.yaml
+│           ├── deployment.yaml
+│           ├── serviceaccount.yaml
+│           └── webhook-secret.yaml
 ├── Dockerfile                 # Docker image build file
 ├── .env.example               # Environment variable configuration example
 ├── pyproject.toml             # Project configuration and dependencies (using uv)
+├── CHANGELOG.md               # Changelog (Keep a Changelog format)
 └── README.md                  # Project documentation
 ```
 

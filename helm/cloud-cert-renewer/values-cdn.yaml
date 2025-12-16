@@ -7,7 +7,12 @@ image:
   pullPolicy: IfNotPresent
 
 cdn:
-  domainName: schema.amugua.com
+  # Domain names can be specified as a YAML list (preferred) or comma-separated string (backward compatible)
+  # List format (recommended):
+  domainName:
+    - schema.amugua.com
+  # Or use comma-separated string (backward compatible):
+  # domainName: schema.amugua.com
   region: cn-hangzhou
 
 secrets:

@@ -81,7 +81,7 @@ spec:
             {{- if eq .Values.serviceType "cdn" }}
             # CDN configuration
             - name: CDN_DOMAIN_NAME
-              value: {{ .Values.cdn.domainName | quote }}
+              value: {{ include "cloud-cert-renewer.domainNames" .Values.cdn.domainName | quote }}
             - name: CDN_REGION
               value: {{ .Values.cdn.region | quote }}
             # CDN certificate and private key (read from Secret)

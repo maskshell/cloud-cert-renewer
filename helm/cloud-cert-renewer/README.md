@@ -25,11 +25,26 @@ helm install cloud-cert-renewer ./helm/cloud-cert-renewer
 ### Installation with Custom Values
 
 ```bash
+# Using --set with comma-separated string (simpler for command line)
 helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set serviceType=cdn \
   --set cdn.domainName="example.com,www.example.com" \
   --set image.tag=v0.1.0
+
+# Or using --set with YAML list format (more verbose)
+helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
+  --set serviceType=cdn \
+  --set cdn.domainName[0]=example.com \
+  --set cdn.domainName[1]=www.example.com \
+  --set image.tag=v0.1.0
 ```
+
+**Note:** For `cdn.domainName`, you can use either:
+
+- **YAML list format** (recommended in values files): `domainName: ["example.com", "www.example.com"]`
+- **Comma-separated string** (backward compatible): `domainName: "example.com,www.example.com"`
+
+The list format is more readable and less error-prone, especially for long domain lists.
 
 ### Installation from Values File
 
@@ -39,7 +54,6 @@ helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
 ```
 
 ## Configuration
-
 
 The following table lists the configurable parameters and their default values:
 
@@ -52,7 +66,7 @@ The following table lists the configurable parameters and their default values:
 | `image.tag`                            | Image tag                             | `latest`                     |
 | `image.pullPolicy`                     | Image pull policy                     | `IfNotPresent`               |
 | `replicas`                             | Number of replicas                    | `1`                          |
-| `cdn.domainName`                       | CDN domain names (comma-separated)    | `schema.amugua.com`          |
+| `cdn.domainName`                       | CDN domain names (YAML list preferred, or comma-separated string) | `["schema.amugua.com"]`      |
 | `cdn.region`                           | CDN region                            | `cn-hangzhou`                |
 | `lb.instanceId`                        | Load Balancer instance IDs (comma-separated, new name, preferred) | `""`                         |
 | `lb.listenerPort`                      | Load Balancer listener port           | `443`                        |
@@ -168,6 +182,7 @@ To use OIDC (OpenID Connect) authentication with RRSA (RAM Role for Service Acco
 **Note:** When using OIDC authentication, you do NOT need to create a credentials secret. The OIDC token and role information are automatically provided by the Kubernetes Service Account and RRSA.
 
 **Reference:**
+
 - [Alibaba Cloud RRSA Documentation](https://help.aliyun.com/zh/ack/serverless-kubernetes/user-guide/use-rrsa-to-authorize-pods-to-access-different-cloud-services)
 - [Alibaba Cloud SDK Credentials Documentation](https://www.alibabacloud.com/help/en/sdk/developer-reference/v2-manage-python-access-credentials)
 
@@ -219,6 +234,7 @@ webhook:
 #### Webhook Events
 
 The webhook system can notify on the following events:
+
 - `renewal_started` - Certificate renewal initiated
 - `renewal_success` - Certificate renewal succeeded
 - `renewal_failed` - Certificate renewal failed
@@ -230,6 +246,7 @@ If `enabledEvents` is not specified, all events will be sent.
 #### Example Configurations
 
 **Slack Integration:**
+
 ```yaml
 webhook:
   enabled: true
@@ -238,6 +255,7 @@ webhook:
 ```
 
 **Discord Integration:**
+
 ```yaml
 webhook:
   enabled: true
@@ -246,6 +264,7 @@ webhook:
 ```
 
 **Custom Webhook Server:**
+
 ```yaml
 webhook:
   enabled: true
@@ -398,7 +417,12 @@ Alternatively, you can use the system policy `AliyunSLBReadOnlyAccess` combined 
 serviceType: cdn
 cloudProvider: alibaba
 cdn:
-  domainName: "example.com,cdn.example.com" # Comma-separated domains
+  # Recommended: YAML list format (more readable and less error-prone)
+  domainName:
+    - example.com
+    - cdn.example.com
+  # Alternative: comma-separated string (backward compatible)
+  # domainName: "example.com,cdn.example.com"
   region: cn-hangzhou
 ```
 
