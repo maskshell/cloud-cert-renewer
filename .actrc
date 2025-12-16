@@ -1,0 +1,11 @@
+# act configuration file
+# See https://github.com/nektos/act#configuration
+
+# Use larger runner image for better compatibility
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+
+# Use local Docker daemon
+--container-architecture linux/arm64
+
+# Enable verbose output for debugging
+-v

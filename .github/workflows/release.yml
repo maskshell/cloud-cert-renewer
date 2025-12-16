@@ -539,13 +539,13 @@ jobs:
             CUSTOM_SECTION=""
           fi
 
-          # Write to temporary file to handle multi-line content properly
-          printf '%s' "$CUSTOM_SECTION" > /tmp/custom_section.txt
-
+          # Use a unique delimiter to avoid conflicts with content
+          # Write directly to GITHUB_OUTPUT with proper heredoc handling
           {
-            echo "section<<EOF"
-            cat /tmp/custom_section.txt
-            echo "EOF"
+            echo "section<<CUSTOM_SECTION_EOF"
+            printf '%s' "$CUSTOM_SECTION"
+            echo ""
+            echo "CUSTOM_SECTION_EOF"
           } >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release

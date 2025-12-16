@@ -799,6 +799,108 @@ cloud-cert-renewer/
 └── README.md                  # Project documentation
 ```
 
+## Local GitHub Actions Workflow Testing
+
+You can test GitHub Actions workflows locally using [act](https://github.com/nektos/act), which runs your workflows in Docker containers.
+
+### Prerequisites
+
+Install `act`:
+
+```bash
+# macOS
+brew install act
+
+# Linux (using the install script)
+curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Or download from releases: https://github.com/nektos/act/releases
+```
+
+### Setup
+
+1. **Create secrets file** (optional, for workflows that need secrets):
+
+```bash
+cp .secrets.example .secrets
+# Edit .secrets and fill in your values
+```
+
+**Note:** The `.secrets` file is in `.gitignore` and should NOT be committed to version control.
+
+2. **Configure act** (optional):
+
+The project includes a `.actrc` configuration file with recommended settings. You can modify it if needed.
+
+### Usage
+
+**Test a specific workflow:**
+
+```bash
+# Test the release workflow
+./scripts/test-workflow.sh .github/workflows/release.yml
+
+# Test a specific job
+./scripts/test-workflow.sh .github/workflows/release.yml prepare
+
+# Test the CI workflow
+./scripts/test-workflow.sh .github/workflows/ci.yml
+```
+
+**Manual act commands:**
+
+```bash
+# List all workflows
+act -l
+
+# Run a specific workflow
+act workflow_dispatch --workflows .github/workflows/release.yml
+
+# Run a specific job
+act workflow_dispatch --job prepare --workflows .github/workflows/release.yml
+
+# Use secrets file
+act workflow_dispatch --secret-file .secrets --workflows .github/workflows/release.yml
+```
+
+### Limitations
+
+- **Docker-in-Docker**: Some workflows that require Docker-in-Docker may not work perfectly
+- **Git operations**: Some git operations may behave differently in local testing
+- **External services**: Workflows that interact with external services (GitHub API, Docker Hub, PyPI) will make real API calls if secrets are provided
+- **Matrix strategies**: Complex matrix strategies may need adjustment for local testing
+
+### Troubleshooting
+
+**Issue: act not found**
+
+- Ensure `act` is installed and in your PATH
+- Check installation: `act --version`
+
+**Issue: Docker errors**
+
+- Ensure Docker is running: `docker ps`
+- Check Docker permissions
+
+**Issue: Workflow fails with secret errors**
+
+- Create `.secrets` file from `.secrets.example`
+- Some workflows may work without secrets (they'll skip steps that require them)
+
+**Issue: Workflow runs but doesn't match expected behavior**
+
+- Check `.actrc` configuration
+- Verify workflow syntax: `act -l` should list your workflows
+- Use `-v` flag for verbose output: `act -v workflow_dispatch`
+
+### Best Practices
+
+1. **Test workflows before pushing**: Run workflows locally before committing changes
+2. **Use dry-run mode**: Some workflows support dry-run mode to avoid side effects
+3. **Test individual jobs**: Test specific jobs rather than entire workflows when debugging
+4. **Keep secrets secure**: Never commit `.secrets` file to version control
+5. **Use workflow_dispatch**: Most workflows support `workflow_dispatch` trigger for manual testing
+
 ## Design Patterns
 
 The project follows several design patterns:

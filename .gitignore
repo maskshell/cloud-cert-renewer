@@ -101,3 +101,6 @@ Desktop.ini
 .cursor/
 .claude/
 AGENTS.md
+
+# Local workflow testing secrets
+.secrets
