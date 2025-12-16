@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6-beta4] - 2025-12-16
+
+### Added
+
+- CI/CD workflow enhancements:
+  - Added support for custom container registry publishing alongside GitHub Container Registry and Docker Hub
+  - Conditional login to custom registry when `CUSTOM_REGISTRY_URL` secret is configured
+  - Automatic inclusion of custom registry images in multi-architecture builds
+  - Custom registry information included in release notes and publish summaries
+
 ## [0.2.6-beta3] - 2025-12-16
 
 ### Fixed
