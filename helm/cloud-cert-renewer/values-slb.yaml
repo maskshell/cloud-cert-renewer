@@ -6,6 +6,11 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+# Image pull secrets (for private registries)
+# Uncomment and configure if using private registry:
+# imagePullSecrets:
+#   - regcred
+
 # Load Balancer configuration (new name, preferred)
 lb:
   instanceId: lb-xxxxxxxxx

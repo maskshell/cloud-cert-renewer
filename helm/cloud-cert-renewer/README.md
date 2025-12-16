@@ -65,6 +65,7 @@ The following table lists the configurable parameters and their default values:
 | `image.repository`                     | Image repository                      | `cloud-cert-renewer`         |
 | `image.tag`                            | Image tag                             | `latest`                     |
 | `image.pullPolicy`                     | Image pull policy                     | `IfNotPresent`               |
+| `imagePullSecrets`                     | List of image pull secret names for private registries | `[]`                         |
 | `replicas`                             | Number of replicas                    | `1`                          |
 | `cdn.domainName`                       | CDN domain names (YAML list preferred, or comma-separated string) | `["schema.amugua.com"]`      |
 | `cdn.region`                           | CDN region                            | `cn-hangzhou`                |
@@ -107,6 +108,70 @@ The following table lists the configurable parameters and their default values:
 | `namespace`                            | Kubernetes namespace                  | `default`                    |
 
 **Note:** The Docker images are built with multi-architecture support (amd64 and arm64). Kubernetes will automatically select the correct architecture based on your node platform.
+
+### Image Pull Secrets
+
+To pull images from private container registries, you need to configure image pull secrets:
+
+1. **Create a Docker registry secret:**
+
+   ```bash
+   kubectl create secret docker-registry regcred \
+     --docker-server=<registry-url> \
+     --docker-username=<username> \
+     --docker-password=<password> \
+     --docker-email=<email> \
+     --namespace=<namespace>
+   ```
+
+   **Examples:**
+
+   - **Docker Hub:**
+
+     ```bash
+     kubectl create secret docker-registry regcred \
+       --docker-server=https://index.docker.io/v1/ \
+       --docker-username=your-username \
+       --docker-password=your-password \
+       --docker-email=your-email@example.com
+     ```
+
+   - **GitHub Container Registry (GHCR):**
+
+     ```bash
+     kubectl create secret docker-registry ghcr-secret \
+       --docker-server=ghcr.io \
+       --docker-username=your-github-username \
+       --docker-password=ghp_your-personal-access-token \
+       --docker-email=your-email@example.com
+     ```
+
+   - **Alibaba Container Registry (ACR):**
+
+     ```bash
+     kubectl create secret docker-registry acr-secret \
+       --docker-server=registry.cn-hangzhou.aliyuncs.com \
+       --docker-username=your-acr-username \
+       --docker-password=your-acr-password \
+       --docker-email=your-email@example.com
+     ```
+
+2. **Configure in values file:**
+
+   ```yaml
+   imagePullSecrets:
+     - regcred
+     # Or multiple secrets:
+     # - regcred
+     # - ghcr-secret
+   ```
+
+3. **Or use --set during installation:**
+
+   ```bash
+   helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
+     --set imagePullSecrets[0]=regcred
+   ```
 
 ## Secrets
 

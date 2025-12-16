@@ -42,6 +42,18 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+# Image pull secrets (for private registries)
+# List of secret names that contain registry credentials
+# Example: ["regcred", "ghcr-secret"]
+# To create a secret:
+# kubectl create secret docker-registry <secret-name> \
+#   --docker-server=<registry-url> \
+#   --docker-username=<username> \
+#   --docker-password=<password> \
+#   --docker-email=<email> \
+#   --namespace=<namespace>
+imagePullSecrets: []
+
 # Deployment configuration
 replicas: 1
 
