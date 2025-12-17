@@ -88,16 +88,73 @@ class WebhookClient:
                     headers={"Content-Length": str(len(encoded_data))},
                 )
 
-                # Consider 2xx status codes as success
+                response_text = response.data.decode("utf-8", errors="replace")
+
+                # Consider 2xx status codes as success,
+                # but check response body for errors
                 if 200 <= response.status < 300:
-                    logger.info(
-                        "Webhook delivered successfully: status=%d, url=%s",
-                        response.status,
-                        url,
-                    )
-                    return True
+                    # Check if response body contains error information
+                    # Some webhook services (e.g., WeChat Work) return HTTP 200
+                    # but include error codes in the response body
+                    error_detected = False
+                    error_message = None
+
+                    try:
+                        # Try to parse response as JSON
+                        response_json = json.loads(response_text)
+                        # Check for common error fields in response
+                        if isinstance(response_json, dict):
+                            # WeChat Work uses "errcode" field (0 means success)
+                            if "errcode" in response_json:
+                                errcode = response_json.get("errcode", 0)
+                                if errcode != 0:
+                                    error_detected = True
+                                    errmsg = response_json.get(
+                                        "errmsg", "Unknown error"
+                                    )
+                                    error_message = (
+                                        f"errcode={errcode}, errmsg={errmsg}"
+                                    )
+                            # Some services use "error" or "status" fields
+                            elif "error" in response_json and response_json["error"]:
+                                error_detected = True
+                                error_message = f"error={response_json['error']}"
+                            elif (
+                                "status" in response_json
+                                and response_json["status"] != "success"
+                                and response_json["status"] != "ok"
+                            ):
+                                error_detected = True
+                                error_message = f"status={response_json['status']}"
+                    except (json.JSONDecodeError, ValueError):
+                        # Response is not JSON, or parsing failed
+                        # If response is not empty and not a simple success message,
+                        # we might want to log it but still consider it success
+                        # (some services return plain text "OK" or similar)
+                        pass
+
+                    if error_detected:
+                        logger.warning(
+                            "Webhook delivery failed: status=%d, url=%s, response=%s",
+                            response.status,
+                            url,
+                            error_message or response_text[:200],
+                        )
+                        error_detail = error_message or response_text[:200]
+                        last_exception = WebhookDeliveryError(
+                            f"HTTP {response.status}: {error_detail}",
+                            status_code=response.status,
+                            response=response_text,
+                        )
+                        # Continue to retry logic
+                    else:
+                        logger.info(
+                            "Webhook delivered successfully: status=%d, url=%s",
+                            response.status,
+                            url,
+                        )
+                        return True
                 else:
-                    response_text = response.data.decode("utf-8", errors="replace")
                     logger.warning(
                         "Webhook delivery failed: status=%d, url=%s, response=%s",
                         response.status,

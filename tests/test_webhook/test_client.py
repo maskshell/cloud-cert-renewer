@@ -218,3 +218,134 @@ class TestWebhookClient:
             # Verify it's valid JSON
             decoded = json.loads(body.decode("utf-8"))
             assert decoded == payload
+
+    @patch("urllib3.PoolManager.request")
+    def test_deliver_wechat_work_error_in_response_body(self, mock_request):
+        """Test webhook delivery with WeChat Work error in response body
+        (HTTP 200 but errcode != 0)
+        """
+        # WeChat Work returns HTTP 200 but includes error in response body
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.data = (
+            b'{"errcode":44004,"errmsg":"Warning: wrong json format. empty content"}'
+        )
+        mock_request.return_value = mock_response
+
+        client = WebhookClient(retry_attempts=0)
+        payload = {"test": "data"}
+
+        result = client.deliver("https://example.com/webhook", payload)
+
+        assert result is False
+        assert mock_request.call_count == 1
+
+    @patch("urllib3.PoolManager.request")
+    def test_deliver_wechat_work_success(self, mock_request):
+        """Test webhook delivery with WeChat Work success (HTTP 200 and errcode = 0)"""
+        # WeChat Work returns HTTP 200 with errcode = 0 for success
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.data = b'{"errcode":0,"errmsg":"ok"}'
+        mock_request.return_value = mock_response
+
+        client = WebhookClient()
+        payload = {"test": "data"}
+
+        result = client.deliver("https://example.com/webhook", payload)
+
+        assert result is True
+        assert mock_request.call_count == 1
+
+    @patch("urllib3.PoolManager.request")
+    def test_deliver_error_field_in_response_body(self, mock_request):
+        """Test webhook delivery with error field in response body"""
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.data = b'{"error":"Invalid payload format"}'
+        mock_request.return_value = mock_response
+
+        client = WebhookClient(retry_attempts=0)
+        payload = {"test": "data"}
+
+        result = client.deliver("https://example.com/webhook", payload)
+
+        assert result is False
+        assert mock_request.call_count == 1
+
+    @patch("urllib3.PoolManager.request")
+    def test_deliver_status_field_error_in_response_body(self, mock_request):
+        """Test webhook delivery with status field indicating error"""
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.data = b'{"status":"error","message":"Something went wrong"}'
+        mock_request.return_value = mock_response
+
+        client = WebhookClient(retry_attempts=0)
+        payload = {"test": "data"}
+
+        result = client.deliver("https://example.com/webhook", payload)
+
+        assert result is False
+        assert mock_request.call_count == 1
+
+    @patch("urllib3.PoolManager.request")
+    def test_deliver_status_field_success_in_response_body(self, mock_request):
+        """Test webhook delivery with status field indicating success"""
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.data = b'{"status":"success","message":"OK"}'
+        mock_request.return_value = mock_response
+
+        client = WebhookClient()
+        payload = {"test": "data"}
+
+        result = client.deliver("https://example.com/webhook", payload)
+
+        assert result is True
+        assert mock_request.call_count == 1
+
+    @patch("urllib3.PoolManager.request")
+    def test_deliver_invalid_json_response_body(self, mock_request):
+        """Test webhook delivery with invalid JSON in response body
+        (should still succeed if HTTP 200)
+        """
+        mock_response = MagicMock()
+        mock_response.status = 200
+        mock_response.data = b"OK"  # Plain text response
+        mock_request.return_value = mock_response
+
+        client = WebhookClient()
+        payload = {"test": "data"}
+
+        result = client.deliver("https://example.com/webhook", payload)
+
+        # Invalid JSON but HTTP 200 should still be considered success
+        assert result is True
+        assert mock_request.call_count == 1
+
+    @patch("urllib3.PoolManager.request")
+    @patch("time.sleep")  # Mock sleep to speed up tests
+    def test_deliver_wechat_work_error_with_retry(self, mock_sleep, mock_request):
+        """Test webhook delivery with WeChat Work error and retry logic"""
+        # First attempt fails with errcode error, second succeeds
+        mock_response_fail = MagicMock()
+        mock_response_fail.status = 200
+        mock_response_fail.data = (
+            b'{"errcode":44004,"errmsg":"Warning: wrong json format"}'
+        )
+
+        mock_response_success = MagicMock()
+        mock_response_success.status = 200
+        mock_response_success.data = b'{"errcode":0,"errmsg":"ok"}'
+
+        mock_request.side_effect = [mock_response_fail, mock_response_success]
+
+        client = WebhookClient(retry_attempts=1, retry_delay=0.01)
+        payload = {"test": "data"}
+
+        result = client.deliver("https://example.com/webhook", payload)
+
+        assert result is True
+        assert mock_request.call_count == 2
+        assert mock_sleep.call_count == 1
