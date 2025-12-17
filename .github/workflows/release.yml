@@ -461,12 +461,45 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Clean charts directory
+        run: |
+          rm -rf charts/
+          mkdir -p charts/
+
       - name: Download Helm chart artifact
         uses: actions/download-artifact@v7
         with:
           name: helm-chart
           path: charts/
         continue-on-error: true
+
+      - name: Filter current version chart files
+        id: chart_files
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          CHART_NAME="cloud-cert-renewer"
+          EXPECTED_FILE="${CHART_NAME}-${VERSION}.tgz"
+
+          # Remove any files that don't match the current version
+          if [ -f "charts/${EXPECTED_FILE}" ]; then
+            # Keep only the current version file
+            find charts/ -name "*.tgz" ! -name "${EXPECTED_FILE}" -delete
+            echo "file=${EXPECTED_FILE}" >> $GITHUB_OUTPUT
+            echo "Found and kept: ${EXPECTED_FILE}"
+          else
+            # If exact match not found, list all files for debugging
+            echo "Warning: Expected file ${EXPECTED_FILE} not found"
+            ls -la charts/ || true
+            # Use the first .tgz file found as fallback
+            FIRST_FILE=$(ls charts/*.tgz 2>/dev/null | head -n1)
+            if [ -n "$FIRST_FILE" ]; then
+              echo "file=$(basename $FIRST_FILE)" >> $GITHUB_OUTPUT
+              echo "Using fallback: $(basename $FIRST_FILE)"
+            else
+              echo "file=" >> $GITHUB_OUTPUT
+              echo "No chart files found"
+            fi
+          fi
 
       - name: Create Git tag
         env:
@@ -548,6 +581,76 @@ jobs:
             echo "CUSTOM_SECTION_EOF"
           } >> $GITHUB_OUTPUT
 
+      - name: Create source code archive
+        id: source_archive
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          TAG="${{ needs.prepare.outputs.tag }}"
+          ARCHIVE_NAME="cloud-cert-renewer-${VERSION}.tar.gz"
+
+          # Fetch the tag if it was just created
+          git fetch origin "${TAG}" 2>/dev/null || true
+
+          # Create source code archive from the tag
+          # Try tag first, fallback to HEAD if tag doesn't exist locally yet
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "Creating archive from tag: ${TAG}"
+            git archive --format=tar.gz \
+              --prefix=cloud-cert-renewer-${VERSION}/ \
+              --output="${ARCHIVE_NAME}" \
+              "${TAG}"
+          else
+            echo "Tag ${TAG} not found locally, using HEAD"
+            git archive --format=tar.gz \
+              --prefix=cloud-cert-renewer-${VERSION}/ \
+              --output="${ARCHIVE_NAME}" \
+              HEAD
+          fi
+
+          # Verify archive was created
+          if [ -f "${ARCHIVE_NAME}" ]; then
+            ls -lh "${ARCHIVE_NAME}"
+            echo "archive=${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
+            echo "Created source archive: ${ARCHIVE_NAME}"
+          else
+            echo "Error: Failed to create source archive"
+            exit 1
+          fi
+
+      - name: Generate checksums
+        id: checksums
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          CHART_FILE="charts/cloud-cert-renewer-${VERSION}.tgz"
+          SOURCE_ARCHIVE="${{ steps.source_archive.outputs.archive }}"
+          CHECKSUMS_FILE="checksums.txt"
+
+          # Create checksums file
+          echo "# SHA256 Checksums for Release ${{ needs.prepare.outputs.tag }}" > "${CHECKSUMS_FILE}"
+          echo "# Generated on $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> "${CHECKSUMS_FILE}"
+          echo "" >> "${CHECKSUMS_FILE}"
+
+          # Calculate checksums for all release artifacts
+          # Use basename for cleaner output (just filename, not path)
+          if [ -f "${SOURCE_ARCHIVE}" ]; then
+            SHA256=$(sha256sum "${SOURCE_ARCHIVE}" | cut -d' ' -f1)
+            FILENAME=$(basename "${SOURCE_ARCHIVE}")
+            echo "${SHA256}  ${FILENAME}" >> "${CHECKSUMS_FILE}"
+            echo "Added checksum for source archive: ${FILENAME}"
+          fi
+
+          if [ -f "${CHART_FILE}" ]; then
+            SHA256=$(sha256sum "${CHART_FILE}" | cut -d' ' -f1)
+            FILENAME=$(basename "${CHART_FILE}")
+            echo "${SHA256}  ${FILENAME}" >> "${CHECKSUMS_FILE}"
+            echo "Added checksum for Helm chart: ${FILENAME}"
+          fi
+
+          # Display checksums file
+          echo "Generated checksums:"
+          cat "${CHECKSUMS_FILE}"
+          echo "checksums=${CHECKSUMS_FILE}" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -587,7 +690,14 @@ jobs:
             - Package: `cloud-cert-renewer==${{ needs.prepare.outputs.version }}`
             - Install: `pip install cloud-cert-renewer==${{ needs.prepare.outputs.version }}`
             - URL: https://pypi.org/project/cloud-cert-renewer/
-          files: charts/*.tgz
+
+            ### Source Code
+            - Source archive: `cloud-cert-renewer-${{ needs.prepare.outputs.version }}.tar.gz`
+            - Checksums: `checksums.txt` (SHA256)
+          files: |
+            ${{ steps.source_archive.outputs.archive }}
+            ${{ steps.checksums.outputs.checksums }}
+            charts/cloud-cert-renewer-${{ needs.prepare.outputs.version }}.tgz
           draft: false
           prerelease: ${{ needs.prepare.outputs.is_prerelease == 'true' }}
         env:
