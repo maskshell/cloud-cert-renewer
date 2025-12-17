@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.9-beta2] - 2025-12-17
+
+### Added
+
+- Webhook message format configuration:
+  - Added `messageFormat` option in webhook configuration to control payload format (e.g., `generic`, `wechat_work`)
+  - Updated example values files to document message format settings for WeChat Work integration
+  - Deployment now conditionally sets `WEBHOOK_MESSAGE_FORMAT` environment variable based on configuration
+
 ## [0.2.9-beta1] - 2025-12-17
 
 ### Added
