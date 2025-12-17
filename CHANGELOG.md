@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8-beta3] - 2025-12-17
+
+### Added
+
+- CI/CD release workflow enhancements:
+  - Added source code archive generation for GitHub releases (`.tar.gz` format)
+  - Added SHA256 checksums file generation for all release artifacts (source archive and Helm chart)
+  - Added chart file filtering to ensure only the current version's chart is included in releases
+  - Improved release artifact organization with explicit file paths
+
+### Improved
+
+- CI/CD release workflow reliability:
+  - Added chart directory cleanup step before downloading artifacts
+  - Enhanced chart file filtering with fallback logic for better error handling
+  - Release artifacts now include source code archive and checksums for verification
+
 ## [0.2.8-beta2] - 2025-12-17
 
 ### Improved
