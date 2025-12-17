@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-beta1] - 2025-12-17
+
+### Fixed
+
+- Alibaba Cloud SDK integration:
+  - Fixed method name typo in SLB certificate update: `set_load_balancer_https_listener_attribute_with_options` → `set_load_balancer_httpslistener_attribute_with_options`
+  - Resolved cryptography deprecation warnings by using `not_valid_after_utc` and `not_valid_before_utc` properties instead of deprecated `not_valid_after` and `not_valid_before`
+  - Removed unnecessary timezone import from certificate renewer base class
+
 ## [0.2.9-beta2] - 2025-12-17
 
 ### Added
