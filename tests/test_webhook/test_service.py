@@ -81,9 +81,25 @@ class TestWebhookService:
         # Non-default events should be disabled
         assert service.is_enabled("custom_event") is False
 
+    def test_is_enabled_with_all_events(self):
+        """Test is_enabled with 'all' in enabled_events"""
+        service = WebhookService(
+            url="https://example.com/webhook", enabled_events={"all"}
+        )
+
+        # All events should be enabled when 'all' is in enabled_events
+        assert service.is_enabled("renewal_started") is True
+        assert service.is_enabled("renewal_success") is True
+        assert service.is_enabled("renewal_failed") is True
+        assert service.is_enabled("renewal_skipped") is True
+        assert service.is_enabled("batch_completed") is True
+        assert service.is_enabled("custom_event") is True
+        assert service.is_enabled("any_event_type") is True
+
     @patch("cloud_cert_renewer.webhook.WebhookClient")
     @patch("threading.Thread")
-    def test_send_event_async(self, mock_thread, mock_client_class):
+    @patch("cloud_cert_renewer.webhook.logger")
+    def test_send_event_async(self, mock_logger, mock_thread, mock_client_class):
         """Test that send_event sends asynchronously"""
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client
@@ -112,6 +128,13 @@ class TestWebhookService:
         assert thread_args[1]["target"] == service._send_event_sync
         assert thread_args[1]["args"] == (event,)
         assert thread_args[1]["daemon"] is True
+
+        # Verify INFO-level logging when webhook is triggered
+        mock_logger.info.assert_called_with(
+            "Webhook triggered: event_type=%s, event_id=%s",
+            event.event_type,
+            event.event_id,
+        )
 
     @patch("cloud_cert_renewer.webhook.WebhookClient")
     def test_send_event_sync_success(self, mock_client_class):

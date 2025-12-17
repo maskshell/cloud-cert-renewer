@@ -85,7 +85,14 @@ class WebhookService:
         :param event_type: Event type to check
         :return: True if webhook should be sent for this event type
         """
-        return bool(self.url and self.client and event_type in self.enabled_events)
+        if not self.url or not self.client:
+            return False
+
+        # If 'all' is in enabled_events, enable all events
+        if "all" in self.enabled_events:
+            return True
+
+        return event_type in self.enabled_events
 
     def send_event(self, event: WebhookEvent) -> bool:
         """
@@ -97,6 +104,13 @@ class WebhookService:
         if not self.is_enabled(event.event_type):
             logger.debug("Webhook disabled for event type: %s", event.event_type)
             return False
+
+        # Log that webhook is being triggered
+        logger.info(
+            "Webhook triggered: event_type=%s, event_id=%s",
+            event.event_type,
+            event.event_id,
+        )
 
         # Send in a separate thread to avoid blocking the main process
         thread = threading.Thread(

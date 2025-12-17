@@ -299,6 +299,7 @@ tkNkku9BXJFJy5bAVs9NxLLOs2OI+REJykbT9zBMiOkAeeFppKYP+qU=
             ),
             cdn_config=cdn_config,
             webhook_config=webhook_config,
+            force_update=False,  # Explicitly set to False for skip tests
         )
 
     @pytest.fixture
@@ -445,6 +446,9 @@ tkNkku9BXJFJy5bAVs9NxLLOs2OI+REJykbT9zBMiOkAeeFppKYP+qU=
         app_config_cdn,
     ):
         """Test CDN renewer sends webhook when certificate is skipped"""
+        # Ensure force_update is False for skip logic to work
+        app_config_cdn.force_update = False
+
         # Setup mocks for skip scenario
         mock_is_cert_valid.return_value = True
         mock_calc_fingerprint.return_value = "current_fingerprint"  # Same fingerprint
@@ -474,14 +478,117 @@ tkNkku9BXJFJy5bAVs9NxLLOs2OI+REJykbT9zBMiOkAeeFppKYP+qU=
         assert result is True
 
         # Wait a bit for async webhook calls
-        time.sleep(0.1)
+        time.sleep(0.2)
 
         # Verify webhook was sent for renewal_started and renewal_skipped
-        assert mock_client.deliver.call_count == 2
+        call_count = mock_client.deliver.call_count
+        assert call_count == 2, f"Expected 2 webhook calls, got {call_count}"
+
+        # Check webhook payloads (order may vary due to async execution)
+        event_types = []
+        skip_payload = None
+        for call in mock_client.deliver.call_args_list:
+            payload = call[0][1] if call[0] else {}
+            event_type = payload.get("event_type")
+            event_types.append(event_type)
+            if event_type == "renewal_skipped":
+                skip_payload = payload
+
+        # Verify both events were sent
+        assert "renewal_started" in event_types
+        assert "renewal_skipped" in event_types
 
         # Check skip webhook payload
-        skip_call_args = mock_client.deliver.call_args_list[1]
-        skip_payload = skip_call_args[0][1]
+        assert skip_payload is not None, "renewal_skipped event not found"
+        assert skip_payload["event_type"] == "renewal_skipped"
+        assert skip_payload["result"]["status"] == "skipped"
+        assert "unchanged" in skip_payload["result"]["message"]
+
+        # Verify get_current_cert_fingerprint was called
+        assert mock_get_fingerprint.called
+
+    @patch("cloud_cert_renewer.webhook.WebhookClient")
+    @patch("cloud_cert_renewer.cert_renewer.cdn_renewer.is_cert_valid")
+    @patch("cloud_cert_renewer.providers.base.CloudAdapterFactory.create")
+    @patch(
+        "cloud_cert_renewer.cert_renewer.cdn_renewer.CdnCertRenewerStrategy._calculate_fingerprint"
+    )
+    @patch(
+        "cloud_cert_renewer.cert_renewer.cdn_renewer.CdnCertRenewerStrategy._do_renew"
+    )
+    @patch(
+        "cloud_cert_renewer.cert_renewer.cdn_renewer.CdnCertRenewerStrategy.get_current_cert_fingerprint"
+    )
+    def test_cdn_renewer_webhook_skipped_with_all_events(
+        self,
+        mock_get_fingerprint,
+        mock_do_renew,
+        mock_calc_fingerprint,
+        mock_adapter_factory,
+        mock_is_cert_valid,
+        mock_client_class,
+        app_config_cdn,
+    ):
+        """Test webhook with enabledEvents=all when certificate is skipped.
+
+        Verifies that webhook events are sent even when enabledEvents contains 'all'.
+        """
+        # Setup webhook config with enabledEvents=all
+        app_config_cdn.webhook_config.enabled_events = {"all"}
+        # Ensure force_update is False for skip logic to work
+        app_config_cdn.force_update = False
+
+        # Setup mocks for skip scenario
+        mock_is_cert_valid.return_value = True
+        mock_calc_fingerprint.return_value = "current_fingerprint"  # Same fingerprint
+        mock_get_fingerprint.return_value = (
+            "current_fingerprint"  # Current fingerprint matches new
+        )
+        # _do_renew should not be called when fingerprints match,
+        # but mock it just in case
+        mock_do_renew.return_value = True
+
+        # Mock adapter factory to avoid actual API calls
+        mock_adapter = MagicMock()
+        mock_adapter.get_current_cdn_certificate.return_value = None
+        mock_adapter_factory.return_value = mock_adapter
+
+        mock_client = MagicMock()
+        mock_client.deliver.return_value = True
+        mock_client_class.return_value = mock_client
+
+        # Create CDN renewer
+        renewer = CdnCertRenewerStrategy(app_config_cdn, "example.com")
+
+        # Execute renewal
+        result = renewer.renew()
+
+        # Verify renewal was skipped but returns True
+        assert result is True
+
+        # Wait a bit for async webhook calls
+        time.sleep(0.2)
+
+        # Verify webhook was sent for renewal_started and renewal_skipped
+        call_count = mock_client.deliver.call_count
+        assert call_count == 2, f"Expected 2 webhook calls, got {call_count}"
+
+        # Check webhook payloads (order may vary due to async execution)
+        event_types = []
+        skip_payload = None
+        for call in mock_client.deliver.call_args_list:
+            payload = call[0][1] if call[0] else {}
+            event_type = payload.get("event_type")
+            event_types.append(event_type)
+            if event_type == "renewal_skipped":
+                skip_payload = payload
+
+        # Verify both events were sent
+        assert "renewal_started" in event_types
+        assert "renewal_skipped" in event_types
+
+        # Check skip webhook payload
+        assert skip_payload is not None, "renewal_skipped event not found"
         assert skip_payload["event_type"] == "renewal_skipped"
         assert skip_payload["result"]["status"] == "skipped"
         assert "unchanged" in skip_payload["result"]["message"]
