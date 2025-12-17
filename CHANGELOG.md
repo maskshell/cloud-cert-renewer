@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-beta2] - 2025-12-17
+
+### Fixed
+
+- Alibaba Cloud SDK integration:
+  - Fixed method name typo in SLB listener configuration query: `describe_load_balancer_https_listener_attribute_with_options` → `describe_load_balancer_httpslistener_attribute_with_options`
+  - This fixes the error: 'Client' object has no attribute 'describe_load_balancer_https_listener_attribute_with_options'
+
 ## [0.3.0-beta1] - 2025-12-17
 
 ### Fixed
