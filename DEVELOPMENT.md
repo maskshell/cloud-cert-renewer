@@ -185,7 +185,7 @@ When using Alibaba Cloud, ensure your AccessKey has the appropriate RAM permissi
 **Quick Reference:**
 
 - **CDN**: `cdn:SetCdnDomainSSLCertificate`, `cdn:DescribeDomainCertificateInfo`
-- **Load Balancer**: `slb:DescribeServerCertificates`, `slb:UploadServerCertificate`
+- **Load Balancer**: `slb:DescribeServerCertificates`, `slb:UploadServerCertificate`, `slb:SetLoadBalancerHTTPSListenerAttribute`, `slb:DescribeLoadBalancerHTTPSListenerAttribute`
 
 ## Code Formatting
 

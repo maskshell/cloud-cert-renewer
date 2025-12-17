@@ -60,9 +60,16 @@ class CompositeCertRenewer:
 
         # Send batch summary webhook if webhook service is available
         # Add a small delay to ensure all individual webhook threads have been started
+        # Webhook failures are non-critical and should not affect the main process
         if self.renewers and self.renewers[0]._webhook_service:
-            time.sleep(0.05)  # Small delay to ensure individual webhooks are queued
-            self._send_batch_summary_webhook(total, failures)
+            try:
+                time.sleep(0.05)  # Small delay to ensure individual webhooks are queued
+                self._send_batch_summary_webhook(total, failures)
+            except Exception as e:
+                # Log but don't raise - webhook failures are non-critical
+                logger.warning(
+                    "Failed to send batch summary webhook (non-critical): %s", e
+                )
 
         if failures > 0:
             logger.error(
@@ -137,4 +144,11 @@ class CompositeCertRenewer:
         )
 
         # Send asynchronously (send_event already handles threading)
-        webhook_service.send_event(event)
+        # Webhook failures are non-critical and handled internally
+        try:
+            webhook_service.send_event(event)
+        except Exception as e:
+            # Log but don't raise - webhook failures are non-critical
+            logger.warning(
+                "Failed to send batch summary webhook event (non-critical): %s", e
+            )

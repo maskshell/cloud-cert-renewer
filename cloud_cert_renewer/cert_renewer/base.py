@@ -74,7 +74,9 @@ class BaseCertRenewer(ABC):
         result: EventResult | None = None,
     ) -> None:
         """
-        Send webhook event if configured
+        Send webhook event if configured.
+        Webhook failures are non-critical and should not affect the main renewal
+        process.
 
         :param event_type: Type of event
         :param cert_info: Certificate info tuple
@@ -86,69 +88,91 @@ class BaseCertRenewer(ABC):
         ):
             return
 
-        # Prepare event source
-        source = EventSource(
-            service_type=self.config.service_type,
-            cloud_provider=self.config.cloud_provider,
-            region=self._get_region(),
-        )
-
-        # Prepare event target
-        target = EventTarget()
-        if cert_info:
-            _, _, domain_or_instance = cert_info
-            if self.config.service_type == "cdn":
-                target.domain_names = [domain_or_instance]
-            else:  # lb
-                target.instance_ids = [domain_or_instance]
-                if self.config.lb_config:
-                    target.listener_port = self.config.lb_config.listener_port
-
-        # Prepare certificate info if available
-        certificate = None
-        if cert_info and event_type in [
-            "renewal_started",
-            "renewal_success",
-            "renewal_skipped",
-        ]:
-            cert, _, _ = cert_info
-            fingerprint = self._calculate_fingerprint(cert)
-            cert_data = self._parse_cert_info(cert)
-            certificate = EventCertificate(
-                fingerprint=fingerprint,
-                not_after=cert_data.get("not_after"),
-                not_before=cert_data.get("not_before"),
-                issuer=cert_data.get("issuer"),
+        try:
+            # Prepare event source
+            source = EventSource(
+                service_type=self.config.service_type,
+                cloud_provider=self.config.cloud_provider,
+                region=self._get_region(),
             )
 
-        # Prepare metadata
-        execution_time_ms = None
-        if self._renewal_start_time:
-            execution_time_ms = int((time.time() - self._renewal_start_time) * 1000)
+            # Prepare event target
+            target = EventTarget()
+            if cert_info:
+                _, _, domain_or_instance = cert_info
+                if self.config.service_type == "cdn":
+                    target.domain_names = [domain_or_instance]
+                else:  # lb
+                    target.instance_ids = [domain_or_instance]
+                    if self.config.lb_config:
+                        target.listener_port = self.config.lb_config.listener_port
 
-        metadata = EventMetadata(
-            version=__version__,
-            execution_time_ms=execution_time_ms,
-            force_update=self.config.force_update,
-            dry_run=self.config.dry_run,
-        )
+            # Prepare certificate info if available
+            certificate = None
+            if cert_info and event_type in [
+                "renewal_started",
+                "renewal_success",
+                "renewal_skipped",
+            ]:
+                cert, _, _ = cert_info
+                fingerprint = self._calculate_fingerprint(cert)
+                cert_data = self._parse_cert_info(cert)
+                certificate = EventCertificate(
+                    fingerprint=fingerprint,
+                    not_after=cert_data.get("not_after"),
+                    not_before=cert_data.get("not_before"),
+                    issuer=cert_data.get("issuer"),
+                )
 
-        # Create and send event
-        event = WebhookEvent(
-            event_type=event_type,
-            source=source,
-            target=target,
-            certificate=certificate,
-            result=result,
-            metadata=metadata,
-        )
+            # Prepare metadata
+            execution_time_ms = None
+            if self._renewal_start_time:
+                execution_time_ms = int((time.time() - self._renewal_start_time) * 1000)
 
-        # Send asynchronously without blocking
-        threading.Thread(
-            target=self._webhook_service.send_event,
-            args=(event,),
-            daemon=True,
-        ).start()
+            metadata = EventMetadata(
+                version=__version__,
+                execution_time_ms=execution_time_ms,
+                force_update=self.config.force_update,
+                dry_run=self.config.dry_run,
+            )
+
+            # Create and send event
+            event = WebhookEvent(
+                event_type=event_type,
+                source=source,
+                target=target,
+                certificate=certificate,
+                result=result,
+                metadata=metadata,
+            )
+
+            # Send asynchronously without blocking
+            # Webhook failures are non-critical and should not affect the main process
+            def send_webhook_safely():
+                try:
+                    self._webhook_service.send_event(event)
+                except Exception as e:
+                    # Log but don't raise - webhook failures are non-critical
+                    logger.warning(
+                        "Failed to send webhook event (non-critical): "
+                        "event_type=%s, error=%s",
+                        event_type,
+                        e,
+                    )
+
+            threading.Thread(
+                target=send_webhook_safely,
+                daemon=True,
+            ).start()
+        except Exception as e:
+            # Log but don't raise - webhook failures are non-critical
+            # This ensures webhook failures don't cause Pod restarts
+            logger.warning(
+                "Failed to prepare webhook event (non-critical): "
+                "event_type=%s, error=%s",
+                event_type,
+                e,
+            )
 
     def _get_region(self) -> str:
         """Get region from configuration"""

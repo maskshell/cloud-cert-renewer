@@ -101,14 +101,23 @@ def run(args: argparse.Namespace | None = None) -> int:
 
         factory = container.get("cert_renewer_factory")
         renewer = factory.create(config)
-        success = renewer.renew()
 
-        if success:
-            logger.info("Certificate renewal completed")
-            return int(ExitCode.SUCCESS)
+        # Execute certificate renewal
+        # Note: Webhook failures are non-critical and handled internally
+        # Only certificate upload failures should cause exit code != 0
+        try:
+            success = renewer.renew()
 
-        logger.error("Certificate renewal failed")
-        return int(ExitCode.FAILURE)
+            if success:
+                logger.info("Certificate renewal completed successfully")
+                return int(ExitCode.SUCCESS)
+
+            logger.error("Certificate renewal failed")
+            return int(ExitCode.FAILURE)
+        except Exception:
+            # Re-raise critical errors to be handled by outer exception handlers
+            # This ensures proper error categorization and exit codes
+            raise
 
     except ConfigError as e:
         logger.error("Configuration error: %s", e)
@@ -132,6 +141,9 @@ def run(args: argparse.Namespace | None = None) -> int:
         logger.error("Invalid value: %s", e)
         return int(ExitCode.CONFIG_ERROR)
     except Exception as e:  # noqa: BLE001
+        # Unexpected errors are treated as critical failures
+        # This ensures Pod restart for debugging, but certificate upload
+        # failures should be caught by CloudApiError handler above
         logger.exception("Unexpected error occurred: %s", e)
         return int(ExitCode.FAILURE)
 

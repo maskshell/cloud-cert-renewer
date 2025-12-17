@@ -405,7 +405,9 @@ For Load Balancer (SLB) certificate renewal:
       "Effect": "Allow",
       "Action": [
         "slb:DescribeServerCertificates",
-        "slb:UploadServerCertificate"
+        "slb:UploadServerCertificate",
+        "slb:SetLoadBalancerHTTPSListenerAttribute",
+        "slb:DescribeLoadBalancerHTTPSListenerAttribute"
       ],
       "Resource": "*"
     }
@@ -431,13 +433,52 @@ For both CDN and Load Balancer:
       "Effect": "Allow",
       "Action": [
         "slb:DescribeServerCertificates",
-        "slb:UploadServerCertificate"
+        "slb:UploadServerCertificate",
+        "slb:SetLoadBalancerHTTPSListenerAttribute",
+        "slb:DescribeLoadBalancerHTTPSListenerAttribute"
       ],
       "Resource": "*"
     }
   ]
 }
 ```
+
+### Complete Policy with Resource-Specific Permissions
+
+For a more secure configuration with resource-specific permissions and Load Balancer listener management:
+
+```json
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cdn:SetCdnDomainSSLCertificate",
+        "cdn:DescribeDomainCertificateInfo"
+      ],
+      "Resource": [
+        "acs:cdn:*:*:domain/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "slb:DescribeServerCertificates",
+        "slb:UploadServerCertificate",
+        "slb:SetLoadBalancerHTTPSListenerAttribute",
+        "slb:DescribeLoadBalancerHTTPSListenerAttribute"
+      ],
+      "Resource": [
+        "acs:slb:*:*:certificate/*",
+        "acs:slb:*:*:loadbalancer/*"
+      ]
+    }
+  ]
+}
+```
+
+**Note:** This policy includes additional permissions for Load Balancer HTTPS listener management (`slb:SetLoadBalancerHTTPSListenerAttribute` and `slb:DescribeLoadBalancerHTTPSListenerAttribute`), which may be required when updating certificates on Load Balancer listeners. The resource-specific format (`acs:cdn:*:*:domain/*` and `acs:slb:*:*:certificate/*`) provides more granular control compared to using `"Resource": "*"`.
 
 ### System Policy Alternative
 
