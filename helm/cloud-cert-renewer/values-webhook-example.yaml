@@ -48,6 +48,10 @@ webhook:
   # - renewal_skipped
   # - batch_completed
   enabledEvents: "renewal_success,renewal_failed,renewal_skipped"
+  #
+  # Webhook message format type (generic, wechat_work, etc.)
+  # For WeChat Work robot webhook URL, set this to "wechat_work"
+  # messageFormat: "wechat_work"
 
 # Secrets configuration
 secrets:

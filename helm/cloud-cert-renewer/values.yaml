@@ -31,6 +31,9 @@ webhook:
   # Comma-separated list of events to notify on (default: all events)
   # Options: renewal_started, renewal_success, renewal_failed, renewal_skipped, batch_completed
   enabledEvents: ""
+  # Message format type for webhook payloads (generic, wechat_work, etc.)
+  # When using WeChat Work robot webhook URL, set to "wechat_work"
+  messageFormat: ""
   # Secret containing webhook URL (alternative to specifying url in values)
   secret:
     name: "" # Name of the secret containing webhook URL

@@ -165,6 +165,10 @@ spec:
             - name: WEBHOOK_ENABLED_EVENTS
               value: {{ .Values.webhook.enabledEvents | quote }}
             {{- end }}
+            {{- if .Values.webhook.messageFormat }}
+            - name: WEBHOOK_MESSAGE_FORMAT
+              value: {{ .Values.webhook.messageFormat | quote }}
+            {{- end }}
             {{- end }}
           resources:
             {{- toYaml .Values.initContainer.resources | nindent 12 }}
