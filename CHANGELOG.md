@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.9-beta1] - 2025-12-17
+
+### Added
+
+- Webhook testing and diagnostics:
+  - Added `scripts/test-webhook.py` helper script for sending test events to configured webhook endpoints
+  - Enables local verification of webhook configuration and payload formatting
+
+### Improved
+
+- Webhook delivery error handling:
+  - Enhanced error handling and logging for webhook delivery failures to improve reliability and troubleshooting
+
 ## [0.2.8-beta3] - 2025-12-17
 
 ### Added
