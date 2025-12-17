@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-beta3] - 2025-12-17
+
+### Added
+
+- Load Balancer certificate idempotency:
+  - Implemented idempotency check for SLB certificate uploads to prevent duplicate certificates and resource waste
+  - Before uploading, the system now queries existing certificates in the region and reuses a certificate with the same fingerprint if found
+  - Optimized API usage and robust error handling (fail-safe fallback to upload)
+
+### Improved
+
+- Webhook robustness:
+  - Webhook failures are now treated as non-critical warnings and do not halt the main renewal process
+  - Added safe execution wrappers for webhook threads to prevent crashes
+- Documentation:
+  - Added `slb:SetLoadBalancerHTTPSListenerAttribute` and `slb:DescribeLoadBalancerHTTPSListenerAttribute` to required IAM permissions documentation
+  - Added granular, resource-specific IAM policy examples for better security in `helm/cloud-cert-renewer/README.md`
+
 ## [0.3.0-beta2] - 2025-12-17
 
 ### Fixed
