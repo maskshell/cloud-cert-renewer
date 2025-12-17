@@ -19,13 +19,8 @@ def parse_cert_info(cert_content: str) -> tuple[list[str], datetime]:
     # only loading the first certificate
     cert = x509.load_pem_x509_certificate(cert_content.encode(), default_backend())
 
-    # Prefer UTC-aware datetime to avoid deprecated naive datetime properties.
-    not_valid_after_utc = getattr(cert, "not_valid_after_utc", None)
-    if not_valid_after_utc is not None:
-        cert_expire_date = not_valid_after_utc
-    else:
-        # Backward compatible fallback for older cryptography versions.
-        cert_expire_date = cert.not_valid_after.replace(tzinfo=timezone.utc)
+    # Use UTC-aware datetime property to avoid deprecated naive datetime properties.
+    cert_expire_date = cert.not_valid_after_utc
 
     # Get domain name list (from Subject and SAN extension)
     cert_domain_name_list = []

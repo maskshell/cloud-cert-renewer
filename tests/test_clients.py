@@ -213,7 +213,7 @@ MIIEpQIBAAKCAQEA...
         )
         mock_bind_response = MagicMock()
         mock_bind_response.status_code = 200
-        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+        mock_client.set_load_balancer_httpslistener_attribute_with_options.return_value = (  # noqa: E501
             mock_bind_response
         )
         mock_create_client.return_value = mock_client
@@ -231,7 +231,7 @@ MIIEpQIBAAKCAQEA...
         # Verify results
         self.assertTrue(result)
         mock_client.upload_server_certificate_with_options.assert_called_once()
-        mock_client.set_load_balancer_https_listener_attribute_with_options.assert_called_once()
+        mock_client.set_load_balancer_httpslistener_attribute_with_options.assert_called_once()
 
     @patch.dict(
         os.environ,
@@ -257,7 +257,7 @@ MIIEpQIBAAKCAQEA...
         )
         mock_bind_response = MagicMock()
         mock_bind_response.status_code = 200
-        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+        mock_client.set_load_balancer_httpslistener_attribute_with_options.return_value = (  # noqa: E501
             mock_bind_response
         )
         mock_create_client.return_value = mock_client
@@ -295,7 +295,7 @@ MIIEpQIBAAKCAQEA...
         )
         mock_bind_response = MagicMock()
         mock_bind_response.status_code = 200
-        mock_client.set_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+        mock_client.set_load_balancer_httpslistener_attribute_with_options.return_value = (  # noqa: E501
             mock_bind_response
         )
         mock_create_client.return_value = mock_client

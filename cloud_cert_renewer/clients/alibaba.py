@@ -340,7 +340,7 @@ class LoadBalancerCertRenewer:
             )
 
             bind_response = (
-                client.set_load_balancer_https_listener_attribute_with_options(
+                client.set_load_balancer_httpslistener_attribute_with_options(
                     bind_request, runtime
                 )
             )

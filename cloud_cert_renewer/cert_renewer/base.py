@@ -7,7 +7,7 @@ import logging
 import threading
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime
 
 from cloud_cert_renewer import __version__
 from cloud_cert_renewer.config import AppConfig
@@ -174,8 +174,8 @@ class BaseCertRenewer(ABC):
             )
 
             return {
-                "not_after": cert_obj.not_valid_after.replace(tzinfo=timezone.utc),
-                "not_before": cert_obj.not_valid_before.replace(tzinfo=timezone.utc),
+                "not_after": cert_obj.not_valid_after_utc,
+                "not_before": cert_obj.not_valid_before_utc,
                 "issuer": cert_obj.issuer.rfc4514_string(),
             }
         except Exception as e:
