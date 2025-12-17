@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8-beta2] - 2025-12-17
+
+### Improved
+
+- Webhook event handling:
+  - Added support for 'all' keyword in `enabled_events` to enable all event types at once
+  - Added INFO-level logging when webhook is triggered, including event type and event ID for better observability
+
 ## [0.2.8-beta1] - 2025-12-17
 
 ### Added
