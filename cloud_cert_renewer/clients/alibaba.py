@@ -16,7 +16,11 @@ from alibabacloud_tea_util import models as util_models
 
 from cloud_cert_renewer.cert_renewer.base import CertValidationError
 from cloud_cert_renewer.errors import CloudApiError
-from cloud_cert_renewer.utils.ssl_cert_parser import is_cert_valid
+from cloud_cert_renewer.utils.ssl_cert_parser import (
+    get_cert_fingerprint_sha1,
+    is_cert_valid,
+    normalize_hex_fingerprint,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -285,6 +289,63 @@ class LoadBalancerCertRenewer:
             return None
 
     @staticmethod
+    def find_existing_certificate_by_fingerprint(
+        region_id: str,
+        cert_fingerprint: str,
+        credential_client: CredClient,
+    ) -> str | None:
+        """
+        Check if a certificate with the same fingerprint already exists in the region
+        :param region_id: Region ID
+        :param cert_fingerprint: Target certificate fingerprint (SHA1)
+        :param credential_client: Alibaba Cloud Credentials client
+        :return: Certificate ID if found, otherwise None
+        """
+        try:
+            client = LoadBalancerCertRenewer.create_client(credential_client)
+            # Query all certificates in the region
+            # PageSize defaults (usually 10-50), but we check recent ones
+            # Usually redundant certificates are recent ones
+            request = slb_20140515_models.DescribeServerCertificatesRequest(
+                region_id=region_id,
+            )
+            runtime = _build_runtime_options()
+            response = client.describe_server_certificates_with_options(
+                request, runtime
+            )
+
+            if (
+                not response.body
+                or not response.body.server_certificates
+                or not response.body.server_certificates.server_certificate
+            ):
+                return None
+
+            target_fingerprint = normalize_hex_fingerprint(cert_fingerprint)
+            for cert in response.body.server_certificates.server_certificate:
+                if not cert.fingerprint or not cert.server_certificate_id:
+                    continue
+
+                if normalize_hex_fingerprint(cert.fingerprint) == target_fingerprint:
+                    logger.info(
+                        "Found existing certificate with matching fingerprint: %s "
+                        "(fingerprint: %s)",
+                        cert.server_certificate_id,
+                        target_fingerprint,
+                    )
+                    return cert.server_certificate_id
+
+            return None
+
+        except Exception as e:
+            logger.warning(
+                "Failed to search for existing certificate by fingerprint: %s. "
+                "Will proceed with new certificate upload.",
+                str(e),
+            )
+            return None
+
+    @staticmethod
     def renew_cert(
         instance_id: str,
         listener_port: int,
@@ -304,28 +365,48 @@ class LoadBalancerCertRenewer:
         :return: Whether successful
         """
         try:
-            # Fingerprint comparison is handled by higher-level renewer logic
-            # (e.g., BaseCertRenewer). This client only performs the update.
-
             # Create client
             client = LoadBalancerCertRenewer.create_client(credential_client)
-
-            # Build request - Upload certificate
-            upload_request = slb_20140515_models.UploadServerCertificateRequest(
-                server_certificate=cert,
-                private_key=cert_private_key,
-                region_id=region,
-            )
-
             runtime = _build_runtime_options()
-            upload_response = client.upload_server_certificate_with_options(
-                upload_request, runtime
-            )
+            cert_id = None
 
-            cert_id = upload_response.body.server_certificate_id
-            logger.info("SLB certificate uploaded successfully: cert_id=%s", cert_id)
+            # 1. Check if certificate already exists (Idempotency Check)
+            try:
+                # Calculate fingerprint of the new certificate
+                new_cert_fingerprint = get_cert_fingerprint_sha1(cert)
 
-            # Build request - Bind certificate to listener
+                # Check for existing certificate
+                cert_id = (
+                    LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint(
+                        region, new_cert_fingerprint, credential_client
+                    )
+                )
+            except Exception as e:
+                logger.warning(
+                    "Idempotency check failed: %s. Proceeding with upload.", str(e)
+                )
+
+            # 2. Upload certificate if not found
+            if not cert_id:
+                # Build request - Upload certificate
+                upload_request = slb_20140515_models.UploadServerCertificateRequest(
+                    server_certificate=cert,
+                    private_key=cert_private_key,
+                    region_id=region,
+                )
+
+                upload_response = client.upload_server_certificate_with_options(
+                    upload_request, runtime
+                )
+
+                cert_id = upload_response.body.server_certificate_id
+                logger.info(
+                    "SLB certificate uploaded successfully: cert_id=%s", cert_id
+                )
+            else:
+                logger.info("Reusing existing SLB certificate: cert_id=%s", cert_id)
+
+            # 3. Bind certificate to listener
             # Note: SetLoadBalancerHTTPSListenerAttribute only needs to pass
             # parameters that need to be updated
             # Other parameters will keep their original values if not passed,

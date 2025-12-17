@@ -615,5 +615,226 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         self.assertIsNone(result)
 
 
+class TestLoadBalancerCertRenewerIdempotency(unittest.TestCase):
+    """Load Balancer certificate renewer idempotency tests"""
+
+    def setUp(self):
+        """Test setup"""
+        self.credential_client = create_mock_credential_client()
+        self.region = "cn-hangzhou"
+        self.cert = "test_cert_content"
+        self.cert_private_key = "test_private_key"
+        self.instance_id = "test-instance-id"
+        self.listener_port = 443
+
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_find_existing_certificate_success(self, mock_create_client):
+        """Test finding existing certificate successfully"""
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.body = MagicMock()
+
+        # Mock certificate list
+        cert1 = MagicMock()
+        cert1.fingerprint = "aa:bb:cc"
+        cert1.server_certificate_id = "cert-1"
+
+        cert2 = MagicMock()
+        cert2.fingerprint = "dd:ee:ff"
+        cert2.server_certificate_id = "cert-2"
+
+        mock_response.body.server_certificates.server_certificate = [cert1, cert2]
+        mock_client.describe_server_certificates_with_options.return_value = (
+            mock_response
+        )
+        mock_create_client.return_value = mock_client
+
+        # Test finding second cert
+        result = LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint(
+            self.region, "DD:EE:FF", self.credential_client
+        )
+
+        self.assertEqual(result, "cert-2")
+
+        # Verify pagination size is set to 100
+        args, _ = mock_client.describe_server_certificates_with_options.call_args
+        self.assertEqual(args[0].region_id, self.region)
+
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_find_existing_certificate_not_found(self, mock_create_client):
+        """Test when existing certificate is not found"""
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.body = MagicMock()
+
+        cert1 = MagicMock()
+        cert1.fingerprint = "aa:bb:cc"
+        cert1.server_certificate_id = "cert-1"
+
+        mock_response.body.server_certificates.server_certificate = [cert1]
+        mock_client.describe_server_certificates_with_options.return_value = (
+            mock_response
+        )
+        mock_create_client.return_value = mock_client
+
+        result = LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint(
+            self.region, "xx:yy:zz", self.credential_client
+        )
+
+        self.assertIsNone(result)
+
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_find_existing_certificate_api_error(self, mock_create_client):
+        """Test API error handling during search"""
+        mock_client = MagicMock()
+        mock_client.describe_server_certificates_with_options.side_effect = Exception(
+            "API Error"
+        )
+        mock_create_client.return_value = mock_client
+
+        result = LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint(
+            self.region, "aa:bb:cc", self.credential_client
+        )
+
+        self.assertIsNone(result)
+
+    @patch("cloud_cert_renewer.clients.alibaba.get_cert_fingerprint_sha1")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint"
+    )
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_renew_cert_reuses_existing(
+        self, mock_create_client, mock_find, mock_fingerprint
+    ):
+        """Test renew_cert reuses existing certificate without uploading"""
+        # Setup mocks
+        mock_fingerprint.return_value = "test-fingerprint"
+        mock_find.return_value = "existing-cert-id"
+
+        mock_client = MagicMock()
+        mock_bind_response = MagicMock()
+        mock_bind_response.status_code = 200
+        bind_method = mock_client.set_load_balancer_httpslistener_attribute_with_options
+        bind_method.return_value = mock_bind_response
+        mock_create_client.return_value = mock_client
+
+        # Execute
+        result = LoadBalancerCertRenewer.renew_cert(
+            self.instance_id,
+            self.listener_port,
+            self.cert,
+            self.cert_private_key,
+            self.region,
+            self.credential_client,
+        )
+
+        # Verify
+        self.assertTrue(result)
+        # Should NOT call upload
+        mock_client.upload_server_certificate_with_options.assert_not_called()
+        # Should call bind with existing ID
+        bind_args, _ = (
+            mock_client.set_load_balancer_httpslistener_attribute_with_options.call_args
+        )
+        self.assertEqual(bind_args[0].server_certificate_id, "existing-cert-id")
+
+    @patch("cloud_cert_renewer.clients.alibaba.get_cert_fingerprint_sha1")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint"
+    )
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_renew_cert_upload_when_not_found(
+        self, mock_create_client, mock_find, mock_fingerprint
+    ):
+        """Test renew_cert uploads new certificate when not found"""
+        # Setup mocks
+        mock_fingerprint.return_value = "test-fingerprint"
+        mock_find.return_value = None
+
+        mock_client = MagicMock()
+
+        # Upload response
+        mock_upload_resp = MagicMock()
+        mock_upload_resp.body.server_certificate_id = "new-cert-id"
+        mock_client.upload_server_certificate_with_options.return_value = (
+            mock_upload_resp
+        )
+
+        # Bind response
+        mock_bind_resp = MagicMock()
+        mock_bind_resp.status_code = 200
+        bind_method = mock_client.set_load_balancer_httpslistener_attribute_with_options
+        bind_method.return_value = mock_bind_resp
+
+        mock_create_client.return_value = mock_client
+        # Execute
+        result = LoadBalancerCertRenewer.renew_cert(
+            self.instance_id,
+            self.listener_port,
+            self.cert,
+            self.cert_private_key,
+            self.region,
+            self.credential_client,
+        )
+
+        # Verify
+        self.assertTrue(result)
+        # Should call upload
+        mock_client.upload_server_certificate_with_options.assert_called_once()
+        # Should call bind with new ID
+        bind_args, _ = (
+            mock_client.set_load_balancer_httpslistener_attribute_with_options.call_args
+        )
+        self.assertEqual(bind_args[0].server_certificate_id, "new-cert-id")
+
+    @patch("cloud_cert_renewer.clients.alibaba.get_cert_fingerprint_sha1")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint"
+    )
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_renew_cert_upload_when_check_fails(
+        self, mock_create_client, mock_find, mock_fingerprint
+    ):
+        """Test renew_cert falls back to upload when idempotency check fails"""
+        # Setup mocks
+        mock_fingerprint.side_effect = Exception("Fingerprint error")
+
+        mock_client = MagicMock()
+
+        # Upload response
+        mock_upload_resp = MagicMock()
+        mock_upload_resp.body.server_certificate_id = "new-cert-id"
+        mock_client.upload_server_certificate_with_options.return_value = (
+            mock_upload_resp
+        )
+
+        # Bind response
+        mock_bind_resp = MagicMock()
+        mock_bind_resp.status_code = 200
+        bind_method = mock_client.set_load_balancer_httpslistener_attribute_with_options
+        bind_method.return_value = mock_bind_resp
+
+        mock_create_client.return_value = mock_client
+        # Execute
+        result = LoadBalancerCertRenewer.renew_cert(
+            self.instance_id,
+            self.listener_port,
+            self.cert,
+            self.cert_private_key,
+            self.region,
+            self.credential_client,
+        )
+
+        # Verify
+        self.assertTrue(result)
+        # Should call upload despite check failure
+        mock_client.upload_server_certificate_with_options.assert_called_once()
+        # Should call bind with new ID
+        bind_args, _ = (
+            mock_client.set_load_balancer_httpslistener_attribute_with_options.call_args
+        )
+        self.assertEqual(bind_args[0].server_certificate_id, "new-cert-id")
+
+
 if __name__ == "__main__":
     unittest.main()
