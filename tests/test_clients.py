@@ -391,7 +391,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
     def test_get_listener_cert_id_exception_handling(self, mock_create_client):
         """Test get_listener_cert_id handles exceptions gracefully"""
         mock_client = MagicMock()
-        mock_client.describe_load_balancer_https_listener_attribute_with_options.side_effect = (  # noqa: E501
+        mock_client.describe_load_balancer_httpslistener_attribute_with_options.side_effect = (  # noqa: E501
             Exception("API Error")
         )
         mock_create_client.return_value = mock_client
@@ -503,7 +503,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = MagicMock()
         mock_response.body.server_certificate_id = "test-cert-id"
-        mock_client.describe_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+        mock_client.describe_load_balancer_httpslistener_attribute_with_options.return_value = (  # noqa: E501
             mock_response
         )
         mock_create_client.return_value = mock_client
@@ -524,7 +524,7 @@ class TestLoadBalancerCertRenewerErrorHandling(unittest.TestCase):
         mock_response = MagicMock()
         mock_response.body = MagicMock()
         mock_response.body.server_certificate_id = None
-        mock_client.describe_load_balancer_https_listener_attribute_with_options.return_value = (  # noqa: E501
+        mock_client.describe_load_balancer_httpslistener_attribute_with_options.return_value = (  # noqa: E501
             mock_response
         )
         mock_create_client.return_value = mock_client

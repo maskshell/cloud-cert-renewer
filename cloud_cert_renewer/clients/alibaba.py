@@ -215,7 +215,7 @@ class LoadBalancerCertRenewer:
             )
             runtime = _build_runtime_options()
             response = (
-                client.describe_load_balancer_https_listener_attribute_with_options(
+                client.describe_load_balancer_httpslistener_attribute_with_options(
                     request, runtime
                 )
             )
