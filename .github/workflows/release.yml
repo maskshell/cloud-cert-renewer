@@ -420,7 +420,7 @@ jobs:
           python-version: "3.10"
 
       - name: Download PyPI artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: pypi-packages
           path: dist/
@@ -467,7 +467,7 @@ jobs:
           mkdir -p charts/
 
       - name: Download Helm chart artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: helm-chart
           path: charts/
