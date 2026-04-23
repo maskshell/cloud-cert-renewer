@@ -32,10 +32,20 @@ class CertRenewerFactory:
                     renewers.append(CdnCertRenewerStrategy(config, domain))
         elif config.service_type == "lb":
             if config.lb_config:
-                for instance_id in config.lb_config.instance_ids:
-                    renewers.append(
-                        LoadBalancerCertRenewerStrategy(config, instance_id)
-                    )
+                if config.lb_config.listeners:
+                    # New format: independent (instance_id, port) pairs
+                    for instance_id, port in config.lb_config.listeners:
+                        renewers.append(
+                            LoadBalancerCertRenewerStrategy(
+                                config, instance_id, target_listener_port=port
+                            )
+                        )
+                else:
+                    # Legacy format: shared listener_port across all instances
+                    for instance_id in config.lb_config.instance_ids:
+                        renewers.append(
+                            LoadBalancerCertRenewerStrategy(config, instance_id)
+                        )
         else:
             raise UnsupportedServiceTypeError(
                 f"Unsupported service type: {config.service_type}"

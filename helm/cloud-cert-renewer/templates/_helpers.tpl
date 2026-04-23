@@ -89,3 +89,28 @@ Supports both YAML list format (preferred) and comma-separated string (backward 
 {{- fail "domainName must be either a list or a string" }}
 {{- end }}
 {{- end }}
+
+{{/*
+Convert LB instance ID list or string to comma-separated string
+Supports both YAML list format (preferred) and comma-separated string (backward compatible)
+*/}}
+{{- define "cloud-cert-renewer.lbInstanceIds" -}}
+{{- if kindIs "slice" . }}
+{{- join "," . }}
+{{- else if kindIs "string" . }}
+{{- . }}
+{{- else }}
+{{- fail "instanceId must be either a list or a string" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Convert structured listeners list to comma-separated instanceId:port pairs
+Example input: [{instanceId: "lb-aaa", listenerPort: 443}, {instanceId: "lb-bbb", listenerPort: 8443}]
+Example output: lb-aaa:443,lb-bbb:8443
+*/}}
+{{- define "cloud-cert-renewer.lbListeners" -}}
+{{- if . }}
+{{- range $i, $listener := . }}{{- if $i }},{{- end }}{{ $listener.instanceId }}:{{ $listener.listenerPort }}{{- end }}
+{{- end }}
+{{- end }}

@@ -104,9 +104,13 @@ spec:
             {{- else if or (eq .Values.serviceType "lb") (eq .Values.serviceType "slb") }}
             # Load Balancer configuration (new name, preferred)
             - name: LB_INSTANCE_ID
-              value: {{ .Values.lb.instanceId | default .Values.slb.instanceId | quote }}
+              value: {{ include "cloud-cert-renewer.lbInstanceIds" (.Values.lb.instanceId | default .Values.slb.instanceId) | quote }}
             - name: LB_LISTENER_PORT
               value: {{ .Values.lb.listenerPort | default .Values.slb.listenerPort | quote }}
+            {{- if .Values.lb.listeners }}
+            - name: LB_LISTENERS
+              value: {{ include "cloud-cert-renewer.lbListeners" .Values.lb.listeners | quote }}
+            {{- end }}
             - name: LB_REGION
               value: {{ .Values.lb.region | default .Values.slb.region | quote }}
             # Load Balancer certificate and private key (read from Secret)

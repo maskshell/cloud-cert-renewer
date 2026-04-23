@@ -357,6 +357,94 @@ class TestLoadConfig(unittest.TestCase):
         self.assertEqual(result.credentials.access_key_id, "test_key_id")
         self.assertEqual(result.credentials.access_key_secret, "test_key_secret")
 
+    def test_load_config_lb_with_listeners(self):
+        """Test loading LB config with new LB_LISTENERS format"""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "lb",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "LB_LISTENERS": "lb-aaa:443,lb-bbb:8443",
+                "LB_CERT": "test_cert",
+                "LB_CERT_PRIVATE_KEY": "test_key",
+                "LB_REGION": "cn-hangzhou",
+            }
+        )
+        result = load_config()
+        self.assertIsNotNone(result.lb_config)
+        self.assertEqual(len(result.lb_config.listeners), 2)
+        self.assertEqual(result.lb_config.listeners[0], ("lb-aaa", 443))
+        self.assertEqual(result.lb_config.listeners[1], ("lb-bbb", 8443))
+
+    def test_load_config_lb_listeners_takes_precedence(self):
+        """Test LB_LISTENERS takes precedence over LB_INSTANCE_ID + LB_LISTENER_PORT"""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "lb",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "LB_INSTANCE_ID": "lb-old",
+                "LB_LISTENER_PORT": "443",
+                "LB_LISTENERS": "lb-new:8443",
+                "LB_CERT": "test_cert",
+                "LB_CERT_PRIVATE_KEY": "test_key",
+            }
+        )
+        result = load_config()
+        # listeners should be populated from LB_LISTENERS
+        self.assertEqual(len(result.lb_config.listeners), 1)
+        self.assertEqual(result.lb_config.listeners[0], ("lb-new", 8443))
+
+    def test_load_config_lb_without_listeners_backward_compat(self):
+        """Test old format still works when LB_LISTENERS is not set"""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "lb",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "LB_INSTANCE_ID": "lb-aaa,lb-bbb",
+                "LB_LISTENER_PORT": "443",
+                "LB_CERT": "test_cert",
+                "LB_CERT_PRIVATE_KEY": "test_key",
+            }
+        )
+        result = load_config()
+        self.assertIsNotNone(result.lb_config)
+        self.assertEqual(result.lb_config.instance_ids, ["lb-aaa", "lb-bbb"])
+        self.assertEqual(result.lb_config.listener_port, 443)
+        # listeners should be empty (backward compat)
+        self.assertEqual(result.lb_config.listeners, [])
+
+    def test_load_config_lb_listeners_invalid_format(self):
+        """Test LB_LISTENERS with invalid format raises ConfigError"""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "lb",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "LB_LISTENERS": "invalid-format-no-colon",
+                "LB_CERT": "test_cert",
+                "LB_CERT_PRIVATE_KEY": "test_key",
+            }
+        )
+        with self.assertRaises(ConfigError):
+            load_config()
+
+    def test_load_config_lb_listeners_invalid_port(self):
+        """Test LB_LISTENERS with invalid port raises ConfigError"""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "lb",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "LB_LISTENERS": "lb-aaa:not_a_port",
+                "LB_CERT": "test_cert",
+                "LB_CERT_PRIVATE_KEY": "test_key",
+            }
+        )
+        with self.assertRaises(ConfigError):
+            load_config()
+
     def test_load_config_with_dry_run_args(self):
         """Test loading configuration with dry-run argument"""
         import argparse

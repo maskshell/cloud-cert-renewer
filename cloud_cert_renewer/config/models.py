@@ -35,6 +35,9 @@ class LoadBalancerConfig:
     cert: str
     cert_private_key: str
     region: str = "cn-hangzhou"
+    listeners: list[tuple[str, int]] = field(
+        default_factory=list
+    )  # (instance_id, listener_port) pairs
 
 
 @dataclass
@@ -85,5 +88,11 @@ class AppConfig:
         if self.cdn_config and not self.cdn_config.domain_names:
             raise ValueError("CDN config must contain at least one domain name")
 
-        if self.lb_config and not self.lb_config.instance_ids:
-            raise ValueError("LB config must contain at least one instance ID")
+        if (
+            self.lb_config
+            and not self.lb_config.instance_ids
+            and not self.lb_config.listeners
+        ):
+            raise ValueError(
+                "LB config must contain at least one instance ID or listener"
+            )

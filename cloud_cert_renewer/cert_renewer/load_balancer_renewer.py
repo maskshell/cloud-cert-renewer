@@ -21,9 +21,20 @@ logger = logging.getLogger(__name__)
 class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
     """Load Balancer certificate renewal strategy"""
 
-    def __init__(self, config, target_instance_id: str) -> None:
+    def __init__(
+        self, config, target_instance_id: str, target_listener_port: int | None = None
+    ) -> None:
         super().__init__(config)
         self.target_instance_id = target_instance_id
+        self.target_listener_port = target_listener_port
+
+    def _get_listener_port(self) -> int:
+        """Get listener port for this strategy instance"""
+        if self.target_listener_port is not None:
+            return self.target_listener_port
+        if self.config.lb_config:
+            return self.config.lb_config.listener_port
+        raise ValueError("No listener port configured")
 
     def _get_cert_info(self) -> tuple[str, str, str]:
         """Get Load Balancer certificate information"""
@@ -61,7 +72,7 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
         adapter = CloudAdapterFactory.create(self.config.cloud_provider)
         fingerprint = adapter.get_current_lb_certificate_fingerprint(
             instance_id=self.target_instance_id,
-            listener_port=self.config.lb_config.listener_port,
+            listener_port=self._get_listener_port(),
             region=self.config.lb_config.region,
             credentials=self.config.credentials,
             auth_method=self.config.auth_method,
@@ -78,7 +89,7 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
         adapter = CloudAdapterFactory.create(self.config.cloud_provider)
         return adapter.update_load_balancer_certificate(
             instance_id=self.target_instance_id,
-            listener_port=self.config.lb_config.listener_port,
+            listener_port=self._get_listener_port(),
             cert=cert,
             cert_private_key=cert_private_key,
             region=self.config.lb_config.region,

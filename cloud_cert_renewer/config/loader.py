@@ -268,19 +268,72 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
         )
 
     elif service_type == "lb":
-        instance_id_str = _get_env_required(
-            "LB_INSTANCE_ID",
-            "SLB_INSTANCE_ID",
-            "Missing required environment variable: LB_INSTANCE_ID or SLB_INSTANCE_ID",
-        )
-        instance_ids = [i.strip() for i in instance_id_str.split(",") if i.strip()]
+        # Parse LB_LISTENERS (new format: instanceId:port pairs)
+        lb_listeners_str = _get_env_with_fallback("LB_LISTENERS", "SLB_LISTENERS")
+        lb_listeners: list[tuple[str, int]] = []
+        if lb_listeners_str:
+            for pair in lb_listeners_str.split(","):
+                pair = pair.strip()
+                if not pair:
+                    continue
+                if ":" not in pair:
+                    raise ConfigError(
+                        f"Invalid LB_LISTENERS format: '{pair}'. "
+                        "Expected 'instanceId:port' (e.g., 'lb-xxx:443')"
+                    )
+                parts = pair.rsplit(":", 1)
+                instance_id = parts[0].strip()
+                try:
+                    port = int(parts[1].strip())
+                except ValueError:
+                    raise ConfigError(
+                        f"Invalid port in LB_LISTENERS: "
+                        f"'{parts[1]}'. Must be an integer."
+                    )
+                if port < 1 or port > 65535:
+                    raise ConfigError(
+                        f"LB_LISTENERS port must be between 1-65535: {port}"
+                    )
+                if not instance_id:
+                    raise ConfigError(
+                        f"Invalid LB_LISTENERS format: "
+                        f"'{pair}'. instanceId cannot be empty."
+                    )
+                lb_listeners.append((instance_id, port))
 
-        listener_port_str = _get_env_required(
-            "LB_LISTENER_PORT",
-            "SLB_LISTENER_PORT",
-            "Missing required environment variable: "
-            "LB_LISTENER_PORT or SLB_LISTENER_PORT",
+        # When LB_LISTENERS is set, LB_INSTANCE_ID is optional
+        if lb_listeners:
+            instance_id_str = _get_env_with_fallback(
+                "LB_INSTANCE_ID", "SLB_INSTANCE_ID"
+            )
+        else:
+            instance_id_str = _get_env_required(
+                "LB_INSTANCE_ID",
+                "SLB_INSTANCE_ID",
+                (
+                    "Missing required environment variable: "
+                    "LB_INSTANCE_ID or SLB_INSTANCE_ID"
+                ),
+            )
+        instance_ids = (
+            [i.strip() for i in instance_id_str.split(",") if i.strip()]
+            if instance_id_str
+            else []
         )
+
+        # When LB_LISTENERS is set, LB_LISTENER_PORT is optional
+        if lb_listeners:
+            listener_port_str = _get_env_with_fallback(
+                "LB_LISTENER_PORT", "SLB_LISTENER_PORT"
+            )
+        else:
+            listener_port_str = _get_env_required(
+                "LB_LISTENER_PORT",
+                "SLB_LISTENER_PORT",
+                "Missing required environment variable: "
+                "LB_LISTENER_PORT or SLB_LISTENER_PORT",
+            )
+
         cert = _get_env_required(
             "LB_CERT",
             "SLB_CERT",
@@ -294,16 +347,19 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
         )
         region = _get_env_with_fallback("LB_REGION", "SLB_REGION") or "cn-hangzhou"
 
-        try:
-            listener_port = int(listener_port_str)
-            if listener_port < 1 or listener_port > 65535:
+        if listener_port_str:
+            try:
+                listener_port = int(listener_port_str)
+                if listener_port < 1 or listener_port > 65535:
+                    raise ConfigError(
+                        f"LB_LISTENER_PORT must be between 1-65535: {listener_port}"
+                    )
+            except ValueError as e:
                 raise ConfigError(
-                    f"LB_LISTENER_PORT must be between 1-65535: {listener_port}"
-                )
-        except ValueError as e:
-            raise ConfigError(
-                f"LB_LISTENER_PORT must be a valid integer: {listener_port_str}"
-            ) from e
+                    f"LB_LISTENER_PORT must be a valid integer: {listener_port_str}"
+                ) from e
+        else:
+            listener_port = 0
 
         lb_config = LoadBalancerConfig(
             instance_ids=instance_ids,
@@ -311,6 +367,7 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
             cert=cert,
             cert_private_key=cert_private_key,
             region=region,
+            listeners=lb_listeners,
         )
 
         return AppConfig(
