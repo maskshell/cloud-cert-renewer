@@ -39,6 +39,19 @@ helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
   --set image.tag=v0.1.0
 ```
 
+```bash
+
+# Load Balancer with independent ports per instance
+helm install cloud-cert-renewer ./helm/cloud-cert-renewer \
+  --set serviceType=lb \
+  --set 'lb.listeners[0].instanceId=lb-aaa' \
+  --set 'lb.listeners[0].listenerPort=443' \
+  --set 'lb.listeners[1].instanceId=lb-bbb' \
+  --set 'lb.listeners[1].listenerPort=8443' \
+  --set image.tag=v0.1.0
+
+```
+
 **Note:** For `cdn.domainName`, you can use either:
 
 - **YAML list format** (recommended in values files): `domainName: ["example.com", "www.example.com"]`
@@ -69,8 +82,9 @@ The following table lists the configurable parameters and their default values:
 | `replicas`                             | Number of replicas                    | `1`                          |
 | `cdn.domainName`                       | CDN domain names (YAML list preferred, or comma-separated string) | `["schema.amugua.com"]`      |
 | `cdn.region`                           | CDN region                            | `cn-hangzhou`                |
-| `lb.instanceId`                        | Load Balancer instance IDs (comma-separated, new name, preferred) | `""`                         |
-| `lb.listenerPort`                      | Load Balancer listener port           | `443`                        |
+| `lb.instanceId`                        | Load Balancer instance IDs (YAML list preferred, or comma-separated string) | `""`                         |
+| `lb.listeners`                         | Structured instanceId/port pairs (takes precedence over instanceId + listenerPort) | `[]`                         |
+| `lb.listenerPort`                      | Load Balancer listener port (shared, used when listeners is not set) | `443`                        |
 | `lb.region`                            | Load Balancer region                  | `cn-hangzhou`                |
 | `slb.instanceId`                       | SLB instance ID (old name, backward compatible)    | `""`                         |
 | `slb.region`                           | SLB region (old name, backward compatible)         | `cn-hangzhou`                |
@@ -538,9 +552,20 @@ cdn:
 serviceType: lb  # or use slb (backward compatible)
 cloudProvider: alibaba
 lb:
-  instanceId: "lb-xxxxxxxx,lb-yyyyyyyy" # Comma-separated instance IDs
+  # YAML list format (recommended):
+  instanceId:
+    - lb-xxxxxxxx
+    - lb-yyyyyyyy
+  # Or comma-separated string (backward compatible):
+  # instanceId: "lb-xxxxxxxx,lb-yyyyyyyy"
   listenerPort: 443
   region: cn-hangzhou
+  # Structured listeners: independent instanceId/port pairs (takes precedence when set)
+  # listeners:
+  #   - instanceId: lb-xxxxxxxx
+  #     listenerPort: 443
+  #   - instanceId: lb-yyyyyyyy
+  #     listenerPort: 8443
 ```
 
 ## Upgrading

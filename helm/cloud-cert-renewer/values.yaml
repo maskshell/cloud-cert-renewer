@@ -93,9 +93,20 @@ cdn:
 
 # Load Balancer configuration (new name, preferred)
 lb:
+  # Instance ID can be specified as a YAML list (preferred) or comma-separated string (backward compatible)
+  # List format (recommended):
   instanceId: ""
+  # Or use comma-separated string (backward compatible):
+  # instanceId: "lb-xxx,lb-yyy"
   listenerPort: 443
   region: cn-hangzhou
+  # Structured listeners: independent instanceId/port pairs (optional, takes precedence when set)
+  # When listeners is specified, instanceId and listenerPort are used as fallback only.
+  # listeners:
+  #   - instanceId: lb-aaa
+  #     listenerPort: 443
+  #   - instanceId: lb-bbb
+  #     listenerPort: 8443
 
 # SLB configuration (old name, backward compatible)
 slb:
