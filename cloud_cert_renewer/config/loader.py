@@ -347,6 +347,14 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
         )
         region = _get_env_with_fallback("LB_REGION", "SLB_REGION") or "cn-hangzhou"
 
+        cert_source = (
+            _get_env_with_fallback("LB_CERT_SOURCE", "SLB_CERT_SOURCE") or "slb"
+        ).lower()
+        if cert_source not in ("slb", "cas"):
+            raise ConfigError(
+                f"LB_CERT_SOURCE must be 'slb' or 'cas', got: {cert_source}"
+            )
+
         if listener_port_str:
             try:
                 listener_port = int(listener_port_str)
@@ -368,6 +376,7 @@ def load_config(args: argparse.Namespace | None = None) -> AppConfig:
             cert_private_key=cert_private_key,
             region=region,
             listeners=lb_listeners,
+            cert_source=cert_source,
         )
 
         return AppConfig(

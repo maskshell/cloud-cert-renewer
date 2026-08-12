@@ -275,6 +275,44 @@ class TestLoadBalancerCertRenewerStrategy(unittest.TestCase):
             region="cn-hangzhou",
             credentials=self.credentials,
             auth_method="access_key",
+            cert_source="slb",
+        )
+
+    @patch("cloud_cert_renewer.cert_renewer.load_balancer_renewer.CloudAdapterFactory")
+    def test_do_renew_cert_source_cas(self, mock_factory):
+        """Strategy forwards lb_config.cert_source to the adapter."""
+        cas_config = AppConfig(
+            service_type="lb",
+            cloud_provider="alibaba",
+            auth_method="access_key",
+            credentials=self.credentials,
+            force_update=False,
+            lb_config=LoadBalancerConfig(
+                instance_ids=["test-instance-id"],
+                listener_port=443,
+                cert="test_cert",
+                cert_private_key="test_key",
+                region="cn-hangzhou",
+                cert_source="cas",
+            ),
+        )
+        strategy = LoadBalancerCertRenewerStrategy(cas_config, "test-instance-id")
+        mock_adapter = MagicMock()
+        mock_adapter.update_load_balancer_certificate.return_value = True
+        mock_factory.create.return_value = mock_adapter
+
+        result = strategy._do_renew("test_cert", "test_key")
+
+        self.assertTrue(result)
+        mock_adapter.update_load_balancer_certificate.assert_called_once_with(
+            instance_id="test-instance-id",
+            listener_port=443,
+            cert="test_cert",
+            cert_private_key="test_key",
+            region="cn-hangzhou",
+            credentials=self.credentials,
+            auth_method="access_key",
+            cert_source="cas",
         )
 
     @patch(

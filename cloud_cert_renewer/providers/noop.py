@@ -52,6 +52,7 @@ class NoopAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
         auth_method: str | None = None,
+        cert_source: str = "slb",
     ) -> bool:
         self._touch_auth(credentials, auth_method)
         logger.info(

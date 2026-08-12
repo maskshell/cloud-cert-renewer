@@ -38,6 +38,10 @@ class LoadBalancerConfig:
     listeners: list[tuple[str, int]] = field(
         default_factory=list
     )  # (instance_id, listener_port) pairs
+    # Certificate upload path: "slb" (default, into SLB managed cert store) or
+    # "cas" (route through Certificate Management Service / CAS, required when
+    # WAF etc. need to reference a CAS-hosted certificate)
+    cert_source: Literal["slb", "cas"] = "slb"
 
 
 @dataclass

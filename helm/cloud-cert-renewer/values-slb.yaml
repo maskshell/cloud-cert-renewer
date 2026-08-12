@@ -21,6 +21,8 @@ lb:
   # instanceId: lb-xxxxxxxxx
   listenerPort: 443
   region: cn-hangzhou
+  # Certificate upload path: slb (default, into SLB self-managed certificate store) | cas (via CAS, for WAF etc.)
+  certSource: slb
   # Structured listeners: independent instanceId/port pairs (optional, takes precedence when set)
   # When listeners is specified, instanceId and listenerPort are used as fallback only.
   # listeners:
@@ -34,6 +36,8 @@ slb:
   instanceId: lb-xxxxxxxxx
   listenerPort: 443
   region: cn-hangzhou
+  # Certificate upload path: slb (default, into SLB self-managed certificate store) | cas (via CAS, for WAF etc.)
+  certSource: slb
 
 secrets:
   # Use generic naming (recommended)

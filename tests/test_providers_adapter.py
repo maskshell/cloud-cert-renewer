@@ -84,6 +84,40 @@ class TestAlibabaCloudAdapter(unittest.TestCase):
             cert_private_key="test_key",
             region="cn-hangzhou",
             credential_client=mock_credential_client,
+            cert_source="slb",
+        )
+
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.renew_cert")
+    @patch("cloud_cert_renewer.providers.alibaba.CredentialProviderFactory")
+    def test_update_load_balancer_certificate_cert_source_cas(
+        self, mock_factory, mock_renew_cert
+    ):
+        """Adapter forwards cert_source='cas' to the client."""
+        mock_renew_cert.return_value = True
+        mock_provider = MagicMock()
+        mock_credential_client = MagicMock()
+        mock_provider.get_credential_client.return_value = mock_credential_client
+        mock_factory.create.return_value = mock_provider
+
+        result = self.adapter.update_load_balancer_certificate(
+            instance_id="test-instance-id",
+            listener_port=443,
+            cert="test_cert",
+            cert_private_key="test_key",
+            region="cn-hangzhou",
+            credentials=self.credentials,
+            cert_source="cas",
+        )
+
+        self.assertTrue(result)
+        mock_renew_cert.assert_called_once_with(
+            instance_id="test-instance-id",
+            listener_port=443,
+            cert="test_cert",
+            cert_private_key="test_key",
+            region="cn-hangzhou",
+            credential_client=mock_credential_client,
+            cert_source="cas",
         )
 
     @patch("cloud_cert_renewer.clients.alibaba.CdnCertRenewer.get_current_cert")
@@ -197,6 +231,7 @@ class TestCloudAdapterFactory(unittest.TestCase):
                 region: str,
                 credentials: Credentials,
                 auth_method: str | None = None,
+                cert_source: str = "slb",
             ) -> bool:
                 return True
 

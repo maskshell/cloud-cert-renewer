@@ -33,6 +33,7 @@ class AzureAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
         auth_method: str | None = None,
+        cert_source: str = "slb",
     ) -> bool:
         """Update Azure Load Balancer certificate"""
         # TODO: Implement Azure Load Balancer certificate renewal logic

@@ -5,6 +5,7 @@ Defines abstract interfaces and factories for cloud service provider adapters.
 
 import logging
 from abc import ABC, abstractmethod
+from typing import Literal
 
 from cloud_cert_renewer.config import Credentials
 from cloud_cert_renewer.errors import UnsupportedCloudProviderError
@@ -47,6 +48,7 @@ class CloudAdapter(ABC):
         region: str,
         credentials: Credentials,
         auth_method: str | None = None,
+        cert_source: Literal["slb", "cas"] = "slb",
     ) -> bool:
         """
         Update Load Balancer certificate

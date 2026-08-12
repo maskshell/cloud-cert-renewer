@@ -29,6 +29,30 @@ Automated HTTPS certificate renewal tool for cloud services, supporting CDN and 
 - Integration with cert-manager and Reloader
 - Automated release workflow with multi-architecture Docker images, Helm Charts, and PyPI packages
 
+## SLB CAS Certificate Relay Path
+
+By default, SLB certificate renewal uploads the certificate directly to the SLB certificate center (`LB_CERT_SOURCE=slb`). For scenarios where WAF or other services require the SLB certificate to reference a CAS-managed certificate, set `LB_CERT_SOURCE=cas` (environment variable name `LB_CERT_SOURCE`, backward compatible with `SLB_CERT_SOURCE`).
+
+### How It Works (cas path)
+
+1. Look up an existing CAS certificate by the stable name (`ListUserCertificateOrder`, `OrderType=UPLOAD`); reuse it when found.
+2. If not found, upload the certificate to Alibaba Cloud Certificate Management Service (CAS) via `UploadUserCertificate`.
+3. Import the CAS certificate into SLB via `UploadServerCertificate` with the `AliCloudCertificateId` parameter.
+4. Bind the certificate to the HTTPS listener.
+
+CDN and the default slb path are unaffected.
+
+### Required CAS Permissions
+
+When using `LB_CERT_SOURCE=cas`, grant the following additional RAM permissions to the AccessKey or RAM Role:
+
+- `yundun-cert:UploadUserCertificate` — upload a certificate to CAS
+- `yundun-cert:ListUserCertificateOrder` — look up an existing uploaded certificate by name (idempotency)
+
+Both actions are included in the system policy `AliyunYundunCertFullAccess`.
+
+For RRSA/OIDC scenarios (Kubernetes), append the CAS permissions to the RAM Role used by the Service Account.
+
 ## Kubernetes Deployment
 
 ### Prerequisites

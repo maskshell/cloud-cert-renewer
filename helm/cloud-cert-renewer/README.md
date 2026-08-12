@@ -86,6 +86,7 @@ The following table lists the configurable parameters and their default values:
 | `lb.listeners`                         | Structured instanceId/port pairs (takes precedence over instanceId + listenerPort) | `[]`                         |
 | `lb.listenerPort`                      | Load Balancer listener port (shared, used when listeners is not set) | `443`                        |
 | `lb.region`                            | Load Balancer region                  | `cn-hangzhou`                |
+| `lb.certSource`                        | Certificate upload path: `slb` (into SLB self-managed store) or `cas` (via Alibaba Cloud CAS, for WAF etc.) | `slb` |
 | `slb.instanceId`                       | SLB instance ID (old name, backward compatible)    | `""`                         |
 | `slb.region`                           | SLB region (old name, backward compatible)         | `cn-hangzhou`                |
 | `secrets.cloudCredentials.name`        | Cloud service credentials secret name (new name, preferred) | `cloud-credentials`           |
@@ -566,6 +567,21 @@ lb:
   #     listenerPort: 443
   #   - instanceId: lb-yyyyyyyy
   #     listenerPort: 8443
+```
+
+### Load Balancer with CAS Certificate Path (WAF Scenario)
+
+When using Alibaba Cloud WAF or other services that reference certificates from the Digital Certificate Management Service (CAS), set `certSource` to `cas` so the certificate is uploaded via CAS instead of the SLB self-managed certificate store:
+
+```yaml
+serviceType: lb
+cloudProvider: alibaba
+lb:
+  instanceId:
+    - lb-xxxxxxxx
+  listenerPort: 443
+  region: cn-hangzhou
+  certSource: cas  # Upload certificate via CAS for WAF compatibility
 ```
 
 ## Upgrading

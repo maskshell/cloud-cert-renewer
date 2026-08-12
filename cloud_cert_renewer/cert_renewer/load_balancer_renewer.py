@@ -95,4 +95,5 @@ class LoadBalancerCertRenewerStrategy(BaseCertRenewer):
             region=self.config.lb_config.region,
             credentials=self.config.credentials,
             auth_method=self.config.auth_method,
+            cert_source=self.config.lb_config.cert_source,
         )

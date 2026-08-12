@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from cloud_cert_renewer.cert_renewer.base import CertValidationError  # noqa: E402
 from cloud_cert_renewer.clients.alibaba import (  # noqa: E402
+    CasCertUploader,
     CdnCertRenewer,
     LoadBalancerCertRenewer,
 )
@@ -232,6 +233,230 @@ MIIEpQIBAAKCAQEA...
         self.assertTrue(result)
         mock_client.upload_server_certificate_with_options.assert_called_once()
         mock_client.set_load_balancer_httpslistener_attribute_with_options.assert_called_once()
+
+    @patch("cloud_cert_renewer.clients.alibaba.get_cert_fingerprint_sha1")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.CasCertUploader.upload_or_reuse_certificate"
+    )
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_renew_cert_cas_path(
+        self, mock_create_client, mock_cas_upload, mock_fingerprint
+    ):
+        """CAS path: upload/reuse via CAS, then reference it from the SLB cert store."""
+        mock_fingerprint.return_value = "aa:bb:cc:dd:ee:ff:00:11"
+        mock_cas_upload.return_value = "cas-cert-id"
+        mock_client = MagicMock()
+        mock_upload_response = MagicMock()
+        mock_upload_response.body.server_certificate_id = "slb-cert-id"
+        mock_client.upload_server_certificate_with_options.return_value = (
+            mock_upload_response
+        )
+        mock_bind_response = MagicMock()
+        mock_bind_response.status_code = 200
+        mock_client.set_load_balancer_httpslistener_attribute_with_options.return_value = (  # noqa: E501
+            mock_bind_response
+        )
+        mock_create_client.return_value = mock_client
+
+        result = LoadBalancerCertRenewer.renew_cert(
+            instance_id=self.instance_id,
+            listener_port=self.listener_port,
+            cert=self.cert,
+            cert_private_key=self.cert_private_key,
+            region=self.region,
+            credential_client=self.credential_client,
+            cert_source="cas",
+        )
+
+        self.assertTrue(result)
+        # CAS upload/reuse happened with cert/private_key/name (name includes instance)
+        mock_cas_upload.assert_called_once()
+        cas_kwargs = mock_cas_upload.call_args.kwargs
+        self.assertEqual(cas_kwargs["cert"], self.cert)
+        self.assertEqual(cas_kwargs["private_key"], self.cert_private_key)
+        self.assertIn(self.instance_id, cas_kwargs["name"])
+        # SLB upload references the CAS cert id (no server_certificate/private_key)
+        slb_req = mock_client.upload_server_certificate_with_options.call_args.args[0]
+        self.assertEqual(slb_req.ali_cloud_certificate_id, "cas-cert-id")
+        self.assertEqual(slb_req.ali_cloud_certificate_region_id, self.region)
+        self.assertFalse(getattr(slb_req, "server_certificate", None))
+        # Bind to listener
+        mock_client.set_load_balancer_httpslistener_attribute_with_options.assert_called_once()
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
+    def test_cas_uploader_upload_success(self, mock_create_cas_client):
+        """Test uploading certificate to CAS returns cert_id."""
+        mock_cas_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.body.cert_id = "cas-cert-123"
+        mock_cas_client.upload_user_certificate_with_options.return_value = (
+            mock_response
+        )
+        mock_create_cas_client.return_value = mock_cas_client
+
+        cert_id = CasCertUploader.upload_user_certificate(
+            cert=self.cert,
+            private_key=self.cert_private_key,
+            name="test-cert",
+            credential_client=self.credential_client,
+        )
+
+        self.assertEqual(cert_id, "cas-cert-123")
+        req = mock_cas_client.upload_user_certificate_with_options.call_args.args[0]
+        self.assertEqual(req.cert, self.cert)
+        self.assertEqual(req.key, self.cert_private_key)
+        self.assertEqual(req.name, "test-cert")
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
+    def test_cas_uploader_upload_empty_cert_id(self, mock_create_cas_client):
+        """CAS upload returning empty cert_id raises CloudApiError."""
+        from cloud_cert_renewer.errors import CloudApiError
+
+        mock_cas_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.body.cert_id = None
+        mock_cas_client.upload_user_certificate_with_options.return_value = (
+            mock_response
+        )
+        mock_create_cas_client.return_value = mock_cas_client
+
+        with self.assertRaises(CloudApiError):
+            CasCertUploader.upload_user_certificate(
+                cert=self.cert,
+                private_key=self.cert_private_key,
+                name="test-cert",
+                credential_client=self.credential_client,
+            )
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
+    def test_cas_uploader_upload_failure(self, mock_create_cas_client):
+        """CAS upload API error is wrapped as CloudApiError."""
+        from cloud_cert_renewer.errors import CloudApiError
+
+        mock_cas_client = MagicMock()
+        mock_cas_client.upload_user_certificate_with_options.side_effect = RuntimeError(
+            "CAS API boom"
+        )
+        mock_create_cas_client.return_value = mock_cas_client
+
+        with self.assertRaises(CloudApiError):
+            CasCertUploader.upload_user_certificate(
+                cert=self.cert,
+                private_key=self.cert_private_key,
+                name="test-cert",
+                credential_client=self.credential_client,
+            )
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
+    def test_cas_find_existing_certificate_by_name_found(self, mock_create_cas_client):
+        """ListUserCertificateOrder returns matching CertificateId for exact name."""
+        mock_cas_client = MagicMock()
+        match = MagicMock()
+        match.name = "test-cert"
+        match.certificate_id = 12345
+        other = MagicMock()
+        other.name = "test-cert-other"
+        other.certificate_id = 99999
+        mock_response = MagicMock()
+        mock_response.body.certificate_order_list = [other, match]
+        mock_cas_client.list_user_certificate_order_with_options.return_value = (
+            mock_response
+        )
+        mock_create_cas_client.return_value = mock_cas_client
+
+        cert_id = CasCertUploader.find_existing_certificate_by_name(
+            name="test-cert",
+            credential_client=self.credential_client,
+        )
+
+        self.assertEqual(cert_id, "12345")
+        req = mock_cas_client.list_user_certificate_order_with_options.call_args.args[0]
+        self.assertEqual(req.keyword, "test-cert")
+        self.assertEqual(req.order_type, "UPLOAD")
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
+    def test_cas_find_existing_certificate_by_name_not_found(
+        self, mock_create_cas_client
+    ):
+        """No exact name match returns None."""
+        mock_cas_client = MagicMock()
+        other = MagicMock()
+        other.name = "other-cert"
+        other.certificate_id = 99999
+        mock_response = MagicMock()
+        mock_response.body.certificate_order_list = [other]
+        mock_cas_client.list_user_certificate_order_with_options.return_value = (
+            mock_response
+        )
+        mock_create_cas_client.return_value = mock_cas_client
+
+        cert_id = CasCertUploader.find_existing_certificate_by_name(
+            name="test-cert",
+            credential_client=self.credential_client,
+        )
+
+        self.assertIsNone(cert_id)
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
+    def test_cas_find_existing_certificate_by_name_api_error(
+        self, mock_create_cas_client
+    ):
+        """List API failure returns None so upload can proceed."""
+        mock_cas_client = MagicMock()
+        mock_cas_client.list_user_certificate_order_with_options.side_effect = (
+            RuntimeError("list boom")
+        )
+        mock_create_cas_client.return_value = mock_cas_client
+
+        cert_id = CasCertUploader.find_existing_certificate_by_name(
+            name="test-cert",
+            credential_client=self.credential_client,
+        )
+
+        self.assertIsNone(cert_id)
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.upload_user_certificate")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.CasCertUploader.find_existing_certificate_by_name"
+    )
+    def test_cas_upload_or_reuse_reuses_existing(self, mock_find, mock_upload):
+        """upload_or_reuse returns existing cert_id without uploading."""
+        mock_find.return_value = "existing-cas-id"
+
+        cert_id = CasCertUploader.upload_or_reuse_certificate(
+            cert=self.cert,
+            private_key=self.cert_private_key,
+            name="test-cert",
+            credential_client=self.credential_client,
+        )
+
+        self.assertEqual(cert_id, "existing-cas-id")
+        mock_find.assert_called_once_with("test-cert", self.credential_client)
+        mock_upload.assert_not_called()
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.upload_user_certificate")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.CasCertUploader.find_existing_certificate_by_name"
+    )
+    def test_cas_upload_or_reuse_uploads_when_missing(self, mock_find, mock_upload):
+        """upload_or_reuse uploads when no existing certificate is found."""
+        mock_find.return_value = None
+        mock_upload.return_value = "new-cas-id"
+
+        cert_id = CasCertUploader.upload_or_reuse_certificate(
+            cert=self.cert,
+            private_key=self.cert_private_key,
+            name="test-cert",
+            credential_client=self.credential_client,
+        )
+
+        self.assertEqual(cert_id, "new-cas-id")
+        mock_upload.assert_called_once_with(
+            cert=self.cert,
+            private_key=self.cert_private_key,
+            name="test-cert",
+            credential_client=self.credential_client,
+        )
 
     @patch.dict(
         os.environ,

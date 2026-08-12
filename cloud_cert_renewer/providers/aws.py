@@ -33,6 +33,7 @@ class AWSAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
         auth_method: str | None = None,
+        cert_source: str = "slb",
     ) -> bool:
         """Update AWS ELB/ALB certificate"""
         # TODO: Implement AWS ELB/ALB certificate renewal logic

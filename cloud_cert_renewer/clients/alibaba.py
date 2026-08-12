@@ -6,6 +6,8 @@ Provides client wrappers for Alibaba Cloud CDN and Load Balancer certificate ren
 import logging
 import os
 
+from alibabacloud_cas20200407 import models as cas_20200407_models
+from alibabacloud_cas20200407.client import Client as Cas20200407Client
 from alibabacloud_cdn20180510 import models as cdn_20180510_models
 from alibabacloud_cdn20180510.client import Client as Cdn20180510Client
 from alibabacloud_credentials.client import Client as CredClient
@@ -178,6 +180,162 @@ class CdnCertRenewer:
             raise CloudApiError(f"CDN certificate update failed: {error_msg}") from e
 
 
+class CasCertUploader:
+    """Certificate Management Service (CAS) certificate uploader.
+
+    Uploads certificates to Alibaba Cloud Certificate Management Service
+    (formerly SSL Certificate Service) so they can be referenced by SLB, WAF
+    and other cloud products via AliCloudCertificateId.
+    """
+
+    @staticmethod
+    def create_client(credential_client: CredClient) -> Cas20200407Client:
+        """
+        Initialize CAS client using credential client
+        :param credential_client: Alibaba Cloud Credentials client
+        :return: CAS Client instance
+        """
+        config = open_api_models.Config(credential=credential_client)
+        config.endpoint = "cas.aliyuncs.com"
+        return Cas20200407Client(config)
+
+    @staticmethod
+    def find_existing_certificate_by_name(
+        name: str,
+        credential_client: CredClient,
+    ) -> str | None:
+        """
+        Find an existing uploaded CAS certificate by its exact name.
+
+        Uses ListUserCertificateOrder (OrderType=UPLOAD) so the returned
+        CertificateId matches UploadUserCertificate's CertId, which is what
+        SLB's AliCloudCertificateId expects.
+        :param name: Certificate name used at upload time
+        :param credential_client: Alibaba Cloud Credentials client
+        :return: CAS certificate ID (cert_id) if found, otherwise None
+        """
+        try:
+            client = CasCertUploader.create_client(credential_client)
+            runtime = _build_runtime_options()
+
+            # Keyword is a fuzzy filter; exact-name match is enforced below.
+            list_request = cas_20200407_models.ListUserCertificateOrderRequest(
+                keyword=name,
+                order_type="UPLOAD",
+                show_size=50,
+            )
+            list_response = client.list_user_certificate_order_with_options(
+                list_request, runtime
+            )
+
+            orders = (
+                list_response.body.certificate_order_list
+                if list_response.body and list_response.body.certificate_order_list
+                else []
+            )
+            for item in orders:
+                if item.name == name and item.certificate_id is not None:
+                    cert_id = str(item.certificate_id)
+                    logger.info(
+                        "Found existing CAS certificate: name=%s, cert_id=%s",
+                        name,
+                        cert_id,
+                    )
+                    return cert_id
+            return None
+        except Exception as e:
+            logger.warning(
+                "Failed to search CAS certificate by name=%s: %s. "
+                "Will proceed with new certificate upload.",
+                name,
+                str(e),
+            )
+            return None
+
+    @staticmethod
+    def upload_user_certificate(
+        cert: str,
+        private_key: str,
+        name: str,
+        credential_client: CredClient,
+    ) -> str:
+        """
+        Upload a certificate to Certificate Management Service (CAS).
+        :param cert: SSL certificate content (PEM)
+        :param private_key: SSL certificate private key (PEM)
+        :param name: Certificate name (also used to reference from SLB)
+        :param credential_client: Alibaba Cloud Credentials client
+        :return: CAS certificate ID (cert_id)
+        :raises CloudApiError: If the upload fails or returns an empty cert_id
+        """
+        try:
+            client = CasCertUploader.create_client(credential_client)
+            request = cas_20200407_models.UploadUserCertificateRequest(
+                cert=cert,
+                key=private_key,
+                name=name,
+            )
+            runtime = _build_runtime_options()
+            response = client.upload_user_certificate_with_options(request, runtime)
+
+            cert_id = response.body.cert_id
+            if not cert_id:
+                raise CloudApiError(f"CAS upload returned empty cert_id: name={name}")
+            cert_id = str(cert_id)
+            logger.info(
+                "CAS certificate uploaded successfully: name=%s, cert_id=%s",
+                name,
+                cert_id,
+            )
+            return cert_id
+        except CloudApiError:
+            raise
+        except Exception as e:
+            error_msg = str(e)
+            if hasattr(e, "message"):
+                error_msg = e.message
+            logger.error("CAS certificate upload failed: %s", error_msg)
+            data = getattr(e, "data", None)
+            if data and isinstance(data, dict):
+                recommend = data.get("Recommend")
+                if recommend:
+                    logger.error("Diagnostic URL: %s", recommend)
+            raise CloudApiError(f"CAS certificate upload failed: {error_msg}") from e
+
+    @staticmethod
+    def upload_or_reuse_certificate(
+        cert: str,
+        private_key: str,
+        name: str,
+        credential_client: CredClient,
+    ) -> str:
+        """
+        Resolve a CAS certificate ID for the given cert (idempotent).
+
+        CAS requires certificate names to be unique per account, so reusing the
+        same stable name on multi-listener renewals or retries would fail with
+        a duplicate-name error. Reuse the existing certificate when one with
+        the same name already exists; otherwise upload a new one.
+        :param cert: SSL certificate content (PEM)
+        :param private_key: SSL certificate private key (PEM)
+        :param name: Stable certificate name (e.g. from _build_cert_name)
+        :param credential_client: Alibaba Cloud Credentials client
+        :return: CAS certificate ID (cert_id)
+        :raises CloudApiError: If the upload fails or returns an empty cert_id
+        """
+        existing_id = CasCertUploader.find_existing_certificate_by_name(
+            name, credential_client
+        )
+        if existing_id:
+            return existing_id
+        return CasCertUploader.upload_user_certificate(
+            cert=cert,
+            private_key=private_key,
+            name=name,
+            credential_client=credential_client,
+        )
+
+
 class LoadBalancerCertRenewer:
     """Load Balancer certificate renewer (renamed from SlbCertsRenewer)"""
 
@@ -346,6 +504,61 @@ class LoadBalancerCertRenewer:
             return None
 
     @staticmethod
+    def _build_cert_name(instance_id: str, cert: str) -> str:
+        """Build a stable certificate name for CAS upload.
+
+        Uses the SLB instance ID and a short SHA1 fingerprint of the
+        certificate, so the same (instance, cert) pair yields a stable name
+        (eases identification) while different certs differ.
+        """
+        fingerprint = get_cert_fingerprint_sha1(cert).replace(":", "")
+        return f"{instance_id}-{fingerprint[:8]}"
+
+    @staticmethod
+    def _upload_or_reuse_slb_cert(
+        cert: str,
+        cert_private_key: str,
+        region: str,
+        credential_client: CredClient,
+    ) -> str:
+        """Resolve an SLB server_certificate_id for the given cert (SLB path).
+
+        Reuses an existing SLB-managed certificate with a matching fingerprint
+        when one exists (idempotency); otherwise uploads a new one.
+        """
+        client = LoadBalancerCertRenewer.create_client(credential_client)
+        runtime = _build_runtime_options()
+        cert_id = None
+
+        # 1. Check if certificate already exists (Idempotency Check)
+        try:
+            new_cert_fingerprint = get_cert_fingerprint_sha1(cert)
+            cert_id = LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint(
+                region, new_cert_fingerprint, credential_client
+            )
+        except Exception as e:
+            logger.warning(
+                "Idempotency check failed: %s. Proceeding with upload.", str(e)
+            )
+
+        # 2. Upload certificate if not found
+        if not cert_id:
+            upload_request = slb_20140515_models.UploadServerCertificateRequest(
+                server_certificate=cert,
+                private_key=cert_private_key,
+                region_id=region,
+            )
+            upload_response = client.upload_server_certificate_with_options(
+                upload_request, runtime
+            )
+            cert_id = upload_response.body.server_certificate_id
+            logger.info("SLB certificate uploaded successfully: cert_id=%s", cert_id)
+        else:
+            logger.info("Reusing existing SLB certificate: cert_id=%s", cert_id)
+
+        return cert_id
+
+    @staticmethod
     def renew_cert(
         instance_id: str,
         listener_port: int,
@@ -353,6 +566,7 @@ class LoadBalancerCertRenewer:
         cert_private_key: str,
         region: str,
         credential_client: CredClient,
+        cert_source: str = "slb",
     ) -> bool:
         """
         Update SLB instance SSL certificate
@@ -362,6 +576,10 @@ class LoadBalancerCertRenewer:
         :param cert_private_key: SSL certificate private key
         :param region: Region
         :param credential_client: Alibaba Cloud Credentials client
+        :param cert_source: Certificate upload path. "slb" (default) uploads
+            directly to the SLB managed cert store; "cas" first uploads to
+            Certificate Management Service (CAS) then references it from the
+            SLB cert store (required by WAF etc.)
         :return: Whether successful
         """
         try:
@@ -370,41 +588,38 @@ class LoadBalancerCertRenewer:
             runtime = _build_runtime_options()
             cert_id = None
 
-            # 1. Check if certificate already exists (Idempotency Check)
-            try:
-                # Calculate fingerprint of the new certificate
-                new_cert_fingerprint = get_cert_fingerprint_sha1(cert)
-
-                # Check for existing certificate
-                cert_id = (
-                    LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint(
-                        region, new_cert_fingerprint, credential_client
-                    )
-                )
-            except Exception as e:
-                logger.warning(
-                    "Idempotency check failed: %s. Proceeding with upload.", str(e)
-                )
-
-            # 2. Upload certificate if not found
-            if not cert_id:
-                # Build request - Upload certificate
-                upload_request = slb_20140515_models.UploadServerCertificateRequest(
-                    server_certificate=cert,
+            if cert_source == "cas":
+                # CAS path: upload to Certificate Management Service first,
+                # then reference it from the SLB cert store. Required when WAF
+                # etc. need the SLB certificate to originate from CAS.
+                cert_name = LoadBalancerCertRenewer._build_cert_name(instance_id, cert)
+                cas_cert_id = CasCertUploader.upload_or_reuse_certificate(
+                    cert=cert,
                     private_key=cert_private_key,
-                    region_id=region,
+                    name=cert_name,
+                    credential_client=credential_client,
                 )
-
+                upload_request = slb_20140515_models.UploadServerCertificateRequest(
+                    region_id=region,
+                    ali_cloud_certificate_id=cas_cert_id,
+                    ali_cloud_certificate_name=cert_name,
+                    ali_cloud_certificate_region_id=region,
+                )
                 upload_response = client.upload_server_certificate_with_options(
                     upload_request, runtime
                 )
-
                 cert_id = upload_response.body.server_certificate_id
                 logger.info(
-                    "SLB certificate uploaded successfully: cert_id=%s", cert_id
+                    "SLB certificate referenced from CAS: "
+                    "cas_cert_id=%s, slb_cert_id=%s",
+                    cas_cert_id,
+                    cert_id,
                 )
             else:
-                logger.info("Reusing existing SLB certificate: cert_id=%s", cert_id)
+                # SLB path (default): managed by SLB's own cert store.
+                cert_id = LoadBalancerCertRenewer._upload_or_reuse_slb_cert(
+                    cert, cert_private_key, region, credential_client
+                )
 
             # 3. Bind certificate to listener
             # Note: SetLoadBalancerHTTPSListenerAttribute only needs to pass

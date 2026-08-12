@@ -157,6 +157,12 @@ Both formats are automatically converted to the `CDN_DOMAIN_NAME` environment va
 - `LB_CERT`: SSL certificate content (PEM format, supports multi-line) (new name, preferred)
 - `LB_CERT_PRIVATE_KEY`: SSL certificate private key (PEM format, supports multi-line) (new name, preferred)
 - `LB_REGION`: Region (default: `cn-hangzhou`) (new name, preferred)
+- `LB_CERT_SOURCE`: Certificate upload path (default: `slb`, backward compatible name: `SLB_CERT_SOURCE`)
+
+#### LB_CERT_SOURCE Options
+
+- **`slb`** (default): Upload the certificate directly to the SLB certificate center. No extra permissions needed.
+- **`cas`**: Upload the certificate to Alibaba Cloud Certificate Management Service (CAS) first, then import into SLB via `AliCloudCertificateId`. Required for scenarios such as WAF that mandate SLB certificates reference a CAS certificate. Looks up an existing certificate by name before upload (idempotent). Requires additional RAM permissions `yundun-cert:UploadUserCertificate` and `yundun-cert:ListUserCertificateOrder` (system policy `AliyunYundunCertFullAccess`). For RRSA/OIDC scenarios, append these CAS permissions to the RAM Role used by the Service Account.
 
 ### Legacy Environment Variables
 
@@ -186,6 +192,7 @@ When using Alibaba Cloud, ensure your AccessKey has the appropriate RAM permissi
 
 - **CDN**: `cdn:SetCdnDomainSSLCertificate`, `cdn:DescribeDomainCertificateInfo`
 - **Load Balancer**: `slb:DescribeServerCertificates`, `slb:UploadServerCertificate`, `slb:SetLoadBalancerHTTPSListenerAttribute`, `slb:DescribeLoadBalancerHTTPSListenerAttribute`
+- **Load Balancer (CAS relay, when LB_CERT_SOURCE=cas)**: `yundun-cert:UploadUserCertificate`, `yundun-cert:ListUserCertificateOrder` (system policy `AliyunYundunCertFullAccess`)
 
 ## Code Formatting
 

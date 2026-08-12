@@ -66,6 +66,7 @@ class AlibabaCloudAdapter(CloudAdapter):
         region: str,
         credentials: Credentials,
         auth_method: str | None = None,
+        cert_source: str = "slb",
     ) -> bool:
         """Update Alibaba Cloud Load Balancer certificate (via Alibaba Cloud adapter)"""
         from cloud_cert_renewer.clients.alibaba import LoadBalancerCertRenewer
@@ -79,6 +80,7 @@ class AlibabaCloudAdapter(CloudAdapter):
             cert_private_key=cert_private_key,
             region=region,
             credential_client=credential_client,
+            cert_source=cert_source,
         )
 
     def get_current_cdn_certificate(

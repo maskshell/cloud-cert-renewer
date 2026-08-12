@@ -38,6 +38,7 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
+    "alibabacloud-cas20200407>=3.5.1",
     "alibabacloud-cdn20180510>=3.1.2",
     "alibabacloud-credentials>=0.3.6",
     "alibabacloud-slb20140515>=3.1.2",

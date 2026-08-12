@@ -88,6 +88,61 @@ class TestLoadConfig(unittest.TestCase):
         self.assertEqual(result.lb_config.region, "cn-beijing")
         self.assertFalse(result.force_update)
 
+    def test_load_config_lb_cert_source_default(self):
+        """LB cert_source defaults to 'slb' when LB_CERT_SOURCE is not set."""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "lb",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "LB_INSTANCE_ID": "test-instance-id",
+                "LB_LISTENER_PORT": "443",
+                "LB_CERT": "test_cert",
+                "LB_CERT_PRIVATE_KEY": "test_key",
+            }
+        )
+
+        result = load_config()
+
+        self.assertEqual(result.lb_config.cert_source, "slb")
+
+    def test_load_config_lb_cert_source_cas(self):
+        """LB_CERT_SOURCE=cas is parsed and lowercased."""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "lb",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "LB_INSTANCE_ID": "test-instance-id",
+                "LB_LISTENER_PORT": "443",
+                "LB_CERT": "test_cert",
+                "LB_CERT_PRIVATE_KEY": "test_key",
+                "LB_CERT_SOURCE": "CAS",
+            }
+        )
+
+        result = load_config()
+
+        self.assertEqual(result.lb_config.cert_source, "cas")
+
+    def test_load_config_lb_cert_source_invalid(self):
+        """Invalid LB_CERT_SOURCE value raises ConfigError."""
+        os.environ.update(
+            {
+                "SERVICE_TYPE": "lb",
+                "CLOUD_ACCESS_KEY_ID": "test_key_id",
+                "CLOUD_ACCESS_KEY_SECRET": "test_key_secret",
+                "LB_INSTANCE_ID": "test-instance-id",
+                "LB_LISTENER_PORT": "443",
+                "LB_CERT": "test_cert",
+                "LB_CERT_PRIVATE_KEY": "test_key",
+                "LB_CERT_SOURCE": "invalid",
+            }
+        )
+
+        with self.assertRaises(ConfigError):
+            load_config()
+
     def test_load_config_slb_backward_compat(self):
         """
         Test backward compatibility: SLB service type automatically
