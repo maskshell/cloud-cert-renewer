@@ -1,18 +1,24 @@
 # Cloud Certificate Renewer
 
-Automated HTTPS certificate renewal tool for cloud services, supporting CDN and Load Balancer products. Currently supports Alibaba Cloud, with architecture designed for multi-cloud extension.
+**English** | [简体中文](README.zh-CN.md)
+
+Automated HTTPS certificate renewal tool for cloud services, supporting CDN and Load Balancer products. It typically runs as a Kubernetes init-container alongside cert-manager and Reloader, or as a standalone CLI. Currently supports Alibaba Cloud, with architecture designed for multi-cloud extension.
 
 ## Table of Contents
 
 - [Features](#features)
 - [Kubernetes Deployment](#kubernetes-deployment)
+- [CLI Installation](#cli-installation)
+- [SLB CAS Certificate Relay Path](#slb-cas-certificate-relay-path)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
 - Automatic certificate renewal for cloud CDN services (currently supports Alibaba Cloud)
 - Automatic certificate renewal for cloud Load Balancer services, supporting multiple instances with independent ports per instance (currently supports Alibaba Cloud SLB)
+- Optional CAS-relay upload path (`LB_CERT_SOURCE=cas`) for SLB certificates referenced by WAF and other services
 - Certificate validation (domain matching, expiration checking)
 - Support for wildcard domain certificates
 - CLI support with arguments (`--dry-run`, `--verbose`, `--version`)
@@ -27,40 +33,6 @@ Automated HTTPS certificate renewal tool for cloud services, supporting CDN and 
 - Comprehensive error handling and logging
 - Helm Chart deployment support
 - Integration with cert-manager and Reloader
-- Automated release workflow with multi-architecture Docker images, Helm Charts, and PyPI packages
-
-## SLB CAS Certificate Relay Path
-
-By default, SLB certificate renewal uploads the certificate directly to the SLB certificate center (`LB_CERT_SOURCE=slb`). For scenarios where WAF or other services require the SLB certificate to reference a CAS-managed certificate, set `LB_CERT_SOURCE=cas` (environment variable name `LB_CERT_SOURCE`, backward compatible with `SLB_CERT_SOURCE`).
-
-### How It Works (cas path)
-
-1. Look up an existing CAS certificate by its stable name (`ListUserCertificateOrder`, `OrderType=UPLOAD`). The lookup paginates uploaded certificates and matches by name client-side — the API `Keyword` only matches domain/resource-ID, not the certificate name — and reuses the existing certificate when found.
-2. If not found, upload the certificate to Alibaba Cloud Certificate Management Service (CAS) via `UploadUserCertificate`. If a concurrent upload created a same-name certificate in the meantime (duplicate-name error), the collision is caught and the existing certificate is reused.
-3. Import the CAS certificate into SLB via `UploadServerCertificate` with `AliCloudCertificateId` and `AliCloudCertificateRegionId=cn-hangzhou` (the CAS China-site region; independent of `LB_REGION`). An existing SLB server certificate with a matching fingerprint is reused when present (idempotent); otherwise a new one is created.
-4. Bind the certificate to the HTTPS listener.
-
-CDN and the default slb path are unaffected.
-
-### Certificate Accumulation (operational note)
-
-Certificate renewal does **not** delete old certificates. Be aware of the accumulation behavior:
-
-- **CAS certs:** the cas path uploads under a stable name derived from the SLB instance ID and a SHA-1 fingerprint of the certificate (`{instance_id}-{fingerprint[:8]}`). When the certificate **content changes** (e.g. a real renewal), the fingerprint changes, producing a **new** CAS certificate under a new name. The previous CAS certificate is left in place and is never removed.
-- **SLB server certificates:** on the cas path, an existing SLB server certificate with a matching fingerprint is reused when one is visible on the first page of `DescribeServerCertificates`; otherwise a **new** SLB server certificate entry is created. Over many renewals this can leave orphaned CAS and SLB certificate entries.
-
-Neither path garbage-collects. Schedule periodic cleanup (or a lifecycle policy) in the Alibaba Cloud console to retire stale CAS certificates and unused SLB server certificates.
-
-### Required CAS Permissions
-
-When using `LB_CERT_SOURCE=cas`, grant the following additional RAM permissions to the AccessKey or RAM Role:
-
-- `yundun-cert:UploadUserCertificate` — upload a certificate to CAS
-- `yundun-cert:ListUserCertificateOrder` — look up an existing uploaded certificate by name (idempotency)
-
-Both actions are included in the system policy `AliyunYundunCertFullAccess`.
-
-For RRSA/OIDC scenarios (Kubernetes), append the CAS permissions to the RAM Role used by the Service Account.
 
 ## Kubernetes Deployment
 
@@ -99,17 +71,13 @@ For detailed deployment instructions and troubleshooting, see:
 - [Helm Chart README](helm/cloud-cert-renewer/README.md)
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
-### How It Works
+### How It Works (in-cluster renewal)
 
 1. cert-manager automatically acquires/updates Let's Encrypt certificates and updates the `cert-secret` Secret
 2. Reloader detects Secret changes and triggers Deployment redeployment
 3. Init container starts, reads certificate from Secret, and calls cloud service API to update certificate
 4. Init container exits after completion
 5. Main container (placeholder) keeps running to ensure Deployment status is normal
-
-### Development
-
-For development and testing, see [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup instructions.
 
 ## CLI Installation
 
@@ -136,6 +104,39 @@ export CLOUD_ACCESS_KEY_ID=your_key
 ...
 cloud-cert-renewer
 ```
+
+## SLB CAS Certificate Relay Path
+
+By default, SLB certificate renewal uploads the certificate directly to the SLB certificate center (`LB_CERT_SOURCE=slb`). For scenarios where WAF or other services require the SLB certificate to reference a CAS-managed certificate, set `LB_CERT_SOURCE=cas` (environment variable name `LB_CERT_SOURCE`, backward compatible with `SLB_CERT_SOURCE`).
+
+### How It Works (cas path)
+
+1. Look up an existing CAS certificate by its stable name (`ListUserCertificateOrder`, `OrderType=UPLOAD`). The lookup paginates uploaded certificates and matches by name client-side — the API `Keyword` only matches domain/resource-ID, not the certificate name — and reuses the existing certificate when found.
+2. If not found, upload the certificate to Alibaba Cloud Certificate Management Service (CAS) via `UploadUserCertificate`. If a concurrent upload created a same-name certificate in the meantime (duplicate-name error), the collision is caught and the existing certificate is reused.
+3. Import the CAS certificate into SLB via `UploadServerCertificate` with `AliCloudCertificateId` and `AliCloudCertificateRegionId=cn-hangzhou` (the CAS China-site region; independent of `LB_REGION`). An existing SLB server certificate with a matching fingerprint is reused when present (idempotent); otherwise a new one is created.
+4. Bind the certificate to the HTTPS listener.
+
+CDN and the default slb path are unaffected.
+
+### Certificate Accumulation (operational note)
+
+Certificate renewal does **not** delete old certificates. Be aware of the accumulation behavior:
+
+- **CAS certs:** the cas path uploads under a stable name derived from the SLB instance ID and a SHA-1 fingerprint of the certificate (`{instance_id}-{fingerprint[:8]}`). When the certificate **content changes** (e.g. a real renewal), the fingerprint changes, producing a **new** CAS certificate under a new name. The previous CAS certificate is left in place and is never removed.
+- **SLB server certificates:** on the cas path, an existing SLB server certificate with a matching fingerprint is reused when one is visible on the first page of `DescribeServerCertificates`; otherwise a **new** SLB server certificate entry is created. Over many renewals this can leave orphaned CAS and SLB certificate entries.
+
+Neither path garbage-collects. Schedule periodic cleanup (or a lifecycle policy) in the Alibaba Cloud console to retire stale CAS certificates and unused SLB server certificates.
+
+### Required CAS Permissions
+
+When using `LB_CERT_SOURCE=cas`, grant the following additional RAM permissions to the AccessKey or RAM Role:
+
+- `yundun-cert:UploadUserCertificate` — upload a certificate to CAS
+- `yundun-cert:ListUserCertificateOrder` — look up an existing uploaded certificate by name (idempotency)
+
+Both actions are included in the system policy `AliyunYundunCertFullAccess`.
+
+For RRSA/OIDC scenarios (Kubernetes), append the CAS permissions to the RAM Role used by the Service Account.
 
 ## Documentation
 
