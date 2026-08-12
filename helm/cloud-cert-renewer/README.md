@@ -86,9 +86,10 @@ The following table lists the configurable parameters and their default values:
 | `lb.listeners`                         | Structured instanceId/port pairs (takes precedence over instanceId + listenerPort) | `[]`                         |
 | `lb.listenerPort`                      | Load Balancer listener port (shared, used when listeners is not set) | `443`                        |
 | `lb.region`                            | Load Balancer region                  | `cn-hangzhou`                |
-| `lb.certSource`                        | Certificate upload path: `slb` (into SLB self-managed store) or `cas` (via Alibaba Cloud CAS, for WAF etc.) | `slb` |
+| `lb.certSource`                        | Certificate upload path: `slb` (SLB self-managed store) or `cas` (via CAS, for WAF). Prefer this over `slb.certSource`. Unset in chart defaults so `slb.certSource` can fall through; template default is `slb`. | `slb` (template) |
 | `slb.instanceId`                       | SLB instance ID (old name, backward compatible)    | `""`                         |
 | `slb.region`                           | SLB region (old name, backward compatible)         | `cn-hangzhou`                |
+| `slb.certSource`                       | Deprecated alias for `lb.certSource`; used only when `lb.certSource` is unset | unset |
 | `secrets.cloudCredentials.name`        | Cloud service credentials secret name (new name, preferred) | `cloud-credentials`           |
 | `secrets.cloudCredentials.accessKeyIdKey` | Access key ID key name in credentials secret | `access-key-id`              |
 | `secrets.cloudCredentials.accessKeySecretKey` | Access key secret key name in credentials secret | `access-key-secret`          |

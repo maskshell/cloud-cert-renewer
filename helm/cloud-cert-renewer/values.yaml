@@ -100,8 +100,10 @@ lb:
   # instanceId: "lb-xxx,lb-yyy"
   listenerPort: 443
   region: cn-hangzhou
-  # Certificate upload path: slb (default, into SLB self-managed certificate store) | cas (via CAS, for WAF etc.)
-  certSource: slb
+  # Certificate upload path: slb (into SLB self-managed store) | cas (via CAS, for WAF).
+  # Leave unset to allow fallthrough to slb.certSource, then template default "slb".
+  # Prefer setting lb.certSource (not slb.certSource) when overriding.
+  # certSource: cas
   # Structured listeners: independent instanceId/port pairs (optional, takes precedence when set)
   # When listeners is specified, instanceId and listenerPort are used as fallback only.
   # listeners:
@@ -115,8 +117,8 @@ slb:
   instanceId: ""
   listenerPort: 443
   region: cn-hangzhou
-  # Certificate upload path: slb (default, into SLB self-managed certificate store) | cas (via CAS, for WAF etc.)
-  certSource: slb
+  # Deprecated: prefer lb.certSource. Used only when lb.certSource is unset.
+  # certSource: cas
 
 # Secrets configuration
 secrets:

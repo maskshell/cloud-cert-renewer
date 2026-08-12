@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - CAS → SLB import now sets `AliCloudCertificateRegionId` to the CAS certificate region (`cn-hangzhou`, matching the hardcoded `cas.aliyuncs.com` endpoint) instead of `LB_REGION`. This fixes `InvalidParameter.AliCloudCertificateId` when the load balancer is outside Hangzhou.
+- Helm chart: removed default `lb.certSource` / `slb.certSource` from `values.yaml` so `slb.certSource` can fall through when `lb.certSource` is unset; both `LB_CERT_SOURCE` and `SLB_CERT_SOURCE` now use the same resolved value. Prefer `lb.certSource`; `slb.certSource` is documented as deprecated.
 
 ## [0.3.0-beta3] - 2025-12-17
 

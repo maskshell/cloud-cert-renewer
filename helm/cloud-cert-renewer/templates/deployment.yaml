@@ -113,9 +113,14 @@ spec:
             {{- end }}
             - name: LB_REGION
               value: {{ .Values.lb.region | default .Values.slb.region | quote }}
-            # Certificate upload path: slb (default, into SLB self-managed certificate store) | cas (via CAS, for WAF etc.)
+            {{- /* Resolve once so LB_* and SLB_* env vars stay consistent.
+                 Prefer lb.certSource; fall back to slb.certSource, then "slb".
+                 Chart values.yaml intentionally leaves certSource unset so this
+                 fallthrough works. */}}
+            {{- $certSource := .Values.lb.certSource | default .Values.slb.certSource | default "slb" }}
+            # Certificate upload path: slb (SLB self-managed store) | cas (via CAS, for WAF etc.)
             - name: LB_CERT_SOURCE
-              value: {{ .Values.lb.certSource | default .Values.slb.certSource | default "slb" | quote }}
+              value: {{ $certSource | quote }}
             # Load Balancer certificate and private key (read from Secret)
             - name: LB_CERT
               valueFrom:
@@ -134,9 +139,9 @@ spec:
               value: {{ .Values.slb.listenerPort | default .Values.lb.listenerPort | quote }}
             - name: SLB_REGION
               value: {{ .Values.slb.region | default .Values.lb.region | quote }}
-            # Certificate upload path (old name, backward compatible)
+            # Certificate upload path (old name, same resolved value as LB_CERT_SOURCE)
             - name: SLB_CERT_SOURCE
-              value: {{ .Values.slb.certSource | default .Values.lb.certSource | default "slb" | quote }}
+              value: {{ $certSource | quote }}
             - name: SLB_CERT
               valueFrom:
                 secretKeyRef:
