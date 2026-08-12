@@ -554,7 +554,7 @@ wheels = [
 
 [[package]]
 name = "cloud-cert-renewer"
-version = "0.3.1"
+version = "0.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "alibabacloud-cas20200407" },

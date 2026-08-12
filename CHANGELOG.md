@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-12
+
 ### Added
 
 - SLB CAS certificate relay path (`LB_CERT_SOURCE=cas`): upload certificates to Alibaba Cloud Certificate Management Service (CAS) first, then import into SLB via `AliCloudCertificateId`. Required for scenarios such as WAF that mandate SLB certificates reference a CAS certificate. The cas path looks up an existing certificate by name before upload (idempotent for multi-listener renewals and retries) and needs RAM permissions `yundun-cert:UploadUserCertificate` and `yundun-cert:ListUserCertificateOrder` (system policy `AliyunYundunCertFullAccess`). CDN and the default slb path are unaffected.
