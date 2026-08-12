@@ -188,6 +188,12 @@ class CasCertUploader:
     and other cloud products via AliCloudCertificateId.
     """
 
+    # Region where certificates uploaded via create_client() live. Must match
+    # the CAS API endpoint below (China-site public endpoint = cn-hangzhou).
+    # SLB's AliCloudCertificateRegionId refers to this CAS region, NOT the
+    # load balancer's LB_REGION.
+    CERTIFICATE_REGION_ID = "cn-hangzhou"
+
     @staticmethod
     def create_client(credential_client: CredClient) -> Cas20200407Client:
         """
@@ -196,6 +202,8 @@ class CasCertUploader:
         :return: CAS Client instance
         """
         config = open_api_models.Config(credential=credential_client)
+        # China-site public endpoint; certificates are stored in cn-hangzhou.
+        # Keep in sync with CERTIFICATE_REGION_ID.
         config.endpoint = "cas.aliyuncs.com"
         return Cas20200407Client(config)
 
@@ -603,7 +611,10 @@ class LoadBalancerCertRenewer:
                     region_id=region,
                     ali_cloud_certificate_id=cas_cert_id,
                     ali_cloud_certificate_name=cert_name,
-                    ali_cloud_certificate_region_id=region,
+                    # CAS cert region (from upload endpoint), not LB_REGION.
+                    ali_cloud_certificate_region_id=(
+                        CasCertUploader.CERTIFICATE_REGION_ID
+                    ),
                 )
                 upload_response = client.upload_server_certificate_with_options(
                     upload_request, runtime

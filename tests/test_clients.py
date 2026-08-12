@@ -258,12 +258,15 @@ MIIEpQIBAAKCAQEA...
         )
         mock_create_client.return_value = mock_client
 
+        # Use a non-Hangzhou SLB region to verify AliCloudCertificateRegionId
+        # is the CAS region (cn-hangzhou), not LB_REGION.
+        lb_region = "cn-beijing"
         result = LoadBalancerCertRenewer.renew_cert(
             instance_id=self.instance_id,
             listener_port=self.listener_port,
             cert=self.cert,
             cert_private_key=self.cert_private_key,
-            region=self.region,
+            region=lb_region,
             credential_client=self.credential_client,
             cert_source="cas",
         )
@@ -278,7 +281,15 @@ MIIEpQIBAAKCAQEA...
         # SLB upload references the CAS cert id (no server_certificate/private_key)
         slb_req = mock_client.upload_server_certificate_with_options.call_args.args[0]
         self.assertEqual(slb_req.ali_cloud_certificate_id, "cas-cert-id")
-        self.assertEqual(slb_req.ali_cloud_certificate_region_id, self.region)
+        self.assertEqual(slb_req.region_id, lb_region)
+        self.assertEqual(
+            slb_req.ali_cloud_certificate_region_id,
+            CasCertUploader.CERTIFICATE_REGION_ID,
+        )
+        self.assertNotEqual(
+            slb_req.ali_cloud_certificate_region_id,
+            lb_region,
+        )
         self.assertFalse(getattr(slb_req, "server_certificate", None))
         # Bind to listener
         mock_client.set_load_balancer_httpslistener_attribute_with_options.assert_called_once()

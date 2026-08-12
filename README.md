@@ -37,7 +37,7 @@ By default, SLB certificate renewal uploads the certificate directly to the SLB 
 
 1. Look up an existing CAS certificate by the stable name (`ListUserCertificateOrder`, `OrderType=UPLOAD`); reuse it when found.
 2. If not found, upload the certificate to Alibaba Cloud Certificate Management Service (CAS) via `UploadUserCertificate`.
-3. Import the CAS certificate into SLB via `UploadServerCertificate` with the `AliCloudCertificateId` parameter.
+3. Import the CAS certificate into SLB via `UploadServerCertificate` with `AliCloudCertificateId` and `AliCloudCertificateRegionId=cn-hangzhou` (the CAS China-site region; independent of `LB_REGION`).
 4. Bind the certificate to the HTTPS listener.
 
 CDN and the default slb path are unaffected.
