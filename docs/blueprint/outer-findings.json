@@ -1,0 +1,13 @@
+{
+  "outcome_axis_respected": true,
+  "findings": [
+    {"defect_id": "novel-1", "severity": "warning", "kind": "contradiction", "location": "md Parallel fan-out / DAG vs plan-model I2b.depends_on", "evidence": "Markdown implied I2b waits on G0; model has I2b.depends_on=[I2] only. FIXED in markdown (I2b follows I2; G0 gates I1 only)."},
+    {"defect_id": "novel-2", "severity": "warning", "kind": "blind-spot", "location": "I2b DoD vs find_existing_certificate_by_fingerprint page-1 gap", "evidence": "I2b mirrors a function with the disclosed F4 page-1 gap; DoD asserted unconditionally. FIXED: I2b DoD + risk now acknowledge page-1 limitation."},
+    {"defect_id": "novel-3", "severity": "warning", "kind": "coverage", "location": "R3 / I2.risk QPS 10/s figure", "evidence": "Reviewer could not re-fetch. RESOLVED by orchestrator: the fetched SRC-CAS-LIST doc states '本接口的单用户 QPS 限制为 10 次/秒' (ListUserCertificateOrder)."},
+    {"defect_id": "novel-4", "severity": "advisory", "kind": "gap", "location": "dod_ref fragment anchors vs markdown slugs", "evidence": "Symbolic dod_ref values are stable opaque pointers in the executable subset; accepted as-is."},
+    {"defect_id": "novel-5", "severity": "advisory", "kind": "coverage", "location": "cross-cutting '6a05ee0 reset' note", "evidence": "Reviewer used stale conversation-start snapshot. RESOLVED: reset DID happen this session (HEAD is now 1ab316e, not 6a05ee0)."},
+    {"defect_id": "novel-6", "severity": "advisory", "kind": "gap", "location": "I2b depends_on I2 is coordination not data dependency", "evidence": "Accepted; markdown now labels it coordination/conflict-avoidance, not a data dependency."},
+    {"defect_id": "novel-7", "severity": "advisory", "kind": "coverage", "location": "F4/F6/F7 finding IDs dangling", "evidence": "csr convergence-record summarizes each; accepted as disclosed."},
+    {"defect_id": "novel-8", "severity": "advisory", "kind": "coverage", "location": "psv C4 (cn-hangzhou inferred) not gated", "evidence": "C4 is inference-based (example value + convention); disclosed. G0 covers the higher-risk C3 only."}
+  ]
+}

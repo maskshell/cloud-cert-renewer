@@ -62,6 +62,11 @@ coverage.xml
 .ruff_cache/
 .bandit
 
+# Lint / architecture tool caches (regenerable; armed by tooling)
+.import_linter_cache/
+.vale/styles/
+node_modules/
+
 # IDE
 .vscode/
 .idea/
@@ -104,3 +109,8 @@ AGENTS.md
 
 # Local workflow testing secrets
 .secrets
+.claude/parallel-dev/loop-state.json
+.claude/parallel-dev/runs/
+.env.solidforge
+!.env.example
+!.env.solidforge.example
