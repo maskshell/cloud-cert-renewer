@@ -227,6 +227,15 @@ kubectl logs <pod-name> -n <namespace> -c cert-renewer | grep -i "webhook\|error
 - **Namespace mismatch**: Ensure secret is in the same namespace as the deployment
 - **Webhook URL format**: URL must start with `http://` or `https://`
 
+### 6. SLB CAS Certificate Relay (`LB_CERT_SOURCE=cas`)
+
+The `cas` path uploads the certificate to Alibaba Cloud Certificate Management Service (CAS) first, then imports it into SLB. A few CAS-specific issues:
+
+- **`InvalidParameter.AliCloudCertificateId`**: the SLB `AliCloudCertificateRegionId` must be the CAS certificate region (`cn-hangzhou` for the China-site `cas.aliyuncs.com` endpoint), not the load balancer's `LB_REGION`. This is set automatically; if you override it, keep it aligned with the CAS endpoint.
+- **Duplicate certificate-name errors on retry**: CAS requires certificate names to be unique per account. The renewer looks up an existing uploaded certificate by name before uploading and reuses it; a duplicate-name collision during upload is also caught and the existing certificate is reused. If you still see a hard duplicate-name failure, the RAM permission `yundun-cert:ListUserCertificateOrder` may be missing (so the pre-upload lookup cannot find the existing cert).
+- **Certificate accumulation**: renewal does **not** delete old certificates. Each renewal whose certificate content changed leaves an old CAS certificate (and possibly an old SLB server certificate) behind. Periodically retire stale certificates in the Alibaba Cloud console. See "Certificate Accumulation" in the README.
+- **Idempotency lookup reliability**: the name lookup paginates uploaded certificates and matches by name client-side (the CAS `Keyword` parameter only matches domain/resource-ID, not the certificate name). If the account holds a very large number of uploaded certificates, the lookup is bounded to the first 1000 (20 pages × 50).
+
 ## Debugging Tips
 
 ### 1. Local Test Configuration

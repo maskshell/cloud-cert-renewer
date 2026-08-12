@@ -215,9 +215,15 @@ class CasCertUploader:
         """
         Find an existing uploaded CAS certificate by its exact name.
 
-        Uses ListUserCertificateOrder (OrderType=UPLOAD) so the returned
-        CertificateId matches UploadUserCertificate's CertId, which is what
-        SLB's AliCloudCertificateId expects.
+        Pages through ListUserCertificateOrder (OrderType=UPLOAD) and matches by
+        name client-side. CAS `Keyword` only matches domain/resource-ID (not the
+        certificate name), so keyword is intentionally NOT used to find the cert.
+
+        The returned CertificateId is assumed to equal UploadUserCertificate's
+        CertId (so it can be passed back as SLB's AliCloudCertificateId). This
+        equivalence is verified-by-convergence, NOT a proof (psv C3). TODO(G0):
+        confirm CertId == CertificateId with a live Alibaba account before the
+        duplicate-name reuse path (upload_or_reuse_certificate) ships to prod.
         :param name: Certificate name used at upload time
         :param credential_client: Alibaba Cloud Credentials client
         :return: CAS certificate ID (cert_id) if found, otherwise None
@@ -226,30 +232,41 @@ class CasCertUploader:
             client = CasCertUploader.create_client(credential_client)
             runtime = _build_runtime_options()
 
-            # Keyword is a fuzzy filter; exact-name match is enforced below.
-            list_request = cas_20200407_models.ListUserCertificateOrderRequest(
-                keyword=name,
-                order_type="UPLOAD",
-                show_size=50,
-            )
-            list_response = client.list_user_certificate_order_with_options(
-                list_request, runtime
-            )
+            # CAS Keyword matches domain/resource-ID, NOT the certificate name
+            # (psv C5: fetched ListUserCertificateOrder doc), so we cannot rely
+            # on keyword=<name> to find a cert. Page through all UPLOAD certs
+            # and match by name client-side.
+            page_size = 50
+            max_pages = 20  # bounded safety cap (20 * 50 = 1000 certs scanned)
+            for page in range(1, max_pages + 1):
+                list_request = cas_20200407_models.ListUserCertificateOrderRequest(
+                    order_type="UPLOAD",
+                    show_size=page_size,
+                    current_page=page,
+                )
+                list_response = client.list_user_certificate_order_with_options(
+                    list_request, runtime
+                )
 
-            orders = (
-                list_response.body.certificate_order_list
-                if list_response.body and list_response.body.certificate_order_list
-                else []
-            )
-            for item in orders:
-                if item.name == name and item.certificate_id is not None:
-                    cert_id = str(item.certificate_id)
-                    logger.info(
-                        "Found existing CAS certificate: name=%s, cert_id=%s",
-                        name,
-                        cert_id,
-                    )
-                    return cert_id
+                orders = (
+                    list_response.body.certificate_order_list
+                    if list_response.body and list_response.body.certificate_order_list
+                    else []
+                )
+                for item in orders:
+                    if item.name == name and item.certificate_id is not None:
+                        cert_id = str(item.certificate_id)
+                        logger.info(
+                            "Found existing CAS certificate: "
+                            "name=%s, cert_id=%s (page=%s)",
+                            name,
+                            cert_id,
+                            page,
+                        )
+                        return cert_id
+                # A short page is the last one; stop paging.
+                if len(orders) < page_size:
+                    break
             return None
         except Exception as e:
             logger.warning(
@@ -336,12 +353,61 @@ class CasCertUploader:
         )
         if existing_id:
             return existing_id
-        return CasCertUploader.upload_user_certificate(
-            cert=cert,
-            private_key=private_key,
-            name=name,
-            credential_client=credential_client,
+        try:
+            return CasCertUploader.upload_user_certificate(
+                cert=cert,
+                private_key=private_key,
+                name=name,
+                credential_client=credential_client,
+            )
+        except CloudApiError as e:
+            # CAS certificate names are unique per account. A concurrent writer
+            # or a transient list-search miss can race the find-then-upload
+            # (TOCTOU): re-resolve by name once and reuse the cert the collision
+            # left behind. Restricted to duplicate-name errors so genuine upload
+            # failures are NOT silently masked by a stale reuse.
+            if CasCertUploader._is_duplicate_name_error(e):
+                logger.warning(
+                    "CAS certificate name collision: name=%s. "
+                    "Re-resolving existing certificate.",
+                    name,
+                )
+                existing_id = CasCertUploader.find_existing_certificate_by_name(
+                    name, credential_client
+                )
+                if existing_id:
+                    logger.info(
+                        "Reused existing CAS certificate after "
+                        "duplicate-name: name=%s, cert_id=%s",
+                        name,
+                        existing_id,
+                    )
+                    return existing_id
+            raise
+
+    @staticmethod
+    def _is_duplicate_name_error(error: CloudApiError) -> bool:
+        """Heuristic: does this CloudApiError look like a CAS duplicate-name error?
+
+        The exact Alibaba error code/string for a duplicate UploadUserCertificate
+        name is NOT documented in fetched sources. TODO(G0): confirm the real
+        duplicate-name error code/string via a live Alibaba account and tighten
+        this matcher before relying on it in production. Until then, match
+        conservatively on common duplicate-name indicators in the wrapped error
+        message. See docs/psv/cas-relay-review.psv.md (C2/C3) and the iteration
+        plan G0 gate.
+        """
+        message = str(error).lower()
+        indicators = (
+            "duplicate",
+            "already exist",
+            "name conflict",
+            "already in use",
+            "已存在",  # "already exists" (zh)
+            "重复",  # "duplicate" (zh)
+            "重名",  # "duplicate name" (zh)
         )
+        return any(ind in message for ind in indicators)
 
 
 class LoadBalancerCertRenewer:
@@ -567,6 +633,67 @@ class LoadBalancerCertRenewer:
         return cert_id
 
     @staticmethod
+    def _upload_or_reuse_slb_cert_from_cas(
+        cert: str,
+        region: str,
+        cas_cert_id: str,
+        cert_name: str,
+        credential_client: CredClient,
+    ) -> str:
+        """Resolve an SLB server_certificate_id for the CAS path (idempotent).
+
+        Reuses an existing SLB-managed certificate with a matching fingerprint
+        when one exists (mirrors the SLB-default path, so repeated CAS renewals
+        don't orphan SLB entries); otherwise uploads a new one referencing the
+        CAS cert.
+
+        NOTE: find_existing_certificate_by_fingerprint reads only page 1 (the
+        SLB-default pagination gap is out of scope), so reuse covers page-1-
+        visible entries only.
+        """
+        client = LoadBalancerCertRenewer.create_client(credential_client)
+        runtime = _build_runtime_options()
+
+        try:
+            new_cert_fingerprint = get_cert_fingerprint_sha1(cert)
+            cert_id = LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint(
+                region, new_cert_fingerprint, credential_client
+            )
+        except Exception as e:
+            logger.warning(
+                "CAS-path SLB idempotency check failed: %s. Proceeding with upload.",
+                str(e),
+            )
+            cert_id = None
+
+        if cert_id:
+            logger.info(
+                "Reusing existing SLB certificate (CAS path): "
+                "cas_cert_id=%s, slb_cert_id=%s",
+                cas_cert_id,
+                cert_id,
+            )
+            return cert_id
+
+        upload_request = slb_20140515_models.UploadServerCertificateRequest(
+            region_id=region,
+            ali_cloud_certificate_id=cas_cert_id,
+            ali_cloud_certificate_name=cert_name,
+            # CAS cert region (from upload endpoint), not LB_REGION.
+            ali_cloud_certificate_region_id=CasCertUploader.CERTIFICATE_REGION_ID,
+        )
+        upload_response = client.upload_server_certificate_with_options(
+            upload_request, runtime
+        )
+        cert_id = upload_response.body.server_certificate_id
+        logger.info(
+            "SLB certificate referenced from CAS: cas_cert_id=%s, slb_cert_id=%s",
+            cas_cert_id,
+            cert_id,
+        )
+        return cert_id
+
+    @staticmethod
     def renew_cert(
         instance_id: str,
         listener_port: int,
@@ -607,24 +734,15 @@ class LoadBalancerCertRenewer:
                     name=cert_name,
                     credential_client=credential_client,
                 )
-                upload_request = slb_20140515_models.UploadServerCertificateRequest(
-                    region_id=region,
-                    ali_cloud_certificate_id=cas_cert_id,
-                    ali_cloud_certificate_name=cert_name,
-                    # CAS cert region (from upload endpoint), not LB_REGION.
-                    ali_cloud_certificate_region_id=(
-                        CasCertUploader.CERTIFICATE_REGION_ID
-                    ),
-                )
-                upload_response = client.upload_server_certificate_with_options(
-                    upload_request, runtime
-                )
-                cert_id = upload_response.body.server_certificate_id
-                logger.info(
-                    "SLB certificate referenced from CAS: "
-                    "cas_cert_id=%s, slb_cert_id=%s",
-                    cas_cert_id,
-                    cert_id,
+                # Reference the CAS cert from the SLB cert store, reusing an
+                # existing SLB server_certificate with a matching fingerprint
+                # when one exists (idempotent; avoids orphaned SLB entries).
+                cert_id = LoadBalancerCertRenewer._upload_or_reuse_slb_cert_from_cas(
+                    cert=cert,
+                    region=region,
+                    cas_cert_id=cas_cert_id,
+                    cert_name=cert_name,
+                    credential_client=credential_client,
                 )
             else:
                 # SLB path (default): managed by SLB's own cert store.

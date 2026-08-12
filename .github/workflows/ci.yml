@@ -449,6 +449,38 @@ jobs:
             --values helm/cloud-cert-renewer/values-slb.yaml \
             --debug
 
+      - name: Assert certSource env consistency + lb/slb fallthrough
+        # Regression guard for the 1ab316e helm fallthrough fix:
+        # LB_CERT_SOURCE and SLB_CERT_SOURCE must resolve to the SAME value,
+        # and slb.certSource must fall through when lb.certSource is unset.
+        run: |
+          set -euo pipefail
+          extract_env() {
+            # $1 = manifest, $2 = env var name -> prints the value
+            printf '%s\n' "$1" | grep -A1 "name: $2" | grep 'value:' | \
+              sed 's/.*value: *//; s/"//g' | head -n1
+          }
+
+          echo "Rendering SLB chart and asserting LB_CERT_SOURCE == SLB_CERT_SOURCE..."
+          manifest=$(helm template test-release helm/cloud-cert-renewer \
+            --values helm/cloud-cert-renewer/values-slb.yaml)
+          lb=$(extract_env "$manifest" LB_CERT_SOURCE)
+          slb=$(extract_env "$manifest" SLB_CERT_SOURCE)
+          echo "LB_CERT_SOURCE=$lb  SLB_CERT_SOURCE=$slb"
+          [ -n "$lb" ] && [ -n "$slb" ] || { echo "FAIL: could not extract certSource env values"; exit 1; }
+          [ "$lb" = "$slb" ] || { echo "FAIL: LB_CERT_SOURCE ($lb) != SLB_CERT_SOURCE ($slb)"; exit 1; }
+
+          echo "Asserting slb.certSource fallthrough (lb.certSource unset)..."
+          manifest2=$(helm template test-release helm/cloud-cert-renewer \
+            --values helm/cloud-cert-renewer/values-slb.yaml \
+            --set slb.certSource=cas)
+          lb2=$(extract_env "$manifest2" LB_CERT_SOURCE)
+          echo "LB_CERT_SOURCE with slb.certSource=cas -> $lb2"
+          [ -n "$lb2" ] || { echo "FAIL: could not extract LB_CERT_SOURCE for fallthrough case"; exit 1; }
+          [ "$lb2" = "cas" ] || { echo "FAIL: slb.certSource fallthrough did not propagate (got $lb2)"; exit 1; }
+
+          echo "certSource assertions passed."
+
       - name: Test Helm chart template rendering (webhook example values)
         run: |
           echo "Testing chart template rendering with webhook example values..."

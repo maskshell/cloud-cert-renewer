@@ -10,11 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - SLB CAS certificate relay path (`LB_CERT_SOURCE=cas`): upload certificates to Alibaba Cloud Certificate Management Service (CAS) first, then import into SLB via `AliCloudCertificateId`. Required for scenarios such as WAF that mandate SLB certificates reference a CAS certificate. The cas path looks up an existing certificate by name before upload (idempotent for multi-listener renewals and retries) and needs RAM permissions `yundun-cert:UploadUserCertificate` and `yundun-cert:ListUserCertificateOrder` (system policy `AliyunYundunCertFullAccess`). CDN and the default slb path are unaffected.
+- CI: Helm chart template assertions verifying `LB_CERT_SOURCE` and `SLB_CERT_SOURCE` resolve to the same value and that `slb.certSource` falls through when `lb.certSource` is unset (regression guard for the chart fallthrough fix).
 
 ### Fixed
 
 - CAS → SLB import now sets `AliCloudCertificateRegionId` to the CAS certificate region (`cn-hangzhou`, matching the hardcoded `cas.aliyuncs.com` endpoint) instead of `LB_REGION`. This fixes `InvalidParameter.AliCloudCertificateId` when the load balancer is outside Hangzhou.
 - Helm chart: removed default `lb.certSource` / `slb.certSource` from `values.yaml` so `slb.certSource` can fall through when `lb.certSource` is unset; both `LB_CERT_SOURCE` and `SLB_CERT_SOURCE` now use the same resolved value. Prefer `lb.certSource`; `slb.certSource` is documented as deprecated.
+- CAS name lookup (`find_existing_certificate_by_name`) no longer relies on the `Keyword` parameter (which matches domain/resource-ID, not the certificate name). It now paginates uploaded certificates and matches by name client-side, so the `cas` path's reuse-by-name is actually functional.
+- CAS path: a duplicate-name error during `UploadUserCertificate` (e.g. a list-then-upload race) is now caught and the existing certificate is reused instead of failing the renewal.
+- CAS path: an existing SLB server certificate with a matching fingerprint is now reused before importing a new one, avoiding orphaned SLB certificate entries on repeated renewals (mirrors the default `slb` path).
+
+### Known Limitations
+
+- The CAS duplicate-name reuse assumes `UploadUserCertificate.CertId` equals `ListUserCertificateOrder.CertificateId`; this is verified-by-convergence but not yet confirmed against a live Alibaba account (`docs/psv/g0-certid-certificateid-verification.md`). The fallback code and tests are in place, but it should not be relied on in production until that equivalence is confirmed.
+- Certificate renewal does not delete old certificates; see "Certificate Accumulation" in the README.
 
 ## [0.3.0-beta3] - 2025-12-17
 

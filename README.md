@@ -35,12 +35,21 @@ By default, SLB certificate renewal uploads the certificate directly to the SLB 
 
 ### How It Works (cas path)
 
-1. Look up an existing CAS certificate by the stable name (`ListUserCertificateOrder`, `OrderType=UPLOAD`); reuse it when found.
-2. If not found, upload the certificate to Alibaba Cloud Certificate Management Service (CAS) via `UploadUserCertificate`.
-3. Import the CAS certificate into SLB via `UploadServerCertificate` with `AliCloudCertificateId` and `AliCloudCertificateRegionId=cn-hangzhou` (the CAS China-site region; independent of `LB_REGION`).
+1. Look up an existing CAS certificate by its stable name (`ListUserCertificateOrder`, `OrderType=UPLOAD`). The lookup paginates uploaded certificates and matches by name client-side — the API `Keyword` only matches domain/resource-ID, not the certificate name — and reuses the existing certificate when found.
+2. If not found, upload the certificate to Alibaba Cloud Certificate Management Service (CAS) via `UploadUserCertificate`. If a concurrent upload created a same-name certificate in the meantime (duplicate-name error), the collision is caught and the existing certificate is reused.
+3. Import the CAS certificate into SLB via `UploadServerCertificate` with `AliCloudCertificateId` and `AliCloudCertificateRegionId=cn-hangzhou` (the CAS China-site region; independent of `LB_REGION`). An existing SLB server certificate with a matching fingerprint is reused when present (idempotent); otherwise a new one is created.
 4. Bind the certificate to the HTTPS listener.
 
 CDN and the default slb path are unaffected.
+
+### Certificate Accumulation (operational note)
+
+Certificate renewal does **not** delete old certificates. Be aware of the accumulation behavior:
+
+- **CAS certs:** the cas path uploads under a stable name derived from the SLB instance ID and a SHA-1 fingerprint of the certificate (`{instance_id}-{fingerprint[:8]}`). When the certificate **content changes** (e.g. a real renewal), the fingerprint changes, producing a **new** CAS certificate under a new name. The previous CAS certificate is left in place and is never removed.
+- **SLB server certificates:** on the cas path, an existing SLB server certificate with a matching fingerprint is reused when one is visible on the first page of `DescribeServerCertificates`; otherwise a **new** SLB server certificate entry is created. Over many renewals this can leave orphaned CAS and SLB certificate entries.
+
+Neither path garbage-collects. Schedule periodic cleanup (or a lifecycle policy) in the Alibaba Cloud console to retire stale CAS certificates and unused SLB server certificates.
 
 ### Required CAS Permissions
 

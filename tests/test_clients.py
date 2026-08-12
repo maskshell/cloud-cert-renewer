@@ -294,6 +294,49 @@ MIIEpQIBAAKCAQEA...
         # Bind to listener
         mock_client.set_load_balancer_httpslistener_attribute_with_options.assert_called_once()
 
+    @patch("cloud_cert_renewer.clients.alibaba.get_cert_fingerprint_sha1")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.CasCertUploader.upload_or_reuse_certificate"
+    )
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.find_existing_certificate_by_fingerprint"
+    )
+    @patch("cloud_cert_renewer.clients.alibaba.LoadBalancerCertRenewer.create_client")
+    def test_renew_cert_cas_path_reuses_existing_slb_cert(
+        self, mock_create_client, mock_find_slb, mock_cas_upload, mock_fingerprint
+    ):
+        """I2b: CAS path reuses an SLB cert with a matching fingerprint instead of
+        uploading a new one (avoids orphaned SLB entries)."""
+        mock_fingerprint.return_value = "aa:bb:cc:dd:ee:ff:00:11"
+        mock_cas_upload.return_value = "cas-cert-id"
+        # An SLB server_certificate with a matching fingerprint already exists.
+        mock_find_slb.return_value = "existing-slb-id"
+        mock_client = MagicMock()
+        mock_bind_response = MagicMock()
+        mock_bind_response.status_code = 200
+        bind_call = mock_client.set_load_balancer_httpslistener_attribute_with_options
+        bind_call.return_value = mock_bind_response
+        mock_create_client.return_value = mock_client
+
+        result = LoadBalancerCertRenewer.renew_cert(
+            instance_id=self.instance_id,
+            listener_port=self.listener_port,
+            cert=self.cert,
+            cert_private_key=self.cert_private_key,
+            region="cn-beijing",
+            credential_client=self.credential_client,
+            cert_source="cas",
+        )
+
+        self.assertTrue(result)
+        # Reused the existing SLB cert; did NOT upload a new one.
+        mock_client.upload_server_certificate_with_options.assert_not_called()
+        # CAS upload/reuse still happened (ensure the CAS cert exists).
+        mock_cas_upload.assert_called_once()
+        # Bind used the reused SLB cert id.
+        bind_req = bind_call.call_args.args[0]
+        self.assertEqual(bind_req.server_certificate_id, "existing-slb-id")
+
     @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
     def test_cas_uploader_upload_success(self, mock_create_cas_client):
         """Test uploading certificate to CAS returns cert_id."""
@@ -382,7 +425,9 @@ MIIEpQIBAAKCAQEA...
 
         self.assertEqual(cert_id, "12345")
         req = mock_cas_client.list_user_certificate_order_with_options.call_args.args[0]
-        self.assertEqual(req.keyword, "test-cert")
+        # I2: keyword is NOT used to find the cert (CAS Keyword matches
+        # domain/resource-ID, not name); match is enforced client-side.
+        self.assertIsNone(req.keyword)
         self.assertEqual(req.order_type, "UPLOAD")
 
     @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
@@ -468,6 +513,126 @@ MIIEpQIBAAKCAQEA...
             name="test-cert",
             credential_client=self.credential_client,
         )
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
+    def test_cas_find_by_name_paginates_and_matches_across_pages(
+        self, mock_create_cas_client
+    ):
+        """I2: lookup pages through UPLOAD certs and matches by name client-side,
+        not relying on keyword (CAS Keyword matches domain/resource-ID, not name)."""
+        mock_cas_client = MagicMock()
+
+        def _order(name, cert_id):
+            m = MagicMock()
+            m.name = name
+            m.certificate_id = cert_id
+            return m
+
+        # Full first page (50 items), none matching; match lives on page 2.
+        page1 = [_order(f"other-{i}", 10000 + i) for i in range(50)]
+        match = _order("test-cert", 4242)
+        page2 = [match]
+
+        resp1 = MagicMock()
+        resp1.body.certificate_order_list = page1
+        resp2 = MagicMock()
+        resp2.body.certificate_order_list = page2
+        mock_cas_client.list_user_certificate_order_with_options.side_effect = [
+            resp1,
+            resp2,
+        ]
+        mock_create_cas_client.return_value = mock_cas_client
+
+        cert_id = CasCertUploader.find_existing_certificate_by_name(
+            name="test-cert", credential_client=self.credential_client
+        )
+
+        self.assertEqual(cert_id, "4242")
+        # Two pages fetched (pagination loop).
+        self.assertEqual(
+            mock_cas_client.list_user_certificate_order_with_options.call_count, 2
+        )
+        # Request does NOT rely on keyword to find the cert.
+        list_mock = mock_cas_client.list_user_certificate_order_with_options
+        req1 = list_mock.call_args_list[0].args[0]
+        req2 = list_mock.call_args_list[1].args[0]
+        self.assertIsNone(req1.keyword)
+        self.assertEqual(req1.order_type, "UPLOAD")
+        self.assertEqual(req1.current_page, 1)
+        self.assertEqual(req2.current_page, 2)
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.create_client")
+    def test_cas_find_by_name_stops_on_short_page(self, mock_create_cas_client):
+        """I2: a partial (final) page stops the loop without extra calls."""
+        mock_cas_client = MagicMock()
+
+        def _order(name, cert_id):
+            m = MagicMock()
+            m.name = name
+            m.certificate_id = cert_id
+            return m
+
+        resp = MagicMock()
+        resp.body.certificate_order_list = [_order("nope", 1), _order("nope-2", 2)]
+        mock_cas_client.list_user_certificate_order_with_options.return_value = resp
+        mock_create_cas_client.return_value = mock_cas_client
+
+        cert_id = CasCertUploader.find_existing_certificate_by_name(
+            name="test-cert", credential_client=self.credential_client
+        )
+
+        self.assertIsNone(cert_id)
+        self.assertEqual(
+            mock_cas_client.list_user_certificate_order_with_options.call_count, 1
+        )
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.upload_user_certificate")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.CasCertUploader.find_existing_certificate_by_name"
+    )
+    def test_cas_upload_or_reuse_duplicate_name_fallback(self, mock_find, mock_upload):
+        """I1: duplicate-name upload error triggers a re-lookup that reuses the cert."""
+        from cloud_cert_renewer.errors import CloudApiError
+
+        # Miss on first lookup, hit after the collision.
+        mock_find.side_effect = [None, "reused-cas-id"]
+        mock_upload.side_effect = CloudApiError(
+            "CAS certificate upload failed: Certificate name already exists (duplicate)"
+        )
+
+        cert_id = CasCertUploader.upload_or_reuse_certificate(
+            cert=self.cert,
+            private_key=self.cert_private_key,
+            name="test-cert",
+            credential_client=self.credential_client,
+        )
+
+        self.assertEqual(cert_id, "reused-cas-id")
+        self.assertEqual(mock_find.call_count, 2)
+        mock_upload.assert_called_once()
+
+    @patch("cloud_cert_renewer.clients.alibaba.CasCertUploader.upload_user_certificate")
+    @patch(
+        "cloud_cert_renewer.clients.alibaba.CasCertUploader.find_existing_certificate_by_name"
+    )
+    def test_cas_upload_or_reuse_non_duplicate_reraises(self, mock_find, mock_upload):
+        """I1: a non-duplicate upload error re-raises (no silent reuse)."""
+        from cloud_cert_renewer.errors import CloudApiError
+
+        mock_find.return_value = None
+        mock_upload.side_effect = CloudApiError(
+            "CAS certificate upload failed: InvalidParameter something else"
+        )
+
+        with self.assertRaises(CloudApiError):
+            CasCertUploader.upload_or_reuse_certificate(
+                cert=self.cert,
+                private_key=self.cert_private_key,
+                name="test-cert",
+                credential_client=self.credential_client,
+            )
+        # No re-lookup for a non-duplicate error.
+        self.assertEqual(mock_find.call_count, 1)
 
     @patch.dict(
         os.environ,
