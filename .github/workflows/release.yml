@@ -168,7 +168,7 @@ jobs:
           uv run ruff format --check .
 
       - name: Install build tools
-        run: uv pip install build twine
+        run: uv pip install build
 
       - name: Build distribution packages
         run: |
@@ -178,7 +178,10 @@ jobs:
 
       - name: Verify distribution packages
         run: |
-          uv run python -m twine check dist/*
+          # Run twine isolated (uvx): twine 7.0.0 imports packaging.errors,
+          # which the project venv's packaging 25.0 lacks, so `uv run ... twine`
+          # raises ImportError. uvx resolves a compatible packaging.
+          uvx twine check dist/*
           uv pip install dist/*.whl --dry-run
 
       - name: Upload PyPI artifacts
