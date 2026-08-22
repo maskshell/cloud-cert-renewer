@@ -144,7 +144,7 @@ For RRSA/OIDC scenarios (Kubernetes), append the CAS permissions to the RAM Role
 - **[DEVELOPMENT.md](DEVELOPMENT.md)**: Detailed development guide (code formatting, linting, testing, building)
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**: Common issues and debugging tips
 - **[Helm Chart README](helm/cloud-cert-renewer/README.md)**: Detailed Kubernetes deployment guide
-- **[testing-design-principles.mdc](testing-design-principles.mdc)**: Testing design and implementation principles
+- **[Testing Design Principles](docs/testing-design-principles.md)**: Testing design and implementation principles
 
 ## Contributing
 

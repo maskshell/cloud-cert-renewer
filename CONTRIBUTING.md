@@ -109,7 +109,7 @@ For detailed code formatting, linting, and style guidelines, see [DEVELOPMENT.md
 
 ## Testing
 
-**All tests must follow the testing design principles defined in `testing-design-principles.mdc`.**
+**All tests must follow the testing design principles defined in `docs/testing-design-principles.md`.**
 
 ### Test Organization
 
@@ -172,7 +172,7 @@ For detailed test execution commands and examples, see [DEVELOPMENT.md](DEVELOPM
 - Mock at design pattern boundaries, not at implementation details
 - Use correct import paths for mocking (e.g., `cloud_cert_renewer.clients.alibaba.CdnCertRenewer`)
 
-**See `testing-design-principles.mdc` for complete testing guidelines.**
+**See `docs/testing-design-principles.md` for complete testing guidelines.**
 
 ## Pull Request Checklist
 
@@ -197,7 +197,7 @@ Before submitting a pull request, ensure:
 1. All pull requests require at least one approval
 2. Code reviews will verify:
    - Code quality and style
-   - **Test organization follows design patterns** (see `testing-design-principles.mdc`)
+   - **Test organization follows design patterns** (see `docs/testing-design-principles.md`)
    - **Test coverage meets requirements** (100% for design patterns, 80%+ for core logic)
    - **Tests align with code changes** (mandatory test updates)
    - Documentation completeness

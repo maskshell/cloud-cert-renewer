@@ -144,7 +144,7 @@ CDN 以及默认的 slb 路径不受影响。
 - **[DEVELOPMENT.md](DEVELOPMENT.md)**：详细开发指南（代码格式化、Lint、测试、构建）
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**：常见问题与排障技巧
 - **[Helm Chart README](helm/cloud-cert-renewer/README.md)**：详细的 Kubernetes 部署指南
-- **[testing-design-principles.mdc](testing-design-principles.mdc)**：测试设计与实现原则
+- **[测试设计原则](docs/testing-design-principles.md)**：测试设计与实现原则
 
 ## 贡献
 

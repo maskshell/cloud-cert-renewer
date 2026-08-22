@@ -315,7 +315,7 @@ uv run pytest --durations=10
 uv run pytest --cov=. --cov-report=html
 ```
 
-For more information about testing, see [testing-design-principles.mdc](testing-design-principles.mdc) and [CONTRIBUTING.md](CONTRIBUTING.md).
+For more information about testing, see [testing-design-principles.md](docs/testing-design-principles.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Building Docker Image
 
@@ -918,4 +918,4 @@ The project follows several design patterns:
 - **Adapter Pattern**: `CloudAdapter` implementations
 - **Dependency Injection**: `DIContainer`
 
-For more details, see [testing-design-principles.mdc](testing-design-principles.mdc).
+For more details, see [testing-design-principles.md](docs/testing-design-principles.md).
